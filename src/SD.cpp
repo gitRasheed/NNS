@@ -96,6 +96,20 @@ inline void for_each_threshold(const ColPre& a, const ColPre& b, F f){
   }
 }
 
+template <class F>
+inline bool for_each_threshold_until(const ColPre& a, const ColPre& b, F f){
+  int ia=0, ib=0, m=a.m; // assume same m
+  while(ia<m || ib<m){
+    double next_a = (ia<m ? a.vals[ia] : R_PosInf);
+    double next_b = (ib<m ? b.vals[ib] : R_PosInf);
+    double t = (next_a < next_b ? next_a : next_b);
+    while(ia<m && a.vals[ia] <= t) ++ia; // k_a = ia
+    while(ib<m && b.vals[ib] <= t) ++ib; // k_b = ib
+    if (!f(t, ia, ib)) return false;
+  }
+  return true;
+}
+
 // =====================================================================
 // Pairwise dominance via prefix sums (O(m) per pair)
 // degree: 1=FSD, 2=SSD, 3=TSD. 'discrete' only matters for FSD.
@@ -106,9 +120,8 @@ inline int sd_dom_pair(const ColPre& X, const ColPre& Y, int degree, bool discre
     if (!(X.mn >= Y.mn)) return 0;                 // FSD gate
     if (identical_samples(X, Y)) return 0;         // identical series -> 0 (matches R's identical(LPM_x, LPM_y))
     
-    bool x_gt_y = false;
     int deg = (discrete ? 0 : 1); // discrete->0, continuous->1
-    for_each_threshold(X, Y, [&](double t, int kx, int ky){
+    bool dominates = for_each_threshold_until(X, Y, [&](double t, int kx, int ky){
       double Rx, Ry;
       if (deg==0){
         // L0/(L0+U0) == ECDF
@@ -122,9 +135,9 @@ inline int sd_dom_pair(const ColPre& X, const ColPre& Y, int degree, bool discre
         Rx = (Ax>0.0 ? Lx/Ax : 0.0);
         Ry = (Ay>0.0 ? Ly/Ay : 0.0);
       }
-      if (Rx > Ry) x_gt_y = true;
+      return !(Rx > Ry);
     });
-    return x_gt_y ? 0 : 1;                         // 1 iff "X FSD Y"
+    return dominates ? 1 : 0;                      // 1 iff "X FSD Y"
   }
   
   // SSD/TSD gates
@@ -193,7 +206,7 @@ IntegerMatrix sd_dom_matrix_prefix_parallel(const NumericMatrix& X, int degree, 
   int n = X.ncol();
   std::vector<ColPre> cols; cols.reserve(n);
   for (int j=0;j<n;++j) cols.push_back(precompute_col(X, j));
-  
+
   IntegerMatrix D(n, n);
   DomWorker w(cols, degree, discrete, D);
   parallelFor(0, n, w);
@@ -214,6 +227,8 @@ static inline double repeatMultiplication(double value, int n) {
 // [[Rcpp::export]]
 CharacterVector NNS_SD_efficient_set_parallel_cpp(NumericMatrix X, int degree, std::string type="discrete", bool status=true){
   int n = X.ncol(); if (!n) return CharacterVector();
+  for (R_xlen_t k=0; k<X.size(); ++k) if (NumericVector::is_na(X[k]))
+    stop("You have some missing values, please address.");
   
   CharacterVector cn = colnames(X);
   if (cn.size()!=n){ cn = CharacterVector(n); for(int j=0;j<n;++j) cn[j] = "X_"+std::to_string(j+1); colnames(X)=cn; }
@@ -227,26 +242,22 @@ CharacterVector NNS_SD_efficient_set_parallel_cpp(NumericMatrix X, int degree, s
   
   // ===== order by LPM(degree, tmax, ·) =====
   std::vector<double> lpm_vals(n, 0.0);
-  std::vector<int> non_na_counts(n, 0);
   
-  // compute LPM_r for each column (simple O(nrows * ncols) pass)
+  // compute LPM_r for each column from the existing prefix sums
   for (int j = 0; j < n; ++j) {
-    double sum = 0.0;
-    int cnt = 0;
-    for (int i = 0; i < X.nrow(); ++i) {
-      double xv = X(i, j);
-      if (!NumericVector::is_na(xv)) {
-        double diff = tmax - xv;
-        if (diff > 0.0) {
-          // use integer repeated multiplication (faster/more accurate than std::pow for integer exponents)
-          sum += repeatMultiplication(diff, degree);
-        }
-        cnt++;
+    const ColPre& c = cols[j];
+    if (degree == 1) {
+      lpm_vals[j] = (double(c.m) * tmax - c.S1) / double(c.m);
+    } else if (degree == 2) {
+      lpm_vals[j] = (double(c.m) * tmax * tmax - 2.0 * tmax * c.S1 + c.S2) / double(c.m);
+    } else {
+      double sum = 0.0;
+      for (int i = 0; i < c.m; ++i) {
+        double diff = tmax - c.vals[i];
+        if (diff > 0.0) sum += diff * diff * diff;
       }
+      lpm_vals[j] = sum / double(c.m);
     }
-    if (cnt > 0) lpm_vals[j] = sum / (double) cnt;
-    else lpm_vals[j] = R_PosInf;   // push all-NA columns to the end
-    non_na_counts[j] = cnt;
   }
   
   // Build index vector and sort by lpm_vals (ascending: lower LPM earlier)
@@ -257,13 +268,24 @@ CharacterVector NNS_SD_efficient_set_parallel_cpp(NumericMatrix X, int degree, s
               if (lpm_vals[a] == lpm_vals[b]) return a < b; // stable tie-break by index
               return lpm_vals[a] < lpm_vals[b];
             });
-  
+
   // build dominance matrix in the sorted order
-  NumericMatrix Xo(X.nrow(), n); CharacterVector names_sorted(n);
-  for (int k=0;k<n;++k){ Xo(_,k)=X(_,ord[k]); names_sorted[k]=cn[ord[k]]; }
-  
-  IntegerMatrix D = sd_dom_matrix_prefix_parallel(Xo, degree, type);
-  
+  std::vector<ColPre> cols_sorted; cols_sorted.reserve(n);
+  CharacterVector names_sorted(n);
+  for (int k=0;k<n;++k){ cols_sorted.push_back(cols[ord[k]]); names_sorted[k]=cn[ord[k]]; }
+
+  std::transform(type.begin(), type.end(), type.begin(), ::tolower);
+  bool discrete = true;
+  if (degree==1){
+    if (!(type=="discrete" || type=="continuous"))
+      warning("type needs to be either discrete or continuous");
+    discrete = (type != "continuous");
+  }
+
+  IntegerMatrix D(n, n);
+  DomWorker w(cols_sorted, degree, discrete, D);
+  parallelFor(0, n, w);
+
   // single pass to keep maximal elements
   LogicalVector keep(n);
   for (int k=0;k<n;++k){
