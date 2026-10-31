@@ -389,5 +389,14 @@ NNS.ARMA <- function(variable,
   if (isTRUE(sf) && is.data.frame(M) && "Period" %in% names(M)) {
     return(list(lag = M$Period[1], Weights = 1))
   }
-  ARMA.seas.weighting(sf, M)
+  ASW <- ARMA.seas.weighting(sf, M)
+  # The weights are (VarCV - CV) / sqrt(lag), normalised. When every row has
+  # CV == VarCV (no-seasonality sentinel, modulo-added periods, constant
+  # series) the denominator is 0 and all weights came back 0, which forced a
+  # forecast of 0. Use equal weights instead.
+  w <- ASW$Weights
+  if (length(ASW$lag) > 0 && (length(w) == 0 || all(w == 0) || any(!is.finite(w)))) {
+    ASW$Weights <- rep(1 / length(ASW$lag), length(ASW$lag))
+  }
+  ASW
 }
