@@ -217,14 +217,10 @@ NNS.part <- function(x, y, Voronoi = FALSE, type = NULL,
   RP <- RP[order(RP$quadrant, method = "radix"), , drop = FALSE]
   rownames(RP) <- NULL
   
-  if (is.discrete(x)) {
-    finite <- is.finite(RP$x)
-    RP$x[finite] <- ifelse(
-      RP$x[finite] %% 1 < 0.5,
-      floor(RP$x[finite]),
-      ceiling(RP$x[finite])
-    )
-  }
+  # Regression points are the (x, y) centroids of each cell. They used to
+  # round x (only) to an integer when x was integer-valued, which paired the
+  # cell's y-centroid with a shifted x and biased NNS.reg on counts, years,
+  # ages and similar predictors.
   
   if (Voronoi) {
     graphics::plot(
