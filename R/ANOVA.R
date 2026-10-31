@@ -110,14 +110,13 @@ NNS.ANOVA <- function(
       # ---------------------------
       # Robust path: resample pairs
       # ---------------------------
-      # Draw bootstrap-style index matrices with a common length so both groups
-      # are resampled on aligned indices for repeated certainty estimation.
-      l <- min(length(treatment), length(control))
-      treatment_p      <- replicate(100, sample.int(l, replace = TRUE))
-      treatment_matrix <- matrix(treatment[treatment_p], ncol = dim(treatment_p)[2], byrow = FALSE)
-      treatment_matrix <- cbind(treatment[treatment_p[,1]], treatment_matrix[, rev(seq_len(ncol(treatment_matrix)))])
-      control_matrix   <- matrix(control[treatment_p],   ncol = dim(treatment_p)[2], byrow = FALSE)
-      full_matrix      <- cbind(control[treatment_p[,1]], control_matrix, treatment[treatment_p[,1]], treatment_matrix)
+      # Bootstrap each group independently from its own full sample (with its
+      # own size). Indexing both groups with sample.int(min(n1, n2)) only ever
+      # looked at the first min(n1, n2) observations of the longer group.
+      control_p        <- replicate(100, sample.int(length(control),   replace = TRUE))
+      treatment_p      <- replicate(100, sample.int(length(treatment), replace = TRUE))
+      control_matrix   <- matrix(control[control_p],     ncol = 100L, byrow = FALSE)
+      treatment_matrix <- matrix(treatment[treatment_p], ncol = 100L, byrow = FALSE)
       
       nns.certainties <- sapply(
         1:ncol(control_matrix),
