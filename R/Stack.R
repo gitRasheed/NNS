@@ -209,7 +209,9 @@ NNS.stack <- function(IVs.train,
       } else if (is.factor(tr) || is.character(tr)) {
         tr_chr <- as.character(tr)
         te_chr <- as.character(te)
-        lev <- if (is.factor(tr)) levels(tr) else unique(tr_chr)
+        # Character predictors use sorted levels, as factor() and NNS.boost do,
+        # so the encoding does not depend on row order.
+        lev <- if (is.factor(tr)) levels(tr) else sort(unique(tr_chr))
         unseen <- setdiff(unique(te_chr), lev)
         if (length(unseen)) {
           stop(sprintf(
@@ -403,7 +405,9 @@ NNS.stack <- function(IVs.train,
       class_values <- levels(response_factor)
       y <- as.integer(response_factor)
     } else if (response_was_character) {
-      class_values <- unique(DV.train)
+      # Sorted (factor) level order, as for a factor response and in
+      # NNS.boost; first-appearance coding made results depend on row order.
+      class_values <- levels(factor(DV.train))
       y <- match(DV.train, class_values)
     } else if (response_was_logical) {
       class_values <- sort(unique(DV.train))
