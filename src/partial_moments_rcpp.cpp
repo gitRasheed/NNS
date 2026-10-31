@@ -35,6 +35,14 @@ static inline bool is_supplied_target(const RObject &target) {
     (is<NumericVector>(target) || is<IntegerVector>(target));
 }
 
+// Same contract as LPM()/UPM(): NA/NaN/Inf are rejected instead of being
+// counted in n (which made e.g. LPM.ratio(0, max(x), x) < 1 with an NA).
+static inline void stop_if_not_finite(const NumericVector &v, const char *what) {
+  for (R_xlen_t i = 0; i < v.size(); ++i) {
+    if (!R_FINITE(v[i])) Rcpp::stop("`%s` must be finite.", what);
+  }
+}
+
 
 // [[Rcpp::export(rng = false)]]
 double CoLPM_nD_RCPP(const NumericMatrix &data,
@@ -172,6 +180,8 @@ NumericVector UPM_RCPP(const double &degree,
      target_vec = NumericVector(1);
      target_vec[0] = mean(variable_vec);
    }
+   stop_if_not_finite(variable_vec, "variable");
+   stop_if_not_finite(target_vec, "target");
    return LPM_ratio_CPv(degree, target_vec, variable_vec);
  }
 
@@ -213,6 +223,8 @@ NumericVector UPM_RCPP(const double &degree,
      target_vec = NumericVector(1);
      target_vec[0] = mean(variable_vec);
    }
+   stop_if_not_finite(variable_vec, "variable");
+   stop_if_not_finite(target_vec, "target");
    return UPM_ratio_CPv(degree, target_vec, variable_vec);
  }
 
@@ -248,6 +260,10 @@ NumericVector CoLPM_RCPP(
      target_y_vec = NumericVector(1);
      target_y_vec[0] = mean(y_vec);
    }
+   stop_if_not_finite(x_vec, "x");
+   stop_if_not_finite(y_vec, "y");
+   stop_if_not_finite(target_x_vec, "target_x");
+   stop_if_not_finite(target_y_vec, "target_y");
    return CoLPM_CPv(degree_lpm, degree_y, x_vec, y_vec, target_x_vec, target_y_vec);
  }
 
@@ -283,6 +299,10 @@ NumericVector CoUPM_RCPP(
      target_y_vec = NumericVector(1);
      target_y_vec[0] = mean(y_vec);
    }
+   stop_if_not_finite(x_vec, "x");
+   stop_if_not_finite(y_vec, "y");
+   stop_if_not_finite(target_x_vec, "target_x");
+   stop_if_not_finite(target_y_vec, "target_y");
    return CoUPM_CPv(degree_upm, degree_y, x_vec, y_vec, target_x_vec, target_y_vec);
  }
 
@@ -336,6 +356,10 @@ NumericVector CoUPM_RCPP(
      target_y_vec = NumericVector(1);
      target_y_vec[0] = mean(y_vec);
    }
+   stop_if_not_finite(x_vec, "x");
+   stop_if_not_finite(y_vec, "y");
+   stop_if_not_finite(target_x_vec, "target_x");
+   stop_if_not_finite(target_y_vec, "target_y");
    return DLPM_CPv(degree_lpm, degree_upm, x_vec, y_vec, target_x_vec, target_y_vec);
  }
 
@@ -389,6 +413,10 @@ NumericVector CoUPM_RCPP(
      target_y_vec = NumericVector(1);
      target_y_vec[0] = mean(y_vec);
    }
+   stop_if_not_finite(x_vec, "x");
+   stop_if_not_finite(y_vec, "y");
+   stop_if_not_finite(target_x_vec, "target_x");
+   stop_if_not_finite(target_y_vec, "target_y");
    return DUPM_CPv(degree_lpm, degree_upm, x_vec, y_vec, target_x_vec, target_y_vec);
  }
 
@@ -430,6 +458,8 @@ NumericVector CoUPM_RCPP(
      return List::create();
    }
    
+   stop_if_not_finite(variable_matrix, "variable");
+   stop_if_not_finite(tgt, "target");
    return PMMatrix_CPv(LPM_degree, UPM_degree, tgt, variable_matrix, pop_adj, norm);
  }
 
