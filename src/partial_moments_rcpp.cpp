@@ -67,6 +67,7 @@ double CoLPM_nD_RCPP(const NumericMatrix &data,
                      const NumericVector &target,
                      const double &degree,
                      const bool &norm ) {
+  nns_check_degree(degree, "degree");
   return clpm_nD_cpp(data, target, degree, norm);
 }
 
@@ -75,6 +76,7 @@ double CoUPM_nD_RCPP(const NumericMatrix &data,
                      const NumericVector &target,
                      const double &degree,
                      const bool &norm ) {
+  nns_check_degree(degree, "degree");
   return cupm_nD_cpp(data, target, degree, norm);
 }
 
@@ -83,6 +85,7 @@ double DPM_nD_RCPP(const NumericMatrix &data,
                      const NumericVector &target,
                      const double &degree,
                      const bool &norm ) {
+  nns_check_degree(degree, "degree");
   return dpm_nD_cpp(data, target, degree, norm);
 } 
 
@@ -93,6 +96,7 @@ NumericVector LPM_RCPP(const double &degree,
                        const RObject &target,
                        const RObject &variable,
                        const bool &excess_ret) {
+  nns_check_degree(degree, "degree");
   NumericVector variable_vec = as<NumericVector>(clone(variable));
   NumericVector target_vec;
   if (is_supplied_target(target)) {
@@ -130,6 +134,7 @@ NumericVector UPM_RCPP(const double &degree,
                        const RObject &target,
                        const RObject &variable,
                        const bool &excess_ret) {
+  nns_check_degree(degree, "degree");
   NumericVector variable_vec = as<NumericVector>(clone(variable));
   NumericVector target_vec;
   if (is_supplied_target(target)) {
@@ -187,6 +192,7 @@ NumericVector UPM_RCPP(const double &degree,
 //' @export
 // [[Rcpp::export("LPM.ratio", rng = false)]]
  NumericVector LPM_ratio_RCPP(const double &degree, const RObject &target, const RObject &variable) {
+   nns_check_degree(degree, "degree");
    NumericVector target_vec, variable_vec;
    if (is<NumericVector>(variable))
      variable_vec=as<NumericVector>(variable);
@@ -233,6 +239,7 @@ NumericVector UPM_RCPP(const double &degree,
 //' @export
 // [[Rcpp::export("UPM.ratio", rng = false)]]
  NumericVector UPM_ratio_RCPP(const double &degree, const RObject &target, const RObject &variable) {
+   nns_check_degree(degree, "degree");
    NumericVector target_vec, variable_vec;
    if (is<NumericVector>(variable))
      variable_vec=as<NumericVector>(variable);
@@ -263,6 +270,8 @@ NumericVector CoLPM_RCPP(
      const RObject &target_x, const RObject &target_y,
      const double &degree_y
  ) {
+   nns_check_degree(degree_lpm, "degree_lpm");
+   nns_check_degree(degree_y, "degree_y");
    NumericVector target_x_vec, target_y_vec, x_vec, y_vec;
    if (is<NumericVector>(x))    x_vec=as<NumericVector>(x);
    else if (is<IntegerVector>(x))	x_vec=as<NumericVector>(x);
@@ -302,6 +311,8 @@ NumericVector CoUPM_RCPP(
      const RObject &target_x, const RObject &target_y,
      const double &degree_y
  ) {
+   nns_check_degree(degree_upm, "degree_upm");
+   nns_check_degree(degree_y, "degree_y");
    NumericVector target_x_vec, target_y_vec, x_vec, y_vec;
    if (is<NumericVector>(x))    x_vec=as<NumericVector>(x);
    else if (is<IntegerVector>(x))	x_vec=as<NumericVector>(x);
@@ -359,6 +370,8 @@ NumericVector CoUPM_RCPP(
      const RObject &x, const RObject &y, 
      const RObject &target_x, const RObject &target_y
  ) {
+   nns_check_degree(degree_lpm, "degree_lpm");
+   nns_check_degree(degree_upm, "degree_upm");
    NumericVector target_x_vec, target_y_vec, x_vec, y_vec;
    if (is<NumericVector>(x))    x_vec=as<NumericVector>(x);
    else if (is<IntegerVector>(x))	x_vec=as<NumericVector>(x);
@@ -416,6 +429,8 @@ NumericVector CoUPM_RCPP(
      const RObject &x, const RObject &y, 
      const RObject &target_x, const RObject &target_y
  ) {
+   nns_check_degree(degree_lpm, "degree_lpm");
+   nns_check_degree(degree_upm, "degree_upm");
    NumericVector target_x_vec, target_y_vec, x_vec, y_vec;
    if (is<NumericVector>(x))    x_vec=as<NumericVector>(x);
    else if (is<IntegerVector>(x))	x_vec=as<NumericVector>(x);
@@ -458,6 +473,8 @@ NumericVector CoUPM_RCPP(
      const bool pop_adj,
      const bool norm
  ) {
+   nns_check_degree(LPM_degree, "LPM_degree");
+   nns_check_degree(UPM_degree, "UPM_degree");
    if(variable.isNULL()){
      Rcpp::stop("variable can't be null");
      return List::create();
