@@ -121,8 +121,10 @@ inline int sd_dom_pair(const ColPre& X, const ColPre& Y, int degree, bool discre
         lpm_upm_deg1(X, kx, t, Lx, Ux);
         lpm_upm_deg1(Y, ky, t, Ly, Uy);
         double Ax = Lx+Ux, Ay = Ly+Uy;
-        Rx = (Ax>0.0 ? Lx/Ax : 0.0);
-        Ry = (Ay>0.0 ? Ly/Ay : 0.0);
+        // 0/0 (every observation equals t): use the degree-0 ratio, as
+        // LPM.ratio does, i.e. the right-continuous CDF value k/m (= 1).
+        Rx = (Ax>0.0 ? Lx/Ax : double(kx)/double(X.m));
+        Ry = (Ay>0.0 ? Ly/Ay : double(ky)/double(Y.m));
       }
       if (Rx > Ry) x_gt_y = true;
       if (Rx != Ry) curves_differ = true;
