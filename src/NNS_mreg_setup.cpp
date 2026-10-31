@@ -6,13 +6,21 @@
 using namespace Rcpp;
 
 double gravity_value(std::vector<double> x, bool discrete);
+SEXP NNS_mode_cpp(SEXP xSEXP, bool discrete, bool multi);
 
 namespace {
 double reduce_numeric(std::vector<double>& v, int reducer, bool is_class) {
   v.erase(std::remove_if(v.begin(), v.end(), [](double x){ return !R_finite(x); }), v.end());
   if (v.empty()) return NA_REAL;
   std::sort(v.begin(), v.end());
-  if (is_class || reducer == 2) {
+  // noise.reduction = "mode" must be the same estimator as the pure-R
+  // reference (.nns_reg_reduce_value: mode(z) = NNS.mode(z, discrete = FALSE,
+  // multi = FALSE)), not the most frequent exact value. The exact-frequency
+  // mode is kept only for class responses (table()/which.max in R).
+  if (!is_class && reducer == 2) {
+    return Rcpp::as<double>(NNS_mode_cpp(Rcpp::wrap(v), false, false));
+  }
+  if (is_class) {
     double best = v[0]; int bestn = 0;
     for (std::size_t i = 0; i < v.size();) {
       const double val = v[i]; int n = 0;
