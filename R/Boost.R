@@ -924,6 +924,24 @@ NNS.boost <- function(IVs.train,
   results <- final.stack$reg
   pred.int.output <- final.stack$reg.pred.int
   
+  # NNS.stack auto-classifies a two-valued numeric response even when boost
+  # treats it as a regression (type = NULL); its output is then integer class
+  # codes 1/2. Map those codes back to the response values.
+  if (!is_class && !is.null(final.stack$class.levels)) {
+    stack_values <- as.numeric(final.stack$class.levels)
+    .decode_stack_codes <- function(v) {
+      v <- as.numeric(v)
+      ok <- is.finite(v)
+      v[ok] <- stack_values[pmin(pmax(as.integer(round(v[ok])), 1L), length(stack_values))]
+      v
+    }
+    results <- .decode_stack_codes(results)
+    if (!is.null(pred.int.output)) {
+      pred.int.output <- as.data.frame(pred.int.output)
+      pred.int.output[] <- lapply(pred.int.output, .decode_stack_codes)
+    }
+  }
+  
   estimates_code <- .sanitize_predictions(results, y)
   pred_int_out <- pred.int.output
   
