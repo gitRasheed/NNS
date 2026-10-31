@@ -235,6 +235,19 @@ NNS.ARMA.optim <- function(variable,
         nns.estimates.indiv <- unlist(nns.estimates.indiv)
       }
       
+      if(j != "lin" && !linear.approximation){
+        # Exhaustive search: score every candidate seasonal set with the
+        # method itself (previously nothing was evaluated here, so nonlin and
+        # both could never be selected).
+        nns.estimates.indiv <- unlist(lapply(1:ncol(seasonal.combs[[i]]), function(k) {
+          actual <- tail(variable, h_eval)
+          predicted <- NNS.ARMA(variable, training.set = training.set, h = h_eval,
+                                seasonal.factor = seasonal.combs[[i]][, k], method = j,
+                                plot = FALSE, negative.values = negative.values)
+          eval(obj.fn)
+        }))
+      }
+      
       if(j=="nonlin" && linear.approximation){
         # Find the min (obj.fn) for a given seasonals sequence
         actual <- tail(variable, h_eval)
