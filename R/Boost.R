@@ -561,10 +561,12 @@ NNS.boost <- function(IVs.train,
     smallest <- min(lengths(groups))
     largest <- max(lengths(groups))
     
+    # g[sample.int(...)]: sample(g, k) on a length-one group g samples from
+    # 1:g and drops that class. Same draw as sample(g, k) when length(g) > 1.
     down_idx <- unlist(lapply(groups, function(g)
-      sample(g, smallest, replace = FALSE)), use.names = FALSE)
+      g[sample.int(length(g), smallest, replace = FALSE)]), use.names = FALSE)
     up_idx <- unlist(lapply(groups, function(g)
-      sample(g, largest, replace = TRUE)), use.names = FALSE)
+      g[sample.int(length(g), largest, replace = TRUE)]), use.names = FALSE)
     
     idx <- sort(c(down_idx, up_idx))
     list(x = train_x[idx, , drop = FALSE], y = train_y[idx])
