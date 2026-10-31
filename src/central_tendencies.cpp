@@ -246,10 +246,14 @@ static void smooth_counts_tri7(const std::vector<int>& counts, std::vector<doubl
   smooth.assign(n, 0.0);
   if (n == 0) return;
   
-  // Mirror at edges (symmetric extension)
+  // Mirror at edges (symmetric extension).  The reflected index is clamped
+  // to [0, n-1]: for n >= 4 bins the clamp never binds, and for n <= 3 the
+  // plain mirror read past the end of counts (heap over-read).  Those
+  // smoothed values are never used (the peak scan needs n >= 7 bins).
   auto at = [&](int idx)->int{
-    if (idx < 0)   return counts[-idx];            // reflect: -1 -> 1, -2 -> 2, ...
-    if (idx >= n)  return counts[2*n - 2 - idx];   // reflect: n -> n-2, n+1 -> n-3, ...
+    if (idx < 0)   idx = -idx;                     // reflect: -1 -> 1, -2 -> 2, ...
+    if (idx >= n)  idx = 2*n - 2 - idx;            // reflect: n -> n-2, n+1 -> n-3, ...
+    idx = std::min(std::max(idx, 0), n - 1);
     return counts[idx];
   };
   
