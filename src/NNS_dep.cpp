@@ -86,7 +86,11 @@ static double copula_signed(const std::vector<double>& xv,
   // for many n (e.g. 49 * (1/49) != 1).
   double d0_concordant = d0_cupm + d0_clpm;
   double d0_Co = d0_concordant * inv_n;
-  if (d0_concordant == static_cast<double>(n) || d0_concordant == 0.0) return 1.0;
+  // Every point concordant: perfect positive dependence. Every point
+  // discordant: perfect negative dependence (this branch used to return +1,
+  // losing the sign, so NNS.dep(x, -x) reported Correlation = +1).
+  if (d0_concordant == static_cast<double>(n)) return 1.0;
+  if (d0_concordant == 0.0) return -1.0;
   
   double c1_total = c1_cupm + c1_clpm + c1_dpm;
   double co_d1 = c1_total > 0.0 ? (c1_cupm + c1_clpm) / c1_total : 0.0;
