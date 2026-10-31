@@ -262,8 +262,10 @@ NNS.ARMA.optim <- function(variable,
         # Find the min (obj.fn) for a given seasonals sequence
         actual <- tail(variable, h_eval)
         
-        lin.predicted <- NNS.ARMA(variable, training.set = training.set, h = h_eval, seasonal.factor = unlist(overall.seasonals[[1]]), method = "lin", plot = FALSE, negative.values = negative.values)
-        predicted <- both.predicted <- (lin.predicted + nonlin.predicted) / 2
+        # Score the model that is returned: NNS.ARMA(method = "both") averages
+        # lin and nonlin inside the recursion, which differs from averaging the
+        # two separately forecast paths.
+        predicted <- both.predicted <- NNS.ARMA(variable, training.set = training.set, h = h_eval, seasonal.factor = unlist(overall.seasonals[[1]]), method = "both", plot = FALSE, negative.values = negative.values)
         
         nns.estimates.indiv <- eval(obj.fn)
       }
