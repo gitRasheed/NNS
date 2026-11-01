@@ -34,9 +34,29 @@ NNS.part(
 }
 \value{
 A list containing `order`, `dt`, and `regression.points`.
+\itemize{
+  \item{\code{order}} the order actually completed. It can be smaller than
+  the requested \code{order} when \code{obs.req} / \code{min.obs.stop}
+  stop the recursion (e.g. \code{order = 3} returns 2 for \code{n = 200}
+  with the default \code{obs.req = 8}).
+  \item{\code{dt}} the observations with their final \code{quadrant} and
+  \code{prior.quadrant} labels.
+  \item{\code{regression.points}} one (x, y) centroid per
+  \code{prior.quadrant}, i.e. per cell of the previous order: \code{order = 1}
+  gives 4 final quadrants but a single regression point (\code{"q"}),
+  \code{order = 2} gives up to 16 quadrants and 4 points.
+}
 }
 \description{
 Creates partitions based on partial-moment quadrant centroids. Numeric orders
 use the compiled recursive partitioner. `order = "max"` returns the maximum
 observable partition representation without passing an invalid integer to C++.
+}
+\details{
+Quadrant labels append one digit per order. Cells are split at the
+\link{NNS.gravity} centre of each coordinate (not the mean). For the
+default joint partition (\code{type = NULL}) the digit is
+\code{1 + (x <= cx) + 2 * (y <= cy)}: 1 = upper-right, 2 = upper-left,
+3 = lower-right, 4 = lower-left. For \code{type = "XONLY"} the digit is
+1 for \code{x <= cx} and 2 for \code{x > cx}.
 }
