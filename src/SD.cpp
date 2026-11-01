@@ -121,8 +121,13 @@ inline void ratio_deg1_coefs(const ColPre& c, int k, double& alpha, double& beta
 // Returns 1 iff X dominates Y, else 0.
 // =====================================================================
 inline int sd_dom_pair(const ColPre& X, const ColPre& Y, int degree, bool discrete){
-  // Scale of the data, used to ignore rounding-level excesses at the
-  // interior candidates below (e.g. a vertex that coincides with a knot).
+  // Floating tolerance. Curve values are computed from prefix sums, so two
+  // curves that are equal in exact arithmetic can differ by rounding noise
+  // of order eps * S^degree (S = largest |value|). Differences up to
+  // 64 * DBL_EPSILON * S^degree (the ratio analogue for continuous FSD, S
+  // for the mean gate) are treated as ties, so that verdicts such as the
+  // textbook equal-mean SSD case do not flip on 1e-16 noise. Discrete FSD
+  // compares exact ECDF fractions and uses no tolerance.
   const double S = std::max(std::max(std::fabs(X.vals.front()), std::fabs(X.vals.back())),
                             std::max(std::fabs(Y.vals.front()), std::fabs(Y.vals.back())));
   const double eps64 = 64.0 * DBL_EPSILON;
@@ -133,7 +138,7 @@ inline int sd_dom_pair(const ColPre& X, const ColPre& Y, int degree, bool discre
     bool x_gt_y = false, curves_differ = false;
     int deg = (discrete ? 0 : 1); // discrete->0, continuous->1
     for_each_threshold(X, Y, [&](double t, int kx, int ky, double t_next){
-      double Rx, Ry;
+      double Rx, Ry, tol = 0.0;
       if (deg==0){
         // L0/(L0+U0) == ECDF
         Rx = double(kx)/double(X.m);
@@ -147,9 +152,11 @@ inline int sd_dom_pair(const ColPre& X, const ColPre& Y, int degree, bool discre
         // LPM.ratio does, i.e. the right-continuous CDF value k/m (= 1).
         Rx = (Ax>0.0 ? Lx/Ax : double(kx)/double(X.m));
         Ry = (Ay>0.0 ? Ly/Ay : double(ky)/double(Y.m));
+        double Amin = std::min(Ax, Ay);
+        tol = eps64 * ((Amin > 0.0) ? std::max(1.0, S / Amin) : 1.0);
       }
-      if (Rx > Ry) x_gt_y = true;
-      if (Rx != Ry) curves_differ = true;
+      if (Rx - Ry > tol) x_gt_y = true;
+      if (std::fabs(Rx - Ry) > tol) curves_differ = true;
       
       // Continuous ratios are linear-fractional between knots, so their
       // difference can peak strictly inside (t, t_next). Its stationary
@@ -185,7 +192,7 @@ inline int sd_dom_pair(const ColPre& X, const ColPre& Y, int degree, bool discre
   }
   
   // SSD/TSD gates
-  if (!(X.mn >= Y.mn) || (Y.mean > X.mean)) return 0;
+  if (!(X.mn >= Y.mn) || (Y.mean - X.mean > eps64 * S)) return 0;
   if (identical_samples(X, Y)) return 0;           // identical series -> 0
   
   if (degree==2){ // SSD: compare LPM degree 1
@@ -195,8 +202,8 @@ inline int sd_dom_pair(const ColPre& X, const ColPre& Y, int degree, bool discre
       double Lx, Ux, Ly, Uy; (void)Ux; (void)Uy;   // not used beyond calc
       lpm_upm_deg1(X, kx, t, Lx, Ux);
       lpm_upm_deg1(Y, ky, t, Ly, Uy);
-      if (Lx > Ly) x_gt_y = true;
-      if (Lx != Ly) curves_differ = true;
+      if (Lx - Ly > eps64 * S) x_gt_y = true;
+      if (std::fabs(Lx - Ly) > eps64 * S) curves_differ = true;
     });
     if (!curves_differ) return 0;                  // equal curves -> no SSD
     return x_gt_y ? 0 : 1;                         // 1 iff "X SSD Y"
@@ -207,8 +214,8 @@ inline int sd_dom_pair(const ColPre& X, const ColPre& Y, int degree, bool discre
   for_each_threshold(X, Y, [&](double t, int kx, int ky, double t_next){
     double Lx2 = lpm_deg2(X, kx, t);
     double Ly2 = lpm_deg2(Y, ky, t);
-    if (Lx2 > Ly2) x_gt_y = true;
-    if (Lx2 != Ly2) curves_differ = true;
+    if (Lx2 - Ly2 > eps64 * S * S) x_gt_y = true;
+    if (std::fabs(Lx2 - Ly2) > eps64 * S * S) curves_differ = true;
     // LPM2 is piecewise quadratic: on (t, t_next) the difference is
     // a*s^2 - 2*b*s + c with a = kx/mx - ky/my, b = P1x/mx - P1y/my. When
     // a < 0 it has an interior maximum at s* = b / a, which the knots miss.
