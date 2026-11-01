@@ -141,9 +141,12 @@ struct CoUPM_CountWorker : public Worker {
   void operator()(std::size_t begin, std::size_t end) override {
     std::size_t d = target.length();
     for (std::size_t i = begin; i < end; ++i) {
+      // Strictly above in every coordinate, as Co.UPM (x > target) does.
+      // Ties belong to the lower side (x <= target), so that at degree 0
+      // CLPM + CUPM + DPM partition the sample.
       bool above_all = true;
       for (std::size_t j = 0; j < d; ++j) {
-        if (data(i, j) < target[j]) { above_all = false; break; }
+        if (data(i, j) <= target[j]) { above_all = false; break; }
       }
       output[i] = above_all ? 1.0 : 0.0;
     }
@@ -184,10 +187,13 @@ struct DpmCountWorker : public Worker {
   void operator()(std::size_t begin, std::size_t end) override {
     std::size_t d = target.length();
     for (std::size_t i = begin; i < end; ++i) {
+      // Discordant = neither all-lower (x <= target, the CLPM count) nor
+      // all-upper (x > target, the CUPM count), so the three degree-0 counts
+      // partition the sample (ties used to count as discordant AND lower).
       bool allBelow = true, allAbove = true;
       for (std::size_t j = 0; j < d; ++j) {
         double diff = data(i, j) - target[j];
-        if (diff >= 0.0) allBelow = false;
+        if (diff > 0.0) allBelow = false;
         if (diff <= 0.0) allAbove = false;
         if (!allBelow && !allAbove) break;
       }
