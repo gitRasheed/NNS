@@ -136,7 +136,7 @@
   `1 - percentile`. An order statistic within rounding of the root is still
   returned exactly: one where `(1 - p) LPM - p UPM` is within 16 eps times
   `(1 - p) LPM + p UPM`, or one within 2 eps times its magnitude (at most 4
-  ulps, and under an eighth of the gap to the next order statistic) of the
+  ulps, and under an eighth of the gap to the adjacent order statistic) of the
   root.
   Tied decimal scores whose decimal ratio is the percentile therefore return
   the tied score, as before (`LPM.VaR(0.8, 1, c(0.1, 0.3, 0.5, rep(0.7, 5),
