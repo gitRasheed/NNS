@@ -256,6 +256,18 @@ test_that("PM.matrix(norm = TRUE) with unequal degrees matches the exact ratio w
   }
 })
 
+test_that("PM.matrix(norm = TRUE) log-domain rescue keeps a term whose ratio to the column scale is denormal", {
+  # Column a's deviations span more than 2^1074, so |d| / s underflows to 0 for
+  # the first row; that row is the only one contributing to cell (a, b) (rows 2
+  # and 3 tie in b), whose exact value is cupm = 1. Was NaN (0 / 0).
+  M <- cbind(a = c(5e-324, 1e300, -1e300), b = c(1, 0, 0))
+  P <- PM.matrix(1, 1, c(0, 0), M, FALSE, TRUE)
+  expect_identical(c(P$cupm["a", "b"], P$dupm["a", "b"], P$dlpm["a", "b"], P$clpm["a", "b"]),
+                   c(1, 0, 0, 0))
+  expect_identical(c(P$cupm["a", "a"], P$clpm["a", "a"]), c(0.5, 0.5))
+  expect_true(all(is.finite(unlist(P))))
+})
+
 test_that("PM.matrix(norm = TRUE) results with a safe total are unchanged", {
   # Bit pattern of the plain division path (no rescue involved).
   set.seed(123)

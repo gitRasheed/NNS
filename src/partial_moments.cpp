@@ -1129,7 +1129,9 @@ static void PMMatrix_normalized_rescue(const NumericMatrix &variable,
   }
 
   if (nns_unsafe_total(total)) {
-    // Log domain: log2 of each nonzero term, shifted by the largest.
+    // Log domain: log2 of each nonzero term, shifted by the largest. log2|d|
+    // - log2 s rather than log2(|d| / s): the quotient underflows to 0 when a
+    // column's deviations span more than 2^1074 (a denormal next to 1e300).
     std::vector<double> lg(4 * n, -std::numeric_limits<double>::infinity());
     double lmax = -std::numeric_limits<double>::infinity();
     for (std::size_t k = 0; k < n; ++k) {
@@ -1142,8 +1144,8 @@ static void PMMatrix_normalized_rescue(const NumericMatrix &variable,
         if (side_i[q] != up_i || side_j[q] != up_j) continue;
         double l = offset[q];
         bool zero = false;
-        if (a[q] != 0.0) { if (di == 0.0) zero = true; else l += a[q] * std::log2(std::fabs(di) / si); }
-        if (b[q] != 0.0) { if (dj == 0.0) zero = true; else l += b[q] * std::log2(std::fabs(dj) / sj); }
+        if (a[q] != 0.0) { if (di == 0.0) zero = true; else l += a[q] * (std::log2(std::fabs(di)) - lsi); }
+        if (b[q] != 0.0) { if (dj == 0.0) zero = true; else l += b[q] * (std::log2(std::fabs(dj)) - lsj); }
         if (zero) continue;
         lg[4 * k + q] = l;
         lmax = std::max(lmax, l);
