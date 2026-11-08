@@ -329,8 +329,9 @@ test_that("LPM/UPM excess_ret handle vectors longer than .Machine$integer.max", 
 })
 
 test_that("VaR rejects a factor column inside a data.table", {
-  skip_if_not_installed("data.table")
-  dt <- data.table::data.table(a = factor(c(10, 20, 30)))
+  # Class-tagged data.frame: the VaR input path dispatches on is.data.frame,
+  # so this covers data.table input without declaring data.table in Suggests.
+  dt <- structure(data.frame(a = factor(c(10, 20, 30))), class = c("data.table", "data.frame"))
   expect_error(LPM.VaR(0.5, 1, dt), "`x` must be numeric, not a factor.", fixed = TRUE)
 })
 
