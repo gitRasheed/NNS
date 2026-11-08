@@ -160,6 +160,14 @@
   are unchanged bit for bit. `NNS.copula()` drops constant columns before
   calling `PM.matrix()`, so it changes only for a pair of columns in which
   every row ties a user-supplied target in one of the two.
+* `NNS.SD.efficient.set()` and `NNS.SD.cluster()` reject a `degree` other than
+  1, 2 or 3 with "`degree` must be 1, 2 or 3." before doing any work. A
+  fractional degree used to be truncated (1.5 ran FSD, 2.9 SSD), a character
+  degree such as `"2"` was converted, and a degree beyond the integer range
+  warned "NAs introduced by coercion to integer range" before failing. The
+  compiled efficient-set routine checks the degree before its LPM ordering
+  pass, which ran `degree` multiplications per element (a degree of
+  2147483647 took minutes before the error).
 
 # NNS 13.3 (development changes)
 

@@ -148,3 +148,57 @@ test_that("NNS.TSD plots against the thresholds, as NNS.SSD does", {
   expect_lte(usr[1], 0)
   expect_gte(usr[2], 10)
 })
+
+# ---- degree of the efficient set and clusters ---------------------------------
+
+degree_msg <- "`degree` must be 1, 2 or 3."
+
+test_that("NNS.SD.efficient.set rejects a fractional degree instead of truncating it", {
+  m <- cbind(x = x_om, y = y_om)
+  for (d in list(1.5, 2.9, 0.5, 3.0000001)) {
+    expect_error(NNS.SD.efficient.set(m, d, status = FALSE), degree_msg, fixed = TRUE)
+  }
+})
+
+test_that("NNS.SD.efficient.set rejects other invalid degrees with the same message", {
+  m <- cbind(x = x_om, y = y_om)
+  for (d in list(0, 4, -1, NA, NA_real_, NaN, Inf, c(1, 2), numeric(0), "2", TRUE, factor(2), NULL)) {
+    expect_error(NNS.SD.efficient.set(m, d, status = FALSE), degree_msg, fixed = TRUE)
+  }
+  # Beyond the integer range: an error, not a coercion warning.
+  expect_no_warning(expect_error(NNS.SD.efficient.set(m, 1e10, status = FALSE), degree_msg, fixed = TRUE))
+})
+
+test_that("NNS.SD.efficient.set accepts 1, 2, 3 as double or integer with unchanged results", {
+  set.seed(7)
+  A <- cbind(a = rnorm(40), b = rnorm(40, 0.3), c = rexp(40) - 1)
+  for (d in 1:3) {
+    ref <- .Call(NNS:::`_NNS_NNS_SD_efficient_set_parallel_cpp`, A, d, "discrete", FALSE)
+    expect_identical(NNS.SD.efficient.set(A, d, status = FALSE), ref)
+    expect_identical(NNS.SD.efficient.set(A, as.numeric(d), status = FALSE), ref)
+  }
+})
+
+test_that("NNS.SD.cluster rejects an invalid degree even when no efficient set is computed", {
+  m <- cbind(x = x_om, y = y_om)
+  expect_error(NNS.SD.cluster(m, 1.5), degree_msg, fixed = TRUE)
+  # min_cluster >= ncol: the efficient set is never called.
+  expect_error(NNS.SD.cluster(m, 1.5, min_cluster = 2), degree_msg, fixed = TRUE)
+  expect_identical(NNS.SD.cluster(m, 1, min_cluster = 2)$Clusters,
+                   NNS.SD.cluster(m, 1L, min_cluster = 2)$Clusters)
+})
+
+test_that("the compiled efficient set checks the degree before its LPM ordering pass", {
+  m <- cbind(x = x_om, y = y_om)
+  # Before the fix, the ordering pass ran 2147483647 multiplications per
+  # element before the degree was checked.
+  elapsed <- system.time(
+    expect_error(.Call(NNS:::`_NNS_NNS_SD_efficient_set_parallel_cpp`, m, .Machine$integer.max,
+                       "discrete", FALSE),
+                 "degree must be 1, 2, or 3", fixed = TRUE)
+  )[["elapsed"]]
+  expect_lt(elapsed, 2)
+  expect_error(.Call(NNS:::`_NNS_NNS_SD_efficient_set_parallel_cpp`, m[, 0, drop = FALSE], 4L,
+                     "discrete", FALSE),
+               "degree must be 1, 2, or 3", fixed = TRUE)
+})

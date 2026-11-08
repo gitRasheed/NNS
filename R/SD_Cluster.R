@@ -4,7 +4,7 @@
 #' subject to a minimum cluster size.
 #'
 #' @param data A numeric matrix or data frame of variables to be clustered. Missing or infinite values are an error.
-#' @param degree Numeric options: (1, 2, 3). Degree of stochastic dominance test.
+#' @param degree Numeric options: (1, 2, 3). Degree of stochastic dominance test. Any other value, including a fractional degree such as 1.5, is an error.
 #' @param type At degree 1, \code{"discrete"} (default) uses empirical FSD and \code{"continuous"} uses the degree-one area-ratio (Omega/expectile) ordering. The latter does not imply ordinary FSD. SSD and TSD are unaffected by \code{type}. Letter case is ignored; any other value is an error.
 #' @param min_cluster Integer. Peeling stops once at most \code{min_cluster} variables remain; those form the final cluster, and a final cluster smaller than \code{min_cluster} is merged into the previous one.  SD-efficient sets peeled before that are kept whatever their size.
 #' @param dendrogram Logical; \code{FALSE} (default). If \code{TRUE}, a dendrogram is produced based on a simple "distance" measure between clusters.
@@ -48,6 +48,7 @@
  
 
 NNS.SD.cluster <- function(data, degree = 1, type = "discrete", min_cluster = 1, dendrogram = FALSE) {
+  degree <- .nns_sd_degree(degree)
   type <- .nns_sd_type(type)
   m <- as.matrix(data)
   if (is.numeric(m)) {

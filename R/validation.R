@@ -66,6 +66,17 @@
   tolower(type)
 }
 
+# The `degree` of the stochastic dominance set functions: exactly 1, 2 or 3,
+# returned as an integer. A fractional degree is an error rather than being
+# truncated by as.integer() (1.5 used to run as FSD).
+.nns_sd_degree <- function(degree, call = sys.call(-1L)) {
+  if (!is.numeric(degree) || is.factor(degree) || length(degree) != 1L ||
+      is.na(degree) || !degree %in% c(1, 2, 3)) {
+    .nns_stop_arg("`degree` must be 1, 2 or 3.", call)
+  }
+  as.integer(degree)
+}
+
 # One sample of a stochastic dominance comparison: single-column numeric data
 # without missing or infinite values. The tolerances and the midrange shift of
 # the dominance tests are defined for finite data only.

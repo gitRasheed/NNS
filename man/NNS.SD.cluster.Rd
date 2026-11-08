@@ -15,7 +15,7 @@ NNS.SD.cluster(
 \arguments{
 \item{data}{A numeric matrix or data frame of variables to be clustered. Missing or infinite values are an error.}
 
-\item{degree}{Numeric options: (1, 2, 3). Degree of stochastic dominance test.}
+\item{degree}{Numeric options: (1, 2, 3). Degree of stochastic dominance test. Any other value, including a fractional degree such as 1.5, is an error.}
 
 \item{type}{At degree 1, \code{"discrete"} (default) uses empirical FSD and \code{"continuous"} uses the degree-one area-ratio (Omega/expectile) ordering. The latter does not imply ordinary FSD. SSD and TSD are unaffected by \code{type}. Letter case is ignored; any other value is an error.}
 

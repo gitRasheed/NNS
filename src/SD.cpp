@@ -393,6 +393,9 @@ static std::vector<char> undominated_components(const IntegerMatrix& D){
 // =====================================================================
 // [[Rcpp::export]]
 CharacterVector NNS_SD_efficient_set_parallel_cpp(NumericMatrix X, int degree, std::string type="discrete", bool status=true){
+  // Validate before the ordering pass below, whose repeatMultiplication loop
+  // runs `degree` times per element.
+  if (!(degree==1 || degree==2 || degree==3)) stop("degree must be 1, 2, or 3");
   int n = X.ncol(); if (!n) return CharacterVector();
   sd_check_input(X, "x");
   
