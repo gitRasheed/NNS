@@ -341,6 +341,24 @@ test_that("LPM/UPM reject a NULL variable, like LPM.ratio", {
   expect_error(UPM(1, 2, NULL), "`variable` must be numeric.", fixed = TRUE)
 })
 
+test_that("the compiled ratio and co-moment kernels reject non-numeric data in the R wording", {
+  # Same message as .nns_as_numeric() on the R side (LPM(), LPM.VaR(), ...).
+  expect_error(LPM.ratio(1, 1, "a"), "`variable` must be numeric.", fixed = TRUE)
+  expect_error(UPM.ratio(1, 1, list(1, 2)), "`variable` must be numeric.", fixed = TRUE)
+  expect_error(LPM.ratio(1, 2, NULL), "`variable` must be numeric.", fixed = TRUE)
+  expect_error(Co.LPM(1, "a", x5, 1, 1), "`x` must be numeric.", fixed = TRUE)
+  expect_error(Co.UPM(1, x5, c("1", "2", "3", "4", "5"), 1, 1), "`y` must be numeric.", fixed = TRUE)
+  expect_error(D.LPM(1, 1, "a", x5, 1, 1), "`x` must be numeric.", fixed = TRUE)
+})
+
+test_that("the VaR anchored sums reject a degree beyond the prefix limit", {
+  expect_error(.Call("_NNS_VaR_anchor_sums_RCPP", c(0, 1), c(1, 1), 33L),
+               "invalid anchored-sum input", fixed = TRUE)
+  expect_error(.Call("_NNS_VaR_anchor_sums_RCPP", c(0, 1), c(1, 1), .Machine$integer.max),
+               "invalid anchored-sum input", fixed = TRUE)
+  expect_identical(dim(.Call("_NNS_VaR_anchor_sums_RCPP", c(0, 1), c(1, 1), 32L)$lower), c(1L, 33L))
+})
+
 test_that("LPM/UPM keep NaN for an empty numeric variable", {
   expect_identical(LPM(1, 2, numeric(0)), NaN)
   expect_identical(UPM(1, 2, numeric(0)), NaN)

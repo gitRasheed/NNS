@@ -43,7 +43,7 @@ static inline NumericVector numeric_input(const RObject &v, const char *what) {
     stop_if_factor(u, what);
     return Rcpp::internal::convert_using_rfunction(u, "as.vector");
   }
-  Rcpp::stop("%s should be numeric vector, or data table", what);
+  Rcpp::stop("`%s` must be numeric.", what);
   return NumericVector(); // not reached
 }
 
@@ -566,7 +566,9 @@ List NNS_bin(NumericVector x, double width, double origin = 0, bool missinglast 
 // [[Rcpp::export(rng = false)]]
 List VaR_anchor_sums_RCPP(const NumericVector &u, const NumericVector &counts, const int degree) {
   const R_xlen_t m = u.size();
-  if (m < 2 || counts.size() != m || degree < 0) Rcpp::stop("invalid anchored-sum input");
+  // degree indexes w x w tables in int arithmetic; the solver passes 1 to 4.
+  if (m < 2 || counts.size() != m || degree < 0 || degree > nns_pm_detail::PREFIX_MAX_DEGREE)
+    Rcpp::stop("invalid anchored-sum input");
   const int w = degree + 1;
   
   std::vector<long double> binom(static_cast<std::size_t>(w) * w, 0.0L);
