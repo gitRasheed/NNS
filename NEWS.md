@@ -122,7 +122,11 @@
   `1 - percentile`. On ordinary data the results change only by rounding
   (less than 2e-14 times the largest threshold in the audit's samples), and
   the help no longer states a ratio tolerance. Degree 0 and the
-  non-integer-degree solver are unchanged.
+  non-integer-degree solver are unchanged. `LPM.VaR(LPM.ratio(d, x_k, x), d,
+  x)` is no longer bit-identical to `x_k` at the extreme order statistics,
+  where rounding of the ratio near 0 or 1 moves the root (by about 1e-8 at
+  `d = 4` for the second-largest of 300 standard normal draws); it is the
+  root of the rounded ratio.
 * An invalid `type` in `NNS.FSD()`, `NNS.FSD.uni()`, `NNS.SD.efficient.set()`
   and `NNS.SD.cluster()` (anything but `"discrete"` or `"continuous"`, in any
   letter case) is now an error, "`type` must be \"discrete\" or
