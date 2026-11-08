@@ -58,7 +58,10 @@
   list data ("`x` must be numeric.") instead of parsing or coercing it.
   For `LPM()`/`UPM()` this includes a `NULL` `variable`, which used to give
   `NaN` and is now an error as in `LPM.ratio()`; `numeric(0)` still gives
-  `NaN`.
+  `NaN`. `LPM.ratio()`, `UPM.ratio()`, `Co.LPM()`, `Co.UPM()`, `D.LPM()` and
+  `D.UPM()` give the same message for such data ("`variable` must be
+  numeric.", "`x` must be numeric.") instead of "variable should be numeric
+  vector, or data table".
 * `LPM.VaR()` and `UPM.VaR()` flatten any data frame, as they already did a
   tibble or data.table, so a plain `data.frame` is accepted instead of
   being an error.
