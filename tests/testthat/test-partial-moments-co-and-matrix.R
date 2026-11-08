@@ -705,6 +705,14 @@ test_that("C13: nD co-moments match the k-column product oracle, including n = 1
     expect_identical(c(aud_nd_triple(X, c(1, 1), 0), aud_nd_triple(X, c(1, 1), 1)),
                      c(clpm = 1, cupm = 0, dpm = 0, clpm = 0, cupm = 0, dpm = 0))
   })
+  aud_case("degree-0 nD co-moments partition a sample tied at the target", {
+    X <- cbind(c(1, 2, 3, 3, 4, 5), c(3, 3, 1, 5, 3, 2))
+    t <- c(3, 3)
+    expect_equal(c(Co.LPM_nD(X, t), Co.UPM_nD(X, t), DPM_nD(X, t)), c(0.5, 0, 0.5))
+    G <- as.matrix(expand.grid(-1:1, -1:1, -1:1))
+    t <- c(0, 0, 0)
+    expect_equal(c(Co.LPM_nD(G, t), Co.UPM_nD(G, t), DPM_nD(G, t)), c(8, 1, 18) / 27)
+  })
 })
 
 # Lean: none | BUGS: none
@@ -811,4 +819,117 @@ test_that("C16: BUGS #11: multivariate NNS.CDF with a constant column", {
     expect_identical(S, apply(X, 1, function(t) Co.UPM_nD(X, t, 1)))
     expect_identical(S, rep(0, 5))
   })
+})
+
+# pin: NNS-Python reference values
+test_that("C17: NNS-Python reference values: Co.LPM, Co.UPM, D.LPM and D.UPM for vectors and one-column frames", {
+  withr::local_seed(20261108)
+  x <- nns_py$x
+  y <- nns_py$y
+  x_df <- as.data.frame(x)
+  y_df <- as.data.frame(y)
+  # Co.LPM and Co.UPM take one degree (d2 is NA); D.LPM and D.UPM take two.
+  ref <- read.table(header = TRUE, text = "
+    fn     d1 d2 target expected
+    Co.UPM 0  NA NULL   0.28
+    Co.UPM 0  NA mean   0.28
+    Co.UPM 1  NA mean   0.01204606
+    Co.UPM 2  NA mean   0.0009799173
+    Co.LPM 0  NA NULL   0.24
+    Co.LPM 0  NA mean   0.24
+    Co.LPM 1  NA mean   0.01058035
+    Co.LPM 2  NA mean   0.0008940764
+    D.LPM  0  0  NULL   0.23
+    D.LPM  0  0  mean   0.23
+    D.LPM  1  0  mean   0.06404049
+    D.LPM  0  1  mean   0.05311669
+    D.LPM  1  1  mean   0.01513793
+    D.LPM  2  0  mean   0.02248309
+    D.LPM  0  2  mean   0.01727327
+    D.LPM  2  2  mean   0.001554909
+    D.UPM  0  0  NULL   0.25
+    D.UPM  0  0  mean   0.25
+    D.UPM  0  1  mean   0.05488706
+    D.UPM  1  0  mean   0.05843498
+    D.UPM  1  1  mean   0.01199175
+    D.UPM  0  2  mean   0.01512857
+    D.UPM  2  0  mean   0.01926167
+    D.UPM  2  2  mean   0.0009941733")
+  ref$d1 <- as.numeric(ref$d1)
+  ref$d2 <- as.numeric(ref$d2)
+  ref <- rbind(cbind(ref, input = "vector"), cbind(ref, input = "frame"))
+  ref$label <- sprintf("%s(%s) at the %s target, %s input", ref$fn,
+                       ifelse(is.na(ref$d2), ref$d1, paste(ref$d1, ref$d2, sep = ", ")), ref$target, ref$input)
+  aud_cases(ref, function(r) {
+    vec <- r$input == "vector"
+    xx <- if (vec) x else x_df
+    yy <- if (vec) y else y_df
+    tx <- if (r$target == "NULL") NULL else if (vec) mean(x) else colMeans(x_df)
+    ty <- if (r$target == "NULL") NULL else if (vec) mean(y) else colMeans(y_df)
+    got <- if (is.na(r$d2)) match.fun(r$fn)(r$d1, xx, yy, tx, ty) else match.fun(r$fn)(r$d1, r$d2, xx, yy, tx, ty)
+    expect_equal(got, r$expected, tolerance = 1e-5)
+  })
+})
+
+# pin: NNS-Python reference values
+test_that("C18: PM.matrix reference covariance of a 3 x 2 matrix and frame, mean and NULL target, and the norm = TRUE identity", {
+  withr::local_seed(20261108)
+  A <- matrix(c(1,1,3,2,2,3), ncol = 2)
+  T1 <- matrix(c(1.3333333, 0.6666667, 0.6666667, 0.3333333), ncol=2)
+  T2 <- matrix(c(0.8888889, 0.4444444, 0.4444444, 0.2222222), ncol=2)
+  aud_case("the reference T1 is cov(A)", {
+    expect_equal(T1, cov(A), tolerance=1e-5)
+  })
+  # pop_adj = TRUE gives T1 and FALSE gives T2; a frame's result carries its V1, V2 names.
+  ref <- expand.grid(input = c("matrix", "frame"), target = c("mean", "NULL"), pop_adj = c(TRUE, FALSE),
+                     stringsAsFactors = FALSE)
+  ref$label <- sprintf("PM.matrix(1, 1) of a %s, %s target, pop_adj = %s", ref$input, ref$target, ref$pop_adj)
+  aud_cases(ref, function(r) {
+    a <- if (r$input == "matrix") A else as.data.frame(A)
+    target <- if (r$target == "mean") colMeans(a) else NULL
+    want <- if (r$pop_adj) T1 else T2
+    if (r$input == "frame") dimnames(want) <- list(c("V1", "V2"), c("V1", "V2"))
+    expect_equal(NNS::PM.matrix(1, 1, target, a, pop_adj = r$pop_adj)$cov.matrix, want, tolerance = 1e-5)
+  })
+  aud_case("NNS::PM.matrix - norm TRUE returns signed normalized covariance decomposition", {
+    x <- nns_py$x
+    y <- nns_py$y
+    z <- nns_py$z
+    A <- cbind(x, y, z)
+    pm <- NNS::PM.matrix(1, 1, NULL, A, pop_adj = TRUE, norm = TRUE)
+
+    expect_equal(
+      pm$cov.matrix,
+      pm$cupm + pm$clpm - pm$dlpm - pm$dupm,
+      tolerance = 1e-10
+    )
+    expect_equal(unname(diag(pm$cov.matrix)), rep(1, ncol(A)), tolerance = 1e-10)
+  })
+})
+
+test_that("C19: co-moments apply each degree to its own variable when one is fractional", {
+  withr::local_seed(20261108)
+  lpm_leg <- function(v, t, d) if (d == 0) as.numeric(v <= t) else pmax(t - v, 0)^d
+  upm_leg <- function(v, t, d) if (d == 0) as.numeric(v > t) else pmax(v - t, 0)^d
+  expect_equal(D.UPM(.5, 1, c(-4, -9), c(2, 3), 0, 0), 6.5)
+  expect_equal(D.UPM(1, .5, c(-2, -3), c(4, 9), 0, 0), 6.5)
+
+  set.seed(11)
+  x <- rnorm(60); y <- rnorm(60)
+  degrees <- c(0, .5, 1, 1.5, 2, 3)
+  # One comparison per function and target pair over the 36 degree pairs. As
+  # lists, each cell keeps the scalar tolerance; a plain vector comparison
+  # averages the error over the cells that differ.
+  ab <- expand.grid(a = degrees, b = degrees)
+  cells <- function(f) as.list(mapply(f, ab$a, ab$b))
+  for (tx in c(0.1, -0.3)) for (ty in c(-0.2, 0.4)) {
+    expect_equal(cells(function(a, b) Co.LPM(a, x, y, tx, ty, b)),
+                 cells(function(a, b) mean(lpm_leg(x, tx, a) * lpm_leg(y, ty, b))))
+    expect_equal(cells(function(a, b) Co.UPM(a, x, y, tx, ty, b)),
+                 cells(function(a, b) mean(upm_leg(x, tx, a) * upm_leg(y, ty, b))))
+    expect_equal(cells(function(a, b) D.LPM(a, b, x, y, tx, ty)),
+                 cells(function(a, b) mean(upm_leg(x, tx, b) * lpm_leg(y, ty, a))))
+    expect_equal(cells(function(a, b) D.UPM(a, b, x, y, tx, ty)),
+                 cells(function(a, b) mean(lpm_leg(x, tx, a) * upm_leg(y, ty, b))))
+  }
 })
