@@ -236,24 +236,61 @@ test_that("PM.matrix(norm = TRUE) at degree 200 does not return 0 when the produ
 })
 
 test_that("PM.matrix(norm = TRUE) with unequal degrees matches the exact ratio when the total overflows", {
-  # Exact values from rational arithmetic (nns-proofs oracle pm_matrix), in
-  # unlist() order: cupm, dupm, dlpm, clpm, each column-major. The plain sums
+  # Exact values from rational arithmetic on the double inputs (nns-proofs
+  # oracle pm_matrix), rounded to double, in unlist() order: cupm, dupm, dlpm,
+  # clpm, each column-major. A 0 is an exact 0 (ties) or a value below the
+  # smallest denormal.
+  pm_check_exact <- function(X, exact, tol) {
+    for (key in names(exact)) {
+      d <- as.numeric(strsplit(key, " ")[[1]])
+      got <- unname(unlist(PM.matrix(d[1], d[2], c(0, 0), X, TRUE, TRUE)[pm_quadrants]))
+      e <- exact[[key]]
+      expect_identical(got == 0, e == 0)
+      expect_lte(max(abs(got - e)[e != 0] / e[e != 0]), tol(d))
+    }
+  }
+  # The rescue's relative error is of order degree * eps: the quadrant exponent
+  # a log2 s_i + b log2 s_j is rounded to about |exponent| * eps before exp2,
+  # and the rounding of |d| / s is raised to the degree.
+  bound <- function(d) 64 * max(d) * .Machine$double.eps
+
+  # Dyadic data: s = 2 and every |d| / s is exact, so the exponents are
+  # integers and the only rounding is in the sums. This exercises the
+  # exact-exponent path only, hence the tighter tolerance. The plain sums
   # overflow (2^2002), so every cell goes through the rescue.
   X <- cbind(a = c(-1.75, -0.5, 0.25, 1.5, 2, -1.25, 0.75, 1.25),
              b = c(1.5, -2, 0.5, -0.75, 1.25, 0.25, -1.5, 1.75))
-  exact <- list(
+  pm_check_exact(X, list(
     "1000 1001" = c(1, 1.0778285412673956e-21, 1.0778285412673956e-21, 3.1782067229759299e-116,
                     0, 0, 1, 0, 0, 1, 0, 0, 2.5944544677354528e-117, 0, 0, 1),
     "700 650" = c(1, 1.1886477434465246e-26, 1.1886477434465246e-26, 3.2171355712192349e-106,
                   0, 2.9359596119441445e-243, 1, 0, 0, 1, 2.9359596119441445e-243, 0,
-                  8.2086889175245743e-52, 2.594463309812418e-285, 2.594463309812418e-285, 1))
-  for (key in names(exact)) {
-    d <- as.numeric(strsplit(key, " ")[[1]])
-    got <- unname(unlist(PM.matrix(d[1], d[2], c(0, 0), X, TRUE, TRUE)[pm_quadrants]))
-    e <- exact[[key]]
-    expect_identical(got == 0, e == 0)
-    expect_lte(max(abs(got - e)[e != 0] / e[e != 0]), 1e-14)
-  }
+                  8.2086889175245743e-52, 2.594463309812418e-285, 2.594463309812418e-285, 1)),
+    function(d) 1e-14)
+
+  # Non-dyadic scales: the same data times 1.3 and 0.7 (relative error about
+  # 2.7e-14 at degrees (1000, 1001)).
+  Y <- cbind(a = X[, "a"] * 1.3, b = X[, "b"] * 0.7)
+  pm_check_exact(Y, list(
+    "1000 1001" = c(1, 1.4011771036479542e-21, 1.4011771036479542e-21, 1.5573212942580642e-116,
+                    0, 0, 1, 0, 0, 1, 0, 0, 1.53518015842312e-117, 0, 0, 1),
+    "700 650" = c(1, 2.3871821306951924e-32, 2.3871821306951924e-32, 9.946387187063837e-91,
+                  0, 1.0604359987379094e-256, 1, 0, 0, 1, 1.0604359987379094e-256, 0,
+                  2.0352090648213927e-40, 4.666051567129481e-293, 4.666051567129481e-293, 1)),
+    bound)
+  Z <- cbind(a = c(2, 0, 1.9, -1.7, 1.1) * 1.3, b = c(0, 2, 1.1, -1.9, 1.7) * 0.7)
+  pm_check_exact(Z, list(
+    "2000 2001" = c(1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+                    7.010615702072899e-284, 1, 1, 4.000968056720675e-90)),
+    bound)
+  # Cell (a, b) has two comparable terms whose rescaled products are denormal
+  # (about 3e-313), so it is summed in the log domain (relative error about
+  # 2.9e-13 in clpm).
+  W <- cbind(a = c(4, 0, 3, -2.95) * 1.3, b = c(0, 4, 3, -3.05) * 0.7)
+  pm_check_exact(W, list(
+    "1250 1251" = c(1, 0.9205749312463112, 0.9205749312463112, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0.07942506875368878, 0.07942506875368878, 5.073457005883048e-296)),
+    bound)
 })
 
 test_that("PM.matrix(norm = TRUE) log-domain rescue keeps a term whose ratio to the column scale is denormal", {

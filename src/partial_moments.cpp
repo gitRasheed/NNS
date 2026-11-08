@@ -1073,6 +1073,13 @@ struct FusedMatrixMultiplicationWorker : public Worker {
 // the same expression, so they cancel exactly and the cell is the plain
 // per-column rescaled ratio. If the rescaled sums still under- or overflow
 // (very high degree), the terms are summed in the log domain.
+//
+// Accuracy: relative error of order degree * eps, not exact. The exponent
+// a_q log2 s_i + b_q log2 s_j (about 1e3 to 1e4 in magnitude at degree 1000)
+// is rounded before exp2, and the rounding of |d| / s is raised to the degree.
+// Splitting s into mantissa and integer exponent would remove the first source
+// but not the second. Both vanish only for dyadic data (s a power of 2 and
+// |d| / s exact).
 static void PMMatrix_normalized_rescue(const NumericMatrix &variable,
                                        const NumericVector &target,
                                        const std::size_t i, const std::size_t j,

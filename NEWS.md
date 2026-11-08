@@ -155,11 +155,12 @@
   `F_j(t_j)` the share of the other column at or below its target. A cell
   total that underflowed or overflowed (deviations of scale 1e-200, or high
   degree) is recomputed on per-column rescaled deviations, in the log domain
-  if needed, instead of returning 0 for every quadrant; with equal degrees the
-  result does not depend on the units of the data. Cells with a safe total
-  are unchanged bit for bit. `NNS.copula()` drops constant columns before
-  calling `PM.matrix()`, so it changes only for a pair of columns in which
-  every row ties a user-supplied target in one of the two.
+  if needed, instead of returning 0 for every quadrant, with a relative error of
+  order degree * `.Machine$double.eps` (about 3e-14 at degree 1000); with equal
+  degrees the result does not depend on the units of the data beyond rounding.
+  Cells with a safe total are unchanged bit for bit. `NNS.copula()` drops
+  constant columns before calling `PM.matrix()`, so it changes only for a pair
+  of columns in which every row ties a user-supplied target in one of the two.
 * `NNS.SD.efficient.set()` and `NNS.SD.cluster()` reject a `degree` other than
   1, 2 or 3 with "`degree` must be 1, 2 or 3." before doing any work. A
   fractional degree used to be truncated (1.5 ran FSD, 2.9 SSD), a character
