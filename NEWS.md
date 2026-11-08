@@ -46,8 +46,12 @@
 * A target that is not `NULL`, numeric or logical (a string, list, data frame
   or factor) is now an error in `LPM.ratio()`, `UPM.ratio()`, `Co.LPM()`,
   `Co.UPM()`, `D.LPM()`, `D.UPM()` and `PM.matrix()` instead of silently
-  becoming `mean(variable)`. A logical target is coerced as `LPM()` does
-  (`TRUE` is 1, `NA` gives "`target` must be finite."). `PM.matrix()` keeps
+  becoming `mean(variable)`. It is also an error ("`target` must be
+  numeric.") in `Co.LPM_nD()`, `Co.UPM_nD()` and `DPM_nD()`, whose target is
+  required (`NULL` is an error there as before), where a character target such
+  as `c("5", "3")` used to be coerced to numbers and a list was accepted. A
+  logical target is coerced as `LPM()` does (`TRUE` is 1, `NA` gives
+  "`target` must be finite."). `PM.matrix()` keeps
   accepting exactly `target = "mean"` and `"means"` as aliases for `NULL`.
 * `LPM()`, `UPM()`, `LPM.VaR()`, `UPM.VaR()`, `NNS.moments()`, `NNS.CDF()`
   targets and the stochastic dominance functions now reject character and
