@@ -62,7 +62,7 @@ sd(x)
 
 
 ## First 4 Moments
-The first 4 moments are returned with the function `NNS.moments`.  For sample statistics, set `population = FALSE`.
+The first 4 moments (mean, variance, skewness and excess kurtosis) are returned with the function `NNS.moments`.  For sample statistics (n - 1 variance, sample skewness and sample excess kurtosis), set `population = FALSE`.
 ```{r moments}
 NNS.moments(x)
 
@@ -153,19 +153,20 @@ NNS.CDF(x, 1, type = "survival")
 
 
 ## Numerical Integration
-Partial moments are asymptotic area approximations of $f(x)$ akin to the familiar Trapezoidal and Simpson's rules.  More observations, more accuracy...
+Partial moments also yield asymptotic area approximations of $f(x)$ in the manner of a Riemann sum (a rectangle rule, so less accurate than the familiar Trapezoidal and Simpson's rules for the same number of points).  More observations, more accuracy...
 
-$$[UPM(1,0,f(x))-LPM(1,0,f(x))]\asymp\frac{[F(b)-F(a)]}{[b-a]}$$
-$$[UPM(1,0,f(x))-LPM(1,0,f(x))] *[b-a] \asymp[F(b)-F(a)]$$
+For $x$ an equally spaced grid of $n$ points on $[a,b]$ and $F$ an antiderivative of $f$, as $n \to \infty$:
+$$[UPM(1,0,f(x))-LPM(1,0,f(x))]\approx\frac{[F(b)-F(a)]}{[b-a]}$$
+$$[UPM(1,0,f(x))-LPM(1,0,f(x))] *[b-a] \approx[F(b)-F(a)]$$
 
 ```{r numerical integration}
 x = seq(0, 1, .001) ; y = x ^ 2
 (UPM(1, 0, y) - LPM(1, 0, y)) * (1 - 0)
 ```
 
-$$0.3333 * [1-0] = \int_{0}^{1} x^2 dx$$
+$$0.3335 * [1-0] \approx \int_{0}^{1} x^2 dx = 0.3333$$
 For the total area, not just the definite integral, simply sum the partial moments and multiply by $[b - a]$:
-$$[UPM(1,0,f(x))+LPM(1,0,f(x))] *[b-a]\asymp\left\lvert{\int_{a}^{b} f(x)dx}\right\rvert$$
+$$[UPM(1,0,f(x))+LPM(1,0,f(x))] *[b-a]\approx\int_{a}^{b} \left\lvert f(x) \right\rvert dx$$
 
 ## Bayes' Theorem
 For example, when ascertaining the probability of an increase in $A$ given an increase in $B$, the `Co.UPM(degree_upm, x, y, target_x, target_y)` target parameters are set to `target_x = 0` and `target_y = 0` and the `UPM(degree, target, variable)` target parameter is also set to `target = 0`.

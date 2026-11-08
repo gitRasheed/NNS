@@ -13,13 +13,13 @@ The following original PRs were reviewed and merged individually:
 
 | PR | Repair |
 | --- | --- |
-| #132 | Mixed-degree co-partial moments |
+| #132 | Mixed-degree co-partial moments; paired-length validation before native parallel work |
 | #125 | Scale-invariant integer-degree VaR root stopping |
 | #141 | Two-sided inclusive correlation permutation tails |
-| #134 | Paired-length validation before native parallel work |
+| #134 | Efficient-set calls no longer write column names into the caller's matrix |
 | #123 | Target hazard/cumulative-hazard evaluation |
-| #126 | Stochastic-dominance cluster ordering |
-| #127 | Residual-cluster handling |
+| #126 | Stochastic-dominance cluster ordering and residual-cluster handling |
+| #127 | Efficient-set membership independent of column order |
 | #147 | Repeated small-sample derivative bandwidths |
 | #135 | Training-only ARMA support selection |
 | #146 | Monte Carlo exponent grids within the requested bounds |

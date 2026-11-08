@@ -217,7 +217,7 @@ This interpretation is particularly useful in reliability analysis, survival ana
 
 ## Hazard Rates
 
-In survival analysis the **hazard rate** describes the instantaneous probability of failure conditional on survival.
+In survival analysis the **hazard rate** describes the instantaneous rate of failure conditional on survival.
 
 For continuous distributions the hazard rate is defined as
 
@@ -254,7 +254,7 @@ h(t) = \frac{f(t)}{U_0(t;X)}.
 This provides a directional interpretation of the hazard rate.
 
 The upper partial moment \(U_0(t;X)\) represents the probability mass that remains **above the benchmark \(t\)**.  
-The hazard rate therefore measures the instantaneous **flow of probability mass across the benchmark** from the upper directional region \(X > t\) into the lower region \(X \le t\).
+The hazard rate therefore measures the instantaneous **flow of probability mass across the benchmark** from the upper directional region \(X > t\) into the lower region \(X \le t\), measured relative to the mass that still remains above the benchmark.
 
 The **cumulative hazard function** is
 
@@ -262,7 +262,7 @@ The **cumulative hazard function** is
 H(t) = -\log S(t) = \int_{-\infty}^t h(s)\,ds,
 \]
 
-The integral formula assumes an absolutely continuous distribution with positive survival on the interval in question. It reduces to \(\int_0^t h(s)\,ds\) for an absolutely continuous non-negative lifetime. For atoms, \(-\log S(t)\) remains the definition and jumps require a corresponding measure-based hazard treatment.
+The integral formula assumes an absolutely continuous distribution with positive survival on the interval in question. It reduces to \(\int_0^t h(s)\,ds\) for an absolutely continuous non-negative lifetime. For distributions with atoms the two expressions part ways: the measure-based cumulative hazard is \(H(t)=\int_{(-\infty,t]} \frac{dF_X(s)}{S_X(s^-)}\), which accumulates the jump hazards \(P(X=s\mid X\ge s)\) and satisfies \(S_X(t)=\prod_{s\le t}\bigl(1-dH(s)\bigr)\); it coincides with \(-\log S_X(t)\) only when \(F_X\) is continuous.
 
 Although hazard rates are typically introduced within survival analysis, they arise naturally within the directional framework once the survival function is recognized as an upper partial moment.
 
@@ -310,7 +310,7 @@ Q_X(\alpha)=\inf\{t\in\mathbb{R}:F_X(t)\ge \alpha\}
 =\inf\{t\in\mathbb{R}:L_0(t;X)\ge \alpha\}.
 \]
 
-This identity is general. It does not depend on whether \(X\) represents returns, forecast errors, waiting times, deviations from a quality target, or distances below a safety threshold. In every case, the degree-zero lower partial moment answers the same question: what proportion of observations fall below the benchmark \(t\)?
+This identity is general. It does not depend on whether \(X\) represents returns, forecast errors, waiting times, deviations from a quality target, or distances below a safety threshold. In every case, the degree-zero lower partial moment answers the same question: what proportion of observations fall at or below the benchmark \(t\)?
 
 In some fields, especially finance, the lower-tail quantile
 \[
@@ -318,7 +318,7 @@ In some fields, especially finance, the lower-tail quantile
 \]
 is called Value-at-Risk. But the mathematical object is broader than that label. It is the benchmark value that partitions a chosen fraction \(\alpha\) of lower-tail mass.
 
-This observation matters because it shows that threshold analysis is not an external application added onto the theory of distributions. It is already contained in the degree-zero directional representation of probability. The estimation-error literature makes the same point explicitly by identifying \(LPM_0\) with the cumulative distribution function and hence with the probability-of-loss object used in applied risk work.
+This observation matters because it shows that threshold analysis is not an external application added onto the theory of distributions. It is already contained in the degree-zero directional representation of probability. The estimation-error literature (Nawrocki and Viole 2024; see Chapter 16) makes the same point explicitly by identifying \(LPM_0\) with the cumulative distribution function and hence with the probability-of-loss object used in applied risk work.
 
 A second implication will become important later. Degree zero partitions observations by frequency alone. Higher degrees retain the same threshold logic while reweighting observations by the severity of their deviations from the benchmark. Thus quantile thinking extends naturally from event frequency to severity-weighted directional mass.
 

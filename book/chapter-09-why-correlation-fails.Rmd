@@ -326,7 +326,7 @@ y <- rnorm(100)
 cov.mtx <- PM.matrix(
   LPM_degree = 1,
   UPM_degree = 1,
-  target = "mean",
+  target = NULL,
   variable = cbind(x, y),
   pop_adj = TRUE
 )
@@ -408,6 +408,8 @@ Then the co-upper partial moment matrix is
 \frac{1}{T}
 \left(U^{(r)}\right)^\top U^{(r)}.
 \]
+
+The factor \(1/T\) is the population normalization used by `PM.matrix(..., pop_adj = FALSE)`; with `pop_adj = TRUE`, as in the example above, each matrix is rescaled by \(T/(T-1)\), which leaves the Gram structure unchanged.
 
 Thus each concordant co-partial moment matrix is a **Gram matrix**: its entries are pairwise inner products of directional-deviation vectors.
 
@@ -511,7 +513,7 @@ Directional co-partial moments reveal this structure.
 With benchmark \(t_X=0\),
 
 - \(\operatorname{CoUPM}\) captures dependence when \(X>0\) and \(Y\) is above its benchmark,
-- \(\operatorname{DUPM}\) or \(\operatorname{DLPM}\) captures the mirrored dependence when \(X<0\), depending on the benchmark chosen for \(Y\).
+- \(\operatorname{DUPM}\) or \(\operatorname{CoLPM}\) captures the mirrored dependence when \(X<0\) (DUPM where \(Y\) is above its benchmark, CoLPM where it is below), depending on the benchmark chosen for \(Y\).
 
 The directional matrices expose strong dependence that the aggregated covariance can cancel.
 

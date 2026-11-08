@@ -96,7 +96,7 @@ Directional statistics extends this same partition structure to **magnitudes of 
 
 Measure theory frequently decomposes functions into positive and negative parts.
 
-For any real-valued function \(f\),
+For any measurable real-valued function \(f\),
 
 \[
 f = f^{+} - f^{-}
@@ -119,7 +119,7 @@ Lebesgue integration then satisfies
 \int f^{-} d\mu.
 \]
 
-This decomposition ensures that integrals of arbitrary measurable functions can be constructed from integrals of nonnegative functions.
+This decomposition ensures that the integral of any measurable function for which at least one of \(\int f^{+}d\mu\), \(\int f^{-}d\mu\) is finite (in particular any \(f \in L^1(\mu)\)) can be constructed from integrals of nonnegative functions.
 
 Directional deviation operators follow exactly the same structure.
 
@@ -153,7 +153,7 @@ Directional deviations therefore correspond directly to the **positive and negat
 
 Partial moments are expectations of these nonnegative measurable functions.
 
-For integer \(r \ge 0\),
+For integer \(r \ge 0\) (with the degree-zero powers read as indicators, \((t-X)_+^0 = \mathbf{1}\{X \le t\}\) and \((X-t)_+^0 = \mathbf{1}\{X > t\}\), as in Chapters 2–3),
 
 \[
 U_r(t;X) = E[(X-t)_+^r]
@@ -213,7 +213,7 @@ raising both sides to power \(r\) and integrating yields
 E[(X-t)^r] = U_r(t;X) + (-1)^r L_r(t;X).
 \]
 
-This identity holds for any integrable random variable.
+This identity holds whenever \(X \in L^r\), so that \(U_r\) and \(L_r\) are both finite; for \(r \le 1\) integrability suffices, but for odd \(r \ge 3\) it does not (both directional integrals can be infinite).
 
 Classical symmetric moments therefore arise as **signed combinations of two directional integrals**.
 
@@ -259,7 +259,7 @@ This implies a strict information hierarchy:
 (U_r,L_r) \quad \text{contains more information than} \quad E[(X-t)^r].
 \]
 
-In measure-theoretic terms, the directional decomposition represents a **refinement of the measurable structure** induced by symmetric aggregation.
+In measure-theoretic terms, the directional decomposition is a **refinement of the partition** over which the symmetric moment integrates: the single region \(\Omega\) is split into the benchmark cells \(\{X \le t\}\) and \(\{X > t\}\).
 
 The symmetric moment collapses two measurable integrals into a single value.
 

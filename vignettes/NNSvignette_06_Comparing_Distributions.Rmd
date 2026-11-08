@@ -28,7 +28,7 @@ require(rgl)
 
 **`NNS`** offers a multitude of ways to test if distributions came from the same population, or if they share the same mean or median. The underlying function for these tests is **`NNS.ANOVA()`**.
 
-The output from **`NNS.ANOVA()`** includes a descriptive `Certainty` statistic. `means.only = TRUE` compares group means through their directional area balance, `means.only = FALSE` compares profiles over shared quantiles, and `medians = TRUE` compares median targets. Agreement in one mode does not establish equality for the other targets. The finite-sample adjustment can make the maximum less than one. Certainty is not a calibrated p-value or power; inferential calibration must match the target and sampling design.
+The output from **`NNS.ANOVA()`** includes a descriptive `Certainty` statistic. `means.only = TRUE` compares group means through their directional area balance, `means.only = FALSE` compares profiles over shared deviation-area benchmarks (the 12.5% and 25% lower and upper degree-one, expectile-type targets, not quantiles), and `medians = TRUE` compares median targets. Agreement in one mode does not establish equality for the other targets. The finite-sample adjustment can make the maximum less than one. Certainty is not a calibrated p-value or power; inferential calibration must match the target and sampling design.
 
 ## Test if Same Population
 
@@ -110,7 +110,7 @@ $$
 
 A value of $P^* = 0.5$ indicates no directional advantage, values above $0.5$ favor $X$, and values below $0.5$ favor $Y$.
 
-This differs from stochastic dominance. Stochastic superiority is a pairwise exceedance probability, while stochastic dominance requires one distribution to be preferred to another over the entire shared support.
+This differs from stochastic dominance. Stochastic superiority is a pairwise exceedance probability, while stochastic dominance requires one distribution to be weakly preferred at every threshold (its CDF, or integrated CDF, never above the other's), not just on average.
 
 Below is an example using the same data generating process from the unequal means example.
 
@@ -139,10 +139,10 @@ $p_star
 [1] 0.233915
 
 $lower
-[1] 0.2105631
+[1] 0.2189796
 
 $upper
-[1] 0.2537789
+[1] 0.2593558
 ```
 
 This provides an interpretable effect size for directional comparison between two distributions without requiring identical distributions or equal variances.
