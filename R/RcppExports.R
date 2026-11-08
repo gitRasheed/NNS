@@ -320,6 +320,10 @@ NNS_bin <- function(x, width, origin = 0, missinglast = FALSE) {
     .Call(`_NNS_NNS_bin`, x, width, origin, missinglast)
 }
 
+VaR_anchor_sums_RCPP <- function(u, counts, degree) {
+    .Call(`_NNS_VaR_anchor_sums_RCPP`, u, counts, degree)
+}
+
 stoch_superiority_cpp <- function(x, y) {
     .Call(`_NNS_stoch_superiority_cpp`, x, y)
 }

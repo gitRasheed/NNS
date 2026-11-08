@@ -14,7 +14,7 @@ LPM.VaR(percentile, degree, x)
 \item{x}{a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error. A data frame (including a tibble or data.table) is flattened to one vector.}
 }
 \value{
-Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area below it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved to an absolute ratio tolerance of about \code{.Machine$double.eps^0.75} (1.8e-12), so percentiles within about 1e-11 of 0 or 1 are not resolved to relative precision.
+Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area below it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved for itself, not to a tolerance on the ratio: it is the root to rounding error on the scale of the data, also for percentiles near 0 or 1, where the ratio is flat (only percentiles below the smallest normal double, about 2.2e-308, are not resolved).
 }
 \description{
 Generates a value at risk (VaR) quantile based on the Lower Partial Moment ratio.

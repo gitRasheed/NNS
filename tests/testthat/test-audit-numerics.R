@@ -62,9 +62,9 @@ test_that("the non-integer-degree VaR solver is scale invariant on data of scale
 })
 
 test_that("integer-degree VaR meets its absolute ratio tolerance at tiny percentiles", {
-  # The documented contract is |ratio(VaR) - p| <= about eps^0.75, not a
-  # relative error: at p near 1e-21 the returned threshold can be far from the
-  # order statistic that has that ratio (see LPM.VaR's value section).
+  # The solver resolves the threshold itself (test-var-root-tolerance.R checks
+  # it recovers these order statistics); this checks the absolute ratio
+  # residual at p near 1e-21, which used to be the documented contract.
   set.seed(11)
   x <- c(rnorm(40, -1e5, 1), rnorm(61, 0, 1))
   p <- LPM.ratio(4, sort(x)[c(5, 20, 35)], x)

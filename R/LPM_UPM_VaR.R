@@ -5,7 +5,7 @@
 #' @param percentile numeric [0, 1]; The percentile for left-tail VaR.
 #' @param degree integer; \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, percentile, type = 7)}), which on tied data need not be an exact inverse of \code{LPM.ratio(0, ., x)}. Use it for probability statements, such as a VaR exceeded with a given frequency.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the \code{percentile}-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies below it, so it is not a quantile of \code{x} (for exponential data the degree-1 5\% point has about a quarter of the observations below it).  Higher degrees weight large deviations more.
 #' @param x a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error. A data frame (including a tibble or data.table) is flattened to one vector.
-#' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area below it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved to an absolute ratio tolerance of about \code{.Machine$double.eps^0.75} (1.8e-12), so percentiles within about 1e-11 of 0 or 1 are not resolved to relative precision.
+#' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area below it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved for itself, not to a tolerance on the ratio: it is the root to rounding error on the scale of the data, also for percentiles near 0 or 1, where the ratio is flat (only percentiles below the smallest normal double, about 2.2e-308, are not resolved).
 #' @author Fred Viole, OVVO Financial Systems
 #' @references Viole, F. and Nawrocki, D. (2013) "Nonlinear Nonparametric Statistics: Using Partial Moments" (ISBN: 1490523995, 2nd edition: \url{https://ovvo-financial.github.io/NNS/book/})
 #' @examples
@@ -42,7 +42,7 @@ LPM.VaR <- function(percentile, degree, x) {
 #' @param percentile numeric [0, 1]; The percentile for right-tail VaR.
 #' @param degree integer; \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, 1 - percentile, type = 7)}), which on tied data need not be an exact inverse of \code{UPM.ratio(0, ., x)}. Use it for probability statements.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the (1 - \code{percentile})-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies above it, so it is not a quantile of \code{x}.  Higher degrees weight large deviations more.
 #' @param x a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error. A data frame (including a tibble or data.table) is flattened to one vector.
-#' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area above it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved to an absolute ratio tolerance of about \code{.Machine$double.eps^0.75} (1.8e-12), so percentiles within about 1e-11 of 0 or 1 are not resolved to relative precision.
+#' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area above it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved for itself, not to a tolerance on the ratio: it is the root to rounding error on the scale of the data, also for percentiles near 0 or 1, where the ratio is flat (only percentiles below the smallest normal double, about 2.2e-308, are not resolved).
 #' @author Fred Viole, OVVO Financial Systems
 #' @references Viole, F. and Nawrocki, D. (2013) "Nonlinear Nonparametric Statistics: Using Partial Moments" (ISBN: 1490523995, 2nd edition: \url{https://ovvo-financial.github.io/NNS/book/})
 #' @examples
@@ -109,295 +109,166 @@ UPM.VaR <- function(percentile, degree, x) {
 
 
 # ------------------------------------------------------------------------------
-# General integer-degree VaR inversion for degrees 1:4
+# Integer-degree VaR inversion for degrees 1:4
 # ------------------------------------------------------------------------------
 #
-# For integer degree d:
+# For integer degree d,
 #
-#   LPM_d(t) = sum((t - x_i)^d for x_i <= t)
-#   UPM_d(t) = sum((x_i - t)^d for x_i > t)
+#   LPM_d(t) = mean((t - x)^d [x <= t]),   UPM_d(t) = mean((x - t)^d [x > t]).
 #
-# Within an interval between sorted unique observations, the below/above sets are
-# fixed. Therefore LPM_d(t) and UPM_d(t) are degree-d polynomials in t.
+# Between adjacent distinct observations u_k < u_{k+1} (gap g) the below/above
+# sets are fixed. With s = t - u_k and r = u_{k+1} - t = g - s,
 #
-# VaR solves:
+#   LPM_d(t) = sum_j C(d,j) s^(d-j) lower_j(k),  lower_j(k) = mean((u_k - x)^j [x <= u_k])
+#   UPM_d(t) = sum_j C(d,j) r^(d-j) upper_j(k),  upper_j(k) = mean((x - u_{k+1})^j [x >= u_{k+1}])
 #
-#   LPM_d(t) / (LPM_d(t) + UPM_d(t)) = p
+# Each sum is anchored at its own adjacent order statistic, so every term is
+# >= 0 and nothing cancels (an expansion around one fixed centre cancels from
+# degree 3 up when a cluster sits far from that centre). LPM.ratio(t) = p reads
 #
-# equivalently:
+#   h(t) = w_L * LPM_d(t) - w_U * UPM_d(t) = 0,   w_L = 1 - p, w_U = p,
 #
-#   (1 - p) * LPM_d(t) - p * UPM_d(t) = 0
+# which is strictly increasing in t on [min x, max x] for non-constant data, so
+# the root exists and is unique. UPM.VaR passes the weights the other way round
+# (w_L = q, w_U = 1 - q), so a tail weight is never formed as 1 - (1 - q).
 #
-# This implementation:
-#   1. Sorts x once.
-#   2. Builds prefix power sums P_0, P_1, ..., P_d.
-#   3. Locates the correct order-statistic interval for each percentile.
-#   4. Solves the exact degree-d polynomial on that interval using uniroot().
-#
-# This replaces the old behavior:
-#   Vectorize(percentile) -> optimize() -> repeated full LPM.ratio / UPM.ratio scans.
+# The solver
+#   1. locates the gap by the sign of h at the breaks (binary search);
+#   2. solves h = 0 on that gap with uniroot() from the nearer anchor (in s on
+#      the lower half, in r on the upper half), so the root is resolved to a
+#      few ulps of t, also where the ratio is flat near min x and max x;
+#   3. returns a break only where the sign of h puts the root there. A tolerance
+#      on the ratio is not a tolerance on t: the former snap to a break within
+#      2^-39 of its ratio gave LPM.VaR(1e-12, 4, c(0, 1)) = 0, root about 1e-3.
 # ------------------------------------------------------------------------------
 
 .NNS_LPM_VaR_integer <- function(percentile, degree, x) {
   p <- pmin(pmax(as.numeric(percentile), 0), 1)
-  
-  n <- length(x)
-  x_sorted <- sort(x)
-  # Center at the sorted median: (t - x) is translation-invariant, so results
-  # are mathematically identical, but prefix powers are built at deviation
-  # scale. This removes the cancellation from a level shift; it does not make
-  # the expanded sums cancellation-free for degree >= 3, so the break ratios
-  # and the solve are accurate to an absolute ratio error (about 2^degree * eps,
-  # solver tolerance eps^0.75), not relative to tiny percentiles.
-  .vshift <- x_sorted[(n + 1L) %/% 2L]
-  x_sorted <- x_sorted - .vshift
-  x_min <- x_sorted[1L]
-  x_max <- x_sorted[n]
-  
-  if (n == 1L || x_min == x_max) {
-    return(rep(x_min + .vshift, length(p)))
-  }
-  
-  # The ratio is scale-free, but deviations of extreme magnitude under- or
-  # overflow in the degree-d powers; solve on data scaled by an exact power of
-  # two (1 for ordinary data) and scale the answer back.
-  .vscale <- .nns_pow2_rescale(max(-x_min, x_max))
-  x_sorted <- x_sorted * .vscale
-  x_min <- x_sorted[1L]
-  x_max <- x_sorted[n]
-  
-  prep <- .NNS_prepare_integer_VaR_backend(x_sorted, degree)
-  
-  ratio_break <- .NNS_LPM_ratio_at_breaks(prep, degree)
-  ratio_break <- pmin(pmax(ratio_break, 0), 1)
-  
-  # Protect findInterval from tiny floating-point non-monotonicity.
-  ratio_break <- cummax(ratio_break)
-  ratio_break[1L] <- 0
-  ratio_break[length(ratio_break)] <- 1
-  
-  out <- numeric(length(p))
-  
-  left_tail <- p <= 0
-  right_tail <- p >= 1
-  middle <- !(left_tail | right_tail)
-  
-  out[left_tail] <- x_min
-  out[right_tail] <- x_max
-  
-  if (any(middle)) {
-    p_mid <- p[middle]
-    
-    interval <- findInterval(
-      p_mid,
-      ratio_break,
-      rightmost.closed = TRUE
-    )
-    
-    interval <- pmax(interval, 1L)
-    interval <- pmin(interval, length(prep$unique_x) - 1L)
-    
-    out_mid <- numeric(length(p_mid))
-    
-    for (i in seq_along(p_mid)) {
-      out_mid[i] <- .NNS_solve_LPM_integer_interval(
-        percentile = p_mid[i],
-        degree = degree,
-        interval = interval[i],
-        prep = prep
-      )
-    }
-    
-    out[middle] <- out_mid
-  }
-  
-  out / .vscale + .vshift
+  .NNS_VaR_integer_solve(
+    w_L = 1 - p, w_U = p,
+    at_min = p <= 0, at_max = p >= 1,
+    degree = degree, x = x
+  )
 }
 
 
 
 .NNS_UPM_VaR_integer <- function(percentile, degree, x) {
-  percentile <- pmin(pmax(as.numeric(percentile), 0), 1)
-  
-  # UPM.ratio(t) = p is equivalent to LPM.ratio(t) = 1 - p.
-  .NNS_LPM_VaR_integer(1 - percentile, degree, x)
+  q <- pmin(pmax(as.numeric(percentile), 0), 1)
+  # UPM.ratio(t) = q is LPM.ratio(t) = 1 - q, with the weights kept exact.
+  .NNS_VaR_integer_solve(
+    w_L = q, w_U = 1 - q,
+    at_min = q >= 1, at_max = q <= 0,
+    degree = degree, x = x
+  )
 }
 
 
 
-.NNS_prepare_integer_VaR_backend <- function(x_sorted, degree) {
-  n <- length(x_sorted)
+.NNS_VaR_integer_solve <- function(w_L, w_U, at_min, at_max, degree, x) {
+  n <- length(x)
+  x_sorted <- sort(x)
+  x_min <- x_sorted[1L]
+  x_max <- x_sorted[n]
   
-  x_rle <- rle(x_sorted)
-  unique_x <- x_rle$values
-  k_break <- cumsum(x_rle$lengths)
+  if (n == 1L || x_min == x_max) {
+    return(rep(x_min, length(w_L)))
+  }
   
-  prefix_power <- matrix(
-    0,
-    nrow = degree + 1L,
-    ncol = length(unique_x)
-  )
+  # The ratio is translation- and scale-free, but deviations of extreme
+  # magnitude under- or overflow in the degree-d powers: build the anchored sums
+  # on data centred at the median and scaled by an exact power of two (1 for
+  # ordinary data). Answers are mapped back from the original order statistics.
+  z <- x_sorted - x_sorted[(n + 1L) %/% 2L]
+  scale <- .nns_pow2_rescale(max(-z[1L], z[n]))
+  z <- z * scale
   
-  total_power <- numeric(degree + 1L)
+  runs <- rle(z)
+  u <- runs$values
+  m <- length(u)
+  k_break <- cumsum(runs$lengths)
+  u_orig <- x_sorted[k_break]
   
-  # Power 0 is count.
-  prefix_power[1L, ] <- k_break
-  total_power[1L] <- n
+  out <- numeric(length(w_L))
+  out[at_min] <- x_min
+  out[at_max] <- x_max
+  middle <- !(at_min | at_max)
   
-  if (degree >= 1L) {
-    for (j in seq_len(degree)) {
-      x_power <- x_sorted^j
-      prefix_power[j + 1L, ] <- cumsum(x_power)[k_break]
-      total_power[j + 1L] <- sum(x_power)
+  if (m < 2L || !any(middle)) {
+    out[middle] <- x_min
+    return(out)
+  }
+  
+  gap <- diff(u)
+  d1 <- degree + 1L
+  bin <- choose(degree, 0:degree)
+  
+  # lower[k, j + 1] = lower_j(k), upper[k, j + 1] = upper_j(k), k = 1, ..., m - 1
+  # (src/partial_moments_rcpp.cpp, accumulated in long double).
+  sums <- .Call("_NNS_VaR_anchor_sums_RCPP", u, as.numeric(runs$lengths), degree)
+  lower <- sums$lower
+  upper <- sums$upper
+  
+  # sum_j C(d,j) h^(d-j) coef_j for each row of coef; all terms are >= 0.
+  combine <- function(coef, h) {
+    value <- 0
+    for (j in 0:degree) {
+      value <- value + bin[j + 1L] * h^(degree - j) * coef[, j + 1L]
     }
+    value
   }
   
-  list(
-    n = n,
-    unique_x = unique_x,
-    k_break = k_break,
-    prefix_power = prefix_power,
-    total_power = total_power
-  )
-}
-
-
-
-.NNS_LPM_raw_integer <- function(t, degree, prefix_power) {
-  value <- 0
+  # LPM and UPM at the left end of every gap (t = u_k), in the solver's arithmetic.
+  lpm_break <- lower[, d1]
+  upm_break <- combine(upper, gap)
   
-  for (j in 0:degree) {
-    value <- value +
-      choose(degree, j) *
-      (-1)^j *
-      t^(degree - j) *
-      prefix_power[j + 1L]
-  }
-  
-  value
-}
-
-
-
-.NNS_UPM_raw_integer <- function(t, degree, prefix_power, total_power) {
-  suffix_power <- total_power - prefix_power
-  value <- 0
-  
-  for (j in 0:degree) {
-    value <- value +
-      choose(degree, j) *
-      (-1)^(degree - j) *
-      t^(degree - j) *
-      suffix_power[j + 1L]
-  }
-  
-  value
-}
-
-
-
-.NNS_LPM_ratio_at_breaks <- function(prep, degree) {
-  t <- prep$unique_x
-  prefix_power <- prep$prefix_power
-  total_power <- prep$total_power
-  
-  lpm <- numeric(length(t))
-  upm <- numeric(length(t))
-  
-  for (j in 0:degree) {
-    lpm <- lpm +
-      choose(degree, j) *
-      (-1)^j *
-      t^(degree - j) *
-      prefix_power[j + 1L, ]
+  solve_one <- function(wl, wu) {
+    # h(u_1) = -wu * UPM(u_1) < 0 and h(u_m) = wl * LPM(u_m) > 0: find k with
+    # h(u_k) <= 0 < h(u_{k+1}) (h(u_m) is taken as positive).
+    lo <- 1L
+    hi <- m
+    while (hi - lo > 1L) {
+      mid <- (lo + hi) %/% 2L
+      if (wl * lpm_break[mid] - wu * upm_break[mid] <= 0) lo <- mid else hi <- mid
+    }
+    k <- lo
+    g <- gap[k]
+    lo_coef <- lower[k, , drop = FALSE]
+    up_coef <- upper[k, , drop = FALSE]
     
-    suffix_power <- total_power[j + 1L] - prefix_power[j + 1L, ]
+    h_s <- function(s) wl * combine(lo_coef, s) - wu * combine(up_coef, g - s)
+    h_r <- function(r) wl * combine(lo_coef, g - r) - wu * combine(up_coef, r)
     
-    upm <- upm +
-      choose(degree, j) *
-      (-1)^(degree - j) *
-      t^(degree - j) *
-      suffix_power
-  }
-  
-  ratio <- lpm / (lpm + upm)
-  ratio[is.nan(ratio)] <- 0
-  ratio
-}
-
-
-
-.NNS_pm_root_value_integer <- function(t, percentile, degree, prefix_power, total_power) {
-  lpm <- .NNS_LPM_raw_integer(t, degree, prefix_power)
-  upm <- .NNS_UPM_raw_integer(t, degree, prefix_power, total_power)
-  
-  (1 - percentile) * lpm - percentile * upm
-}
-
-
-
-.NNS_solve_LPM_integer_interval <- function(percentile, degree, interval, prep) {
-  lower <- prep$unique_x[interval]
-  upper <- prep$unique_x[interval + 1L]
-  
-  prefix_power <- prep$prefix_power[, interval]
-  total_power <- prep$total_power
-  
-  if (lower == upper) {
-    return(lower)
-  }
-  
-  f <- function(t) {
-    .NNS_pm_root_value_integer(
-      t = t,
-      percentile = percentile,
-      degree = degree,
-      prefix_power = prefix_power,
-      total_power = total_power
-    )
-  }
-  
-  # The ratio residual is dimensionless, unlike f, whose size scales with x^degree.
-  ratio_gap <- function(t) {
-    lpm <- .NNS_LPM_raw_integer(t, degree, prefix_power)
-    upm <- .NNS_UPM_raw_integer(t, degree, prefix_power, total_power)
-    lpm / (lpm + upm) - percentile
-  }
-  
-  f_lower <- f(lower)
-  f_upper <- f(upper)
-  g_lower <- ratio_gap(lower)
-  g_upper <- ratio_gap(upper)
-  
-  tol <- .Machine$double.eps^0.75
-  
-  if (is.finite(g_lower) && abs(g_lower) <= tol) {
-    return(lower)
-  }
-  
-  if (is.finite(g_upper) && abs(g_upper) <= tol) {
-    return(upper)
-  }
-  
-  if (
-    is.finite(f_lower) &&
-    is.finite(f_upper) &&
-    f_lower * f_upper <= 0
-  ) {
-    # Where the ratio is steep a tolerance on t does not bound its residual, so solve to rounding.
-    root <- stats::uniroot(
-      f,
-      interval = c(lower, upper),
-      f.lower = f_lower,
-      f.upper = f_upper,
-      tol = .Machine$double.eps^2 * (upper - lower)
-    )$root
+    h_left <- wl * lpm_break[k] - wu * upm_break[k]
+    if (h_left >= 0) return(u_orig[k])
+    h_right <- h_r(0)
+    if (h_right <= 0) return(u_orig[k + 1L])
     
-    return(pmin(pmax(root, lower), upper))
+    half <- g / 2
+    h_half <- h_s(half)
+    
+    # Solve from the nearer anchor; zeroin stops at about 4 * eps * |s| (or |r|),
+    # so the offset from the anchor is resolved to relative precision.
+    if (h_half >= 0) {
+      if (h_half == 0) return(u_orig[k] + half / scale)
+      s <- stats::uniroot(
+        h_s, c(0, half), f.lower = h_left, f.upper = h_half,
+        tol = .Machine$double.xmin, maxiter = 2000L
+      )$root
+      t <- u_orig[k] + min(max(s, 0), half) / scale
+    } else {
+      r <- stats::uniroot(
+        h_r, c(0, half), f.lower = h_right, f.upper = h_half,
+        tol = .Machine$double.xmin, maxiter = 2000L
+      )$root
+      t <- u_orig[k + 1L] - min(max(r, 0), half) / scale
+    }
+    min(max(t, u_orig[k]), u_orig[k + 1L])
   }
   
-  # No sign change, from rounding at a break: take the closer endpoint.
-  if (abs(g_lower) <= abs(g_upper)) lower else upper
+  idx <- which(middle)
+  out[idx] <- vapply(idx, function(i) solve_one(w_L[i], w_U[i]), numeric(1))
+  out
 }
 
 

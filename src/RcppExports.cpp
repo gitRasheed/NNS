@@ -810,6 +810,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// VaR_anchor_sums_RCPP
+List VaR_anchor_sums_RCPP(const NumericVector& u, const NumericVector& counts, const int degree);
+RcppExport SEXP _NNS_VaR_anchor_sums_RCPP(SEXP uSEXP, SEXP countsSEXP, SEXP degreeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::traits::input_parameter< const NumericVector& >::type u(uSEXP);
+    Rcpp::traits::input_parameter< const NumericVector& >::type counts(countsSEXP);
+    Rcpp::traits::input_parameter< const int >::type degree(degreeSEXP);
+    rcpp_result_gen = Rcpp::wrap(VaR_anchor_sums_RCPP(u, counts, degree));
+    return rcpp_result_gen;
+END_RCPP
+}
 // stoch_superiority_cpp
 List stoch_superiority_cpp(NumericVector x, NumericVector y);
 RcppExport SEXP _NNS_stoch_superiority_cpp(SEXP xSEXP, SEXP ySEXP) {
@@ -896,6 +908,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_NNS_DUPM_RCPP", (DL_FUNC) &_NNS_DUPM_RCPP, 6},
     {"_NNS_PMMatrix_RCPP", (DL_FUNC) &_NNS_PMMatrix_RCPP, 6},
     {"_NNS_NNS_bin", (DL_FUNC) &_NNS_NNS_bin, 4},
+    {"_NNS_VaR_anchor_sums_RCPP", (DL_FUNC) &_NNS_VaR_anchor_sums_RCPP, 3},
     {"_NNS_stoch_superiority_cpp", (DL_FUNC) &_NNS_stoch_superiority_cpp, 2},
     {"_NNS_NNS_mreg_reduce_cpp", (DL_FUNC) &_NNS_NNS_mreg_reduce_cpp, 5},
     {NULL, NULL, 0}

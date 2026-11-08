@@ -96,9 +96,23 @@
 * Multivariate `NNS.CDF(type = "survival")` at degree > 0 is computed by the
   batched `Co.UPM_nD()` directly (bit-identical on ordinary data), so its
   zero-total fallback is the strict all-above count of `Co.UPM_nD()`.
-* The `LPM.VaR()`/`UPM.VaR()` help states that integer degrees 1 to 4 are
-  solved to an absolute ratio tolerance (about 1.8e-12), so percentiles within
-  about 1e-11 of 0 or 1 are not resolved to relative precision.
+* `LPM.VaR()`/`UPM.VaR()` at integer degrees 1 to 4 return the root of the
+  ratio equation, not a nearby order statistic. The solver used to accept a
+  break whenever its ratio was within about 1.8e-12 of the percentile, which
+  is not a tolerance on the threshold where the ratio is flat:
+  `LPM.VaR(1e-12, 4, c(0, 1))` was 0 and `UPM.VaR(1e-12, 4, c(0, 1))` was 1
+  (root about 0.001 from each end), and `LPM.VaR(0.5 + 1e-13, 2, c(0, 1, 2))`
+  was 1. Its prefix power sums were expanded around the median and cancelled
+  from degree 3 up for a cluster far from it (a percentile of 1e-21 in a
+  cluster at -1e5 returned the wrong order statistic, 1.2 away). The gap is
+  now located by the sign of `(1 - p) LPM - p UPM` at the order statistics,
+  using sums anchored at the adjacent order statistics (no cancellation,
+  accumulated in long double), and solved there from the nearer end with
+  `uniroot()`. `UPM.VaR()` keeps its percentile exact instead of solving at
+  `1 - percentile`. On ordinary data the results change only by rounding
+  (less than 2e-14 times the largest threshold in the audit's samples), and
+  the help no longer states a ratio tolerance. Degree 0 and the
+  non-integer-degree solver are unchanged.
 * An invalid `type` in `NNS.FSD()`, `NNS.FSD.uni()`, `NNS.SD.efficient.set()`
   and `NNS.SD.cluster()` (anything but `"discrete"` or `"continuous"`, in any
   letter case) is now an error, "`type` must be \"discrete\" or

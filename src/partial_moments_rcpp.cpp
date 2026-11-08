@@ -541,3 +541,66 @@ List NNS_bin(NumericVector x, double width, double origin = 0, bool missinglast 
   
   return RVAL;
 }
+
+// Anchored partial-moment sums for the integer-degree VaR solver
+// (.NNS_VaR_integer_solve in R/LPM_UPM_VaR.R). For sorted distinct values
+// u_1 < ... < u_m with counts c_i and total n, row k (k = 1, ..., m - 1) holds
+//   lower[k, j] = sum_{x <= u_k}     (u_k - x)^j     / n
+//   upper[k, j] = sum_{x >= u_{k+1}} (x - u_{k+1})^j / n,   j = 0, ..., degree,
+// built with the exact recurrence of PrefixPartialMomentBackend (every term
+// >= 0, so nothing cancels). The recurrence runs in long double, as R's sum()
+// and cumsum() accumulate, so its rounding over ~n steps stays below double
+// precision on platforms with an extended long double.
+// [[Rcpp::export(rng = false)]]
+List VaR_anchor_sums_RCPP(const NumericVector &u, const NumericVector &counts, const int degree) {
+  const R_xlen_t m = u.size();
+  if (m < 2 || counts.size() != m || degree < 0) Rcpp::stop("invalid anchored-sum input");
+  const int w = degree + 1;
+  
+  std::vector<long double> binom(static_cast<std::size_t>(w) * w, 0.0L);
+  for (int j = 0; j < w; ++j) {
+    binom[j * w] = 1.0L;
+    for (int l = 1; l <= j; ++l)
+      binom[j * w + l] = binom[(j - 1) * w + l - 1] + (l < j ? binom[(j - 1) * w + l] : 0.0L);
+  }
+  
+  long double n = 0.0L;
+  for (R_xlen_t i = 0; i < m; ++i) n += static_cast<long double>(counts[i]);
+  
+  NumericMatrix lower(m - 1, w), upper(m - 1, w);
+  std::vector<long double> cur(w), nxt(w), dpow(w);
+  
+  // next_j = sum_{l <= j} C(j,l) delta^(j-l) prev_l + c * [j == 0]. Exact-zero
+  // factors are skipped so an overflowed sum times a zero power stays Inf, not NaN.
+  auto step = [&](const long double delta, const long double c) {
+    dpow[0] = 1.0L;
+    for (int p = 1; p < w; ++p) dpow[p] = dpow[p - 1] * delta;
+    for (int j = 0; j < w; ++j) {
+      long double acc = (j == 0) ? c : 0.0L;
+      for (int l = 0; l <= j; ++l)
+        if (cur[l] != 0.0L && dpow[j - l] != 0.0L) acc += binom[j * w + l] * dpow[j - l] * cur[l];
+      nxt[j] = acc;
+    }
+    cur.swap(nxt);
+  };
+  
+  // Forward: anchored at u_k over x <= u_k.
+  std::fill(cur.begin(), cur.end(), 0.0L);
+  cur[0] = static_cast<long double>(counts[0]);
+  for (R_xlen_t k = 0; k < m - 1; ++k) {
+    if (k > 0) step(static_cast<long double>(u[k]) - static_cast<long double>(u[k - 1]),
+                    static_cast<long double>(counts[k]));
+    for (int j = 0; j < w; ++j) lower(k, j) = static_cast<double>(cur[j] / n);
+  }
+  
+  // Backward: anchored at u_{k+1} over x >= u_{k+1}.
+  std::fill(cur.begin(), cur.end(), 0.0L);
+  cur[0] = static_cast<long double>(counts[m - 1]);
+  for (R_xlen_t k = m - 2; k >= 0; --k) {
+    if (k < m - 2) step(static_cast<long double>(u[k + 2]) - static_cast<long double>(u[k + 1]),
+                        static_cast<long double>(counts[k + 1]));
+    for (int j = 0; j < w; ++j) upper(k, j) = static_cast<double>(cur[j] / n);
+  }
+  
+  return List::create(_["lower"] = lower, _["upper"] = upper);
+}
