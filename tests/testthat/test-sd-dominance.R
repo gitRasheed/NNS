@@ -100,9 +100,11 @@ test_that("adding a constant to both samples keeps the TSD result", {
   }
 })
 
-test_that("an infinite value doesn't stop the centred comparison", {
+test_that("an infinite value is an error, not 'no dominance'", {
   a <- c(0, 1, Inf); b <- c(0, 1, 2)
-  expect_equal(c(NNS.SSD.uni(a, b), NNS.TSD.uni(a, b), NNS.FSD.uni(a, b, "continuous")), c(0, 0, 0))
+  expect_error(NNS.SSD.uni(a, b), "`x` must be finite.", fixed = TRUE)
+  expect_error(NNS.TSD.uni(a, b), "`x` must be finite.", fixed = TRUE)
+  expect_error(NNS.FSD.uni(a, b, "continuous"), "`x` must be finite.", fixed = TRUE)
 })
 
 test_that("the efficient set does not depend on column order", {

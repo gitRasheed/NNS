@@ -99,6 +99,21 @@
 * The `LPM.VaR()`/`UPM.VaR()` help states that integer degrees 1 to 4 are
   solved to an absolute ratio tolerance (about 1.8e-12), so percentiles within
   about 1e-11 of 0 or 1 are not resolved to relative precision.
+* An invalid `type` in `NNS.FSD()`, `NNS.FSD.uni()`, `NNS.SD.efficient.set()`
+  and `NNS.SD.cluster()` (anything but `"discrete"` or `"continuous"`, in any
+  letter case) is now an error, "`type` must be \"discrete\" or
+  \"continuous\".", at every degree. It used to warn and then fall back to
+  the Omega order in `NNS.FSD()` but to discrete FSD everywhere else.
+* The stochastic dominance functions reject infinite observations with
+  "`x` must be finite." (naming `y` or `data` when that is the argument).
+  `NNS.SSD.uni()`, `NNS.TSD.uni()`, continuous `NNS.FSD.uni()` and the SSD/TSD
+  efficient set and clusters used to report no dominance whenever a value was
+  infinite (a total-loss log return made the asset SSD-efficient although it
+  was FSD-dominated); discrete `NNS.FSD.uni()` accepted it. `NNS.FSD()`,
+  `NNS.SSD()` and `NNS.TSD()` already failed, but with "`variable` must be
+  finite.". `NA`/`NaN` keep the "missing values" error.
+* `NNS.FSD()`, `NNS.SSD()` and `NNS.TSD()` compute their plot curves only when
+  `plot = TRUE`; the verdict never used them.
 
 # NNS 13.3 (development changes)
 

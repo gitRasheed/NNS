@@ -301,22 +301,37 @@ struct DomWorker : public Worker {
   }
 };
 
+// Dominance input: no missing values (NA/NaN keep their historical message),
+// then no infinite ones. The midrange shift and the tolerances, which scale
+// with the largest |value|, are defined for finite data only; an infinite
+// value used to make every SSD/TSD comparison a tie ("no dominance").
+static void sd_check_input(const NumericVector& v, const char* name){
+  const R_xlen_t n = v.size();
+  for (R_xlen_t k=0; k<n; ++k) if (ISNAN(v[k]))
+    stop("You have some missing values, please address.");
+  for (R_xlen_t k=0; k<n; ++k) if (!R_FINITE(v[k]))
+    stop("`%s` must be finite.", name);
+}
+
+// `type` is "discrete" or "continuous" in any letter case; anything else is an
+// error (the R wrappers check first, this guards direct .Call use).
+static bool sd_type_is_discrete(std::string type){
+  std::transform(type.begin(), type.end(), type.begin(), ::tolower);
+  if (!(type=="discrete" || type=="continuous"))
+    stop("`type` must be \"discrete\" or \"continuous\".");
+  return type != "continuous";
+}
+
 // =====================================================================
 // Export: dominance matrix in parallel (prefix-sum version)
 // =====================================================================
 // [[Rcpp::export]]
 IntegerMatrix sd_dom_matrix_prefix_parallel(const NumericMatrix& X, int degree, std::string type="discrete"){
   if (!(degree==1 || degree==2 || degree==3)) stop("degree must be 1, 2, or 3");
-  for (R_xlen_t k=0; k<X.size(); ++k) if (NumericVector::is_na(X[k]))
-    stop("You have some missing values, please address.");
+  sd_check_input(X, "x");
   
-  std::transform(type.begin(), type.end(), type.begin(), ::tolower);
-  bool discrete = true;
-  if (degree==1){
-    if (!(type=="discrete" || type=="continuous"))
-      warning("type needs to be either discrete or continuous");
-    discrete = (type != "continuous");
-  }
+  const bool type_discrete = sd_type_is_discrete(type);
+  const bool discrete = (degree==1) ? type_discrete : true;
   
   int n = X.ncol();
   std::vector<ColPre> cols; cols.reserve(n);
@@ -379,6 +394,7 @@ static std::vector<char> undominated_components(const IntegerMatrix& D){
 // [[Rcpp::export]]
 CharacterVector NNS_SD_efficient_set_parallel_cpp(NumericMatrix X, int degree, std::string type="discrete", bool status=true){
   int n = X.ncol(); if (!n) return CharacterVector();
+  sd_check_input(X, "x");
   
   CharacterVector cn = colnames(X);
   if (cn.size()!=n){ cn = CharacterVector(n); for(int j=0;j<n;++j) cn[j] = "X_"+std::to_string(j+1); }
@@ -448,8 +464,9 @@ CharacterVector NNS_SD_efficient_set_parallel_cpp(NumericMatrix X, int degree, s
 int NNS_FSD_uni_cpp(const NumericVector& x, const NumericVector& y, std::string type = "discrete"){
   if (is_true(any(is_na(x))) || is_true(any(is_na(y))))
     stop("You have some missing values, please address.");
-  std::transform(type.begin(), type.end(), type.begin(), ::tolower);
-  bool discrete = (type != "continuous");
+  sd_check_input(x, "x");
+  sd_check_input(y, "y");
+  const bool discrete = sd_type_is_discrete(type);
   ColPre X = precompute_vec(x), Y = precompute_vec(y);
   return sd_dom_pair_centred(X, Y, 1, discrete);
 }
@@ -458,6 +475,8 @@ int NNS_FSD_uni_cpp(const NumericVector& x, const NumericVector& y, std::string 
 int NNS_SSD_uni_cpp(const NumericVector& x, const NumericVector& y){
   if (is_true(any(is_na(x))) || is_true(any(is_na(y))))
     stop("You have some missing values, please address.");
+  sd_check_input(x, "x");
+  sd_check_input(y, "y");
   ColPre X = precompute_vec(x), Y = precompute_vec(y);
   return sd_dom_pair_centred(X, Y, 2, true);
 }
@@ -466,6 +485,8 @@ int NNS_SSD_uni_cpp(const NumericVector& x, const NumericVector& y){
 int NNS_TSD_uni_cpp(const NumericVector& x, const NumericVector& y){
   if (is_true(any(is_na(x))) || is_true(any(is_na(y))))
     stop("You have some missing values, please address.");
+  sd_check_input(x, "x");
+  sd_check_input(y, "y");
   ColPre X = precompute_vec(x), Y = precompute_vec(y);
   return sd_dom_pair_centred(X, Y, 3, true);
 }

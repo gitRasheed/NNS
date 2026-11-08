@@ -54,3 +54,24 @@
   }
   .nns_as_numeric(v, arg_name, call = call)
 }
+
+# The `type` of the stochastic dominance functions: one of "discrete" or
+# "continuous" in any letter case, returned lower-cased. Anything else is an
+# error rather than a silent fallback, which differed between entry points.
+.nns_sd_type <- function(type, call = sys.call(-1L)) {
+  if (!is.character(type) || length(type) != 1L || is.na(type) ||
+      !tolower(type) %in% c("discrete", "continuous")) {
+    .nns_stop_arg("`type` must be \"discrete\" or \"continuous\".", call)
+  }
+  tolower(type)
+}
+
+# One sample of a stochastic dominance comparison: single-column numeric data
+# without missing or infinite values. The tolerances and the midrange shift of
+# the dominance tests are defined for finite data only.
+.nns_sd_sample <- function(v, name, call = sys.call(-1L)) {
+  v <- .nns_single_column_numeric(v, name, call = call)
+  if (anyNA(v)) .nns_stop_arg("You have some missing values, please address.", call)
+  if (!all(is.finite(v))) .nns_stop_arg(sprintf("`%s` must be finite.", name), call)
+  v
+}

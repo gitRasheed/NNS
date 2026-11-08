@@ -2,8 +2,8 @@
 #'
 #' Bi-directional test of second degree stochastic dominance using lower partial moments.
 #'
-#' @param x a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.
-#' @param y a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.
+#' @param x a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error, as are missing or infinite values.
+#' @param y a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error, as are missing or infinite values.
 #' @param plot logical; \code{TRUE} (default) plots the SSD test.
 #' @return Returns one of the following SSD results: \code{"X SSD Y"}, \code{"Y SSD X"}, or \code{"NO SSD EXISTS"}.
 #' @note The curves are compared on the merged sample points and, for TSD and continuous FSD, also at their closed-form extrema between those points. Differences smaller than \code{64 * .Machine$double.eps * S^d} (\code{S} = largest absolute value in \code{x} and \code{y}, \code{d} = 1 for SSD and the mean condition, 2 for TSD; a ratio analogue for continuous FSD) are treated as ties, so that rounding noise does not decide dominance. Discrete FSD compares exact empirical CDF values.
@@ -20,18 +20,15 @@
 
 NNS.SSD <- function(x, y, plot = TRUE){
 
-  x <- .nns_single_column_numeric(x, "x")
-  y <- .nns_single_column_numeric(y, "y")
-
-  if(anyNA(x) || anyNA(y)) stop("You have some missing values, please address.")
-
-  Combined_sort <- sort(c(x, y), decreasing = FALSE)
-
-  LPM_x_sort <- LPM(1, Combined_sort,x)
-  LPM_y_sort <- LPM(1, Combined_sort,y)
-
+  x <- .nns_sd_sample(x, "x")
+  y <- .nns_sd_sample(y, "y")
 
   if(plot){
+    # The grid curves are only drawn; the verdict below does not use them.
+    Combined_sort <- sort(c(x, y), decreasing = FALSE)
+    LPM_x_sort <- LPM(1, Combined_sort, x)
+    LPM_y_sort <- LPM(1, Combined_sort, y)
+
     plot(Combined_sort, LPM_x_sort, type = "l", lwd = 3,col = "red", main = "SSD", ylab = "Area of Cumulative Distribution",
           ylim = c(min(c(LPM_y_sort, LPM_x_sort)), max(c(LPM_y_sort, LPM_x_sort))))
 
@@ -39,7 +36,7 @@ NNS.SSD <- function(x, y, plot = TRUE){
     legend("topleft", c("X", "Y"), lwd = 10, col = c("red", "steelblue"))
   }
 
-  # Verdict from the pairwise test (NNS.SSD.uni both ways); the grid curves are for the plot.
+  # Verdict from the pairwise test (NNS.SSD.uni both ways).
   x.dom <- .Call(`_NNS_NNS_SSD_uni_cpp`, x, y) == 1L
   y.dom <- .Call(`_NNS_NNS_SSD_uni_cpp`, y, x) == 1L
   ifelse(x.dom,

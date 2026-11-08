@@ -2,9 +2,9 @@
 #'
 #' Determines the set of stochastic dominant variables for various degrees.
 #'
-#' @param x a numeric matrix or data frame.
+#' @param x a numeric matrix or data frame. Missing or infinite values are an error.
 #' @param degree numeric options: (1, 2, 3); Degree of stochastic dominance test from (1, 2 or 3).
-#' @param type \code{"discrete"} (default) uses empirical FSD. At degree 1, \code{"continuous"} retains the degree-one area-ratio (Omega/expectile) ordering, which need not imply FSD or preference for every increasing utility. SSD and TSD are unaffected by \code{type}.
+#' @param type \code{"discrete"} (default) uses empirical FSD. At degree 1, \code{"continuous"} retains the degree-one area-ratio (Omega/expectile) ordering, which need not imply FSD or preference for every increasing utility. SSD and TSD are unaffected by \code{type}. Letter case is ignored; any other value is an error.
 #' @param status logical; \code{TRUE} (default) Prints status update message in console.
 #' @return Returns set of stochastic dominant variable names.
 #' @note The curves are compared on the merged sample points and, for TSD and continuous area order, also at their closed-form extrema between those points. Differences smaller than \code{64 * .Machine$double.eps * S^d} (\code{S} = largest absolute value in \code{x} and \code{y}, \code{d} = 1 for SSD and the mean condition, 2 for TSD; a ratio analogue for continuous area order) are treated as ties, so that rounding noise does not decide dominance. Discrete FSD compares exact empirical CDF values.
@@ -25,6 +25,7 @@
 
 
 NNS.SD.efficient.set <- function(x, degree, type = "discrete", status = TRUE) {
+  type <- .nns_sd_type(type)
   .Call(`_NNS_NNS_SD_efficient_set_parallel_cpp`,
-        as.matrix(x), as.integer(degree), as.character(type), as.logical(status))
+        as.matrix(x), as.integer(degree), type, as.logical(status))
 }

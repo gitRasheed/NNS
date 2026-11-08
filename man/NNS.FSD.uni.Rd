@@ -7,11 +7,11 @@
 NNS.FSD.uni(x, y, type = "discrete")
 }
 \arguments{
-\item{x}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.}
+\item{x}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error, as are missing or infinite values.}
 
-\item{y}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.}
+\item{y}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error, as are missing or infinite values.}
 
-\item{type}{\code{"discrete"} (default) uses empirical FSD. At degree 1, \code{"continuous"} retains the degree-one area-ratio (Omega/expectile) ordering, which need not imply FSD or preference for every increasing utility. SSD and TSD are unaffected by \code{type}.}
+\item{type}{\code{"discrete"} (default) uses empirical FSD. At degree 1, \code{"continuous"} retains the degree-one area-ratio (Omega/expectile) ordering, which need not imply FSD or preference for every increasing utility. SSD and TSD are unaffected by \code{type}. Letter case is ignored; any other value is an error.}
 }
 \value{
 Returns (1) if X dominates Y in the selected order (ordinary FSD or Omega/expectile order), else (0).

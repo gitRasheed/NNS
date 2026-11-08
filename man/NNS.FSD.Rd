@@ -7,11 +7,11 @@
 NNS.FSD(x, y, type = "discrete", plot = TRUE)
 }
 \arguments{
-\item{x}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.}
+\item{x}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error, as are missing or infinite values.}
 
-\item{y}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.}
+\item{y}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error, as are missing or infinite values.}
 
-\item{type}{\code{"discrete"} (default) compares empirical CDFs for ordinary first-order stochastic dominance. The legacy option \code{"continuous"} compares degree-one ratios \eqn{L_1/(L_1+U_1)}, equivalently Omega/expectile order; it does not carry the ordinary FSD guarantee for every increasing utility.}
+\item{type}{\code{"discrete"} (default) compares empirical CDFs for ordinary first-order stochastic dominance. The legacy option \code{"continuous"} compares degree-one ratios \eqn{L_1/(L_1+U_1)}, equivalently Omega/expectile order; it does not carry the ordinary FSD guarantee for every increasing utility. Letter case is ignored; any other value is an error.}
 
 \item{plot}{logical; \code{TRUE} (default) plots the FSD test.}
 }
