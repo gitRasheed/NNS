@@ -146,3 +146,21 @@ test_that("integer-degree VaR at the smallest normal percentile converges in few
   # Bisection through the whole half gap takes about 1000 iterations at d = 2.
   expect_lt(max(e$iter), 100L)
 })
+
+test_that("integer-degree VaR solves two points whose spread overflows", {
+  # z = x - median was c(0, Inf) here and the solve stopped with "missing value
+  # where TRUE/FALSE needed". On c(a, b) the LPM root is a + (b - a) r / (1 + r)
+  # with r = (p / (1 - p))^(1 / d); for b = -a = 1e308 that is 1e308 (2 s - 1),
+  # s = r / (1 + r), and the UPM root is its negative.
+  x <- c(-1e308, 1e308)
+  p <- c(0.1, 0.5, 0.9)
+  for (d in 1:4) {
+    r <- (p / (1 - p))^(1 / d)
+    root <- 1e308 * (2 * r / (1 + r) - 1)
+    v <- LPM.VaR(p, d, x)
+    w <- UPM.VaR(p, d, x)
+    expect_true(all(is.finite(v)) && all(is.finite(w)))
+    expect_lt(max(abs(v - root)), 1e308 * 1e-14)
+    expect_lt(max(abs(w + root)), 1e308 * 1e-14)
+  }
+})

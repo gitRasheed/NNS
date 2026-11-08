@@ -208,6 +208,21 @@ test_that("VaR rejects factor and character x", {
   expect_error(UPM.VaR(0.5, 1, c("1", "2")), "`x` must be numeric.", fixed = TRUE)
 })
 
+test_that("VaR rejects a missing or non-numeric percentile at every degree", {
+  # A missing percentile used to give NA at degree 0, a silent 0 at degree 1 to
+  # 4 when other percentiles were present, and "missing value where
+  # TRUE/FALSE needed" otherwise.
+  x <- c(1, 2, 3, 5)
+  for (d in c(0, 1, 2, 4, 2.5)) {
+    expect_error(LPM.VaR(NA, d, x), "`percentile` must not be NA.", fixed = TRUE)
+    expect_error(UPM.VaR(c(0.1, NaN), d, x), "`percentile` must not be NA.", fixed = TRUE)
+    expect_error(LPM.VaR(c(0.1, NA), d, x), "`percentile` must not be NA.", fixed = TRUE)
+    expect_error(UPM.VaR("0.1", d, x), "`percentile` must be numeric.", fixed = TRUE)
+  }
+  # Out-of-range percentiles are still clamped to [0, 1].
+  expect_identical(LPM.VaR(c(-1, 2), 2, x), c(1, 5))
+})
+
 # --- NNS.CDF input forms (#13) -----------------------------------------------
 
 test_that("NNS.CDF accepts a one-column data.frame like a vector", {

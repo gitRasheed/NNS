@@ -57,6 +57,13 @@
   finite." at every degree. Degrees 1-4 used to fail with "missing value
   where TRUE/FALSE needed", and degree 0 returned a quantile. `NA`/`NaN` are
   still dropped.
+* `LPM.VaR()` and `UPM.VaR()` reject a missing `percentile` with
+  "`percentile` must not be NA." and a character one with "`percentile` must
+  be numeric." at every degree. A missing percentile gave `NA` at degree 0,
+  silently 0 at degrees 1-4 when other percentiles were present, and "missing
+  value where TRUE/FALSE needed" otherwise. At degrees 1-4, data whose spread
+  from the median overflows (such as `c(-1e308, 1e308)`) is centred at the
+  midrange instead of failing with the same message.
 * `NNS.CDF()` accepts a one-column data frame as univariate data and a vector
   of targets for univariate data (evaluated element-wise); a missing target
   gives "`target` must be finite.".

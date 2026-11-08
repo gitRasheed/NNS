@@ -2,7 +2,7 @@
 #'
 #' Generates a value at risk (VaR) quantile based on the Lower Partial Moment ratio.
 #'
-#' @param percentile numeric [0, 1]; The percentile for left-tail VaR.
+#' @param percentile numeric [0, 1]; The percentile for left-tail VaR. Values outside [0, 1] are clamped; \code{NA} is an error.
 #' @param degree integer; \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, percentile, type = 7)}), which on tied data need not be an exact inverse of \code{LPM.ratio(0, ., x)}. Use it for probability statements, such as a VaR exceeded with a given frequency.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the \code{percentile}-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies below it, so it is not a quantile of \code{x} (for exponential data the degree-1 5\% point has about a quarter of the observations below it).  Higher degrees weight large deviations more.
 #' @param x a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error. A data frame (including a tibble or data.table) is flattened to one vector.
 #' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area below it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved for itself, not to a tolerance on the ratio: it is the root to rounding error on the scale of the data, also for percentiles near 0 or 1, where the ratio is flat (only percentiles below the smallest normal double, about 2.2e-308, are not resolved).
@@ -20,7 +20,7 @@
 
 LPM.VaR <- function(percentile, degree, x) {
   x <- .NNS_prepare_VaR_x(x)
-  percentile <- pmin(pmax(as.numeric(percentile), 0), 1)
+  percentile <- .NNS_prepare_VaR_percentile(percentile)
   
   if (degree == 0) {
     return(stats::quantile(x, percentile, na.rm = TRUE))
@@ -39,7 +39,7 @@ LPM.VaR <- function(percentile, degree, x) {
 #'
 #' Generates an upside value at risk (VaR) quantile based on the Upper Partial Moment ratio.
 #'
-#' @param percentile numeric [0, 1]; The percentile for right-tail VaR.
+#' @param percentile numeric [0, 1]; The percentile for right-tail VaR. Values outside [0, 1] are clamped; \code{NA} is an error.
 #' @param degree integer; \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, 1 - percentile, type = 7)}), which on tied data need not be an exact inverse of \code{UPM.ratio(0, ., x)}. Use it for probability statements.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the (1 - \code{percentile})-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies above it, so it is not a quantile of \code{x}.  Higher degrees weight large deviations more.
 #' @param x a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error. A data frame (including a tibble or data.table) is flattened to one vector.
 #' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area above it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved for itself, not to a tolerance on the ratio: it is the root to rounding error on the scale of the data, also for percentiles near 0 or 1, where the ratio is flat (only percentiles below the smallest normal double, about 2.2e-308, are not resolved).
@@ -55,7 +55,7 @@ LPM.VaR <- function(percentile, degree, x) {
 
 UPM.VaR <- function(percentile, degree, x) {
   x <- .NNS_prepare_VaR_x(x)
-  percentile <- pmin(pmax(as.numeric(percentile), 0), 1)
+  percentile <- .NNS_prepare_VaR_percentile(percentile)
   
   if (degree == 0) {
     return(stats::quantile(x, 1 - percentile, na.rm = TRUE))
@@ -93,6 +93,16 @@ UPM.VaR <- function(percentile, degree, x) {
   if (!all(is.finite(x))) .nns_stop_arg("`x` must be finite.", sys.call(-1L))
   
   x
+}
+
+
+
+# Percentiles outside [0, 1] are clamped; a missing one has no threshold and
+# is an error at every degree, as a missing target is for the ratios.
+.NNS_prepare_VaR_percentile <- function(percentile) {
+  percentile <- .nns_as_numeric(percentile, "percentile", call = sys.call(-1L))
+  if (anyNA(percentile)) .nns_stop_arg("`percentile` must not be NA.", sys.call(-1L))
+  pmin(pmax(percentile, 0), 1)
 }
 
 
@@ -182,6 +192,11 @@ UPM.VaR <- function(percentile, degree, x) {
   # on data centred at the median and scaled by an exact power of two (1 for
   # ordinary data). Answers are mapped back from the original order statistics.
   z <- x_sorted - x_sorted[(n + 1L) %/% 2L]
+  if (!is.finite(z[1L]) || !is.finite(z[n])) {
+    # The spread from the median overflows (data near both ends of the double
+    # range): centre at the midrange, formed without overflow, instead.
+    z <- x_sorted - (x_min / 2 + x_max / 2)
+  }
   scale <- .nns_pow2_rescale(max(-z[1L], z[n]))
   z <- z * scale
   
@@ -196,10 +211,7 @@ UPM.VaR <- function(percentile, degree, x) {
   out[at_max] <- x_max
   middle <- !(at_min | at_max)
   
-  if (m < 2L || !any(middle)) {
-    out[middle] <- x_min
-    return(out)
-  }
+  if (!any(middle)) return(out)
   
   gap <- diff(u)
   d1 <- degree + 1L
