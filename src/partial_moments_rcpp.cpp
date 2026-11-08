@@ -15,10 +15,36 @@ using namespace Rcpp;
 //  return u.d;
 //}
 
-// Integer targets (2L, 1:3) are used as given, not replaced by mean(variable).
-static inline bool is_supplied_target(const RObject &target) {
-  return !target.isNULL() &&
-    (is<NumericVector>(target) || is<IntegerVector>(target));
+// A factor is an integer vector underneath, but its level codes are not its
+// values, so it is rejected wherever numeric data or targets are expected.
+static inline void stop_if_factor(const RObject &v, const char *what) {
+  if (Rf_isFactor(v)) Rcpp::stop("`%s` must be numeric, not a factor.", what);
+}
+
+// NULL means "use the mean" (the caller computes it). Double, integer and
+// logical targets are used as given (integer targets such as 2L or 1:3 are not
+// replaced by the mean; a logical NA becomes NA_real_ and is then rejected as
+// non-finite). Any other type is an error instead of silently becoming the mean.
+static inline bool is_supplied_target(const RObject &target, const char *what) {
+  if (target.isNULL()) return false;
+  stop_if_factor(target, what);
+  if (is<NumericVector>(target) || is<IntegerVector>(target) || is<LogicalVector>(target))
+    return true;
+  Rcpp::stop("`%s` must be numeric or NULL.", what);
+  return false; // not reached
+}
+
+// Numeric vector, or a data frame column flattened with unlist/as.vector.
+static inline NumericVector numeric_input(const RObject &v, const char *what) {
+  stop_if_factor(v, what);
+  if (is<NumericVector>(v) || is<IntegerVector>(v)) return as<NumericVector>(v);
+  if (is<DataFrame>(v)) {
+    RObject u = Rcpp::internal::convert_using_rfunction(v, "unlist");
+    stop_if_factor(u, what);
+    return Rcpp::internal::convert_using_rfunction(u, "as.vector");
+  }
+  Rcpp::stop("%s should be numeric vector, or data table", what);
+  return NumericVector(); // not reached
 }
 
 // Same contract as LPM()/UPM(): non-finite values are rejected, not counted in n.
@@ -64,6 +90,7 @@ double CoLPM_nD_RCPP(const NumericMatrix &data,
                      const double &degree,
                      const bool &norm ) {
   nns_check_degree(degree, "degree");
+  if (data.nrow() == 0) Rcpp::stop("`data` must have at least one row");
   return clpm_nD_cpp(data, target, degree, norm);
 }
 
@@ -73,6 +100,7 @@ double CoUPM_nD_RCPP(const NumericMatrix &data,
                      const double &degree,
                      const bool &norm ) {
   nns_check_degree(degree, "degree");
+  if (data.nrow() == 0) Rcpp::stop("`data` must have at least one row");
   return cupm_nD_cpp(data, target, degree, norm);
 }
 
@@ -82,6 +110,7 @@ double DPM_nD_RCPP(const NumericMatrix &data,
                      const double &degree,
                      const bool &norm ) {
   nns_check_degree(degree, "degree");
+  if (data.nrow() == 0) Rcpp::stop("`data` must have at least one row");
   return dpm_nD_cpp(data, target, degree, norm);
 } 
 
@@ -95,19 +124,19 @@ NumericVector LPM_RCPP(const double &degree,
   nns_check_degree(degree, "degree");
   NumericVector variable_vec = as<NumericVector>(clone(variable));
   NumericVector target_vec;
-  if (is_supplied_target(target)) {
+  if (is_supplied_target(target, "target")) {
     target_vec = as<NumericVector>(target);
   } else {
     target_vec = NumericVector::create(mean(variable_vec));
   }
   
   if (excess_ret) {
-    int n = variable_vec.size();
-    int tlen = target_vec.size();
+    const R_xlen_t n = variable_vec.size();
+    const R_xlen_t tlen = target_vec.size();
     if (!(tlen == 1 || tlen == n))
       Rcpp::stop("When excess_ret=TRUE, target must be length 1 or same length as variable");
     NumericVector out(n);
-    for (int i = 0; i < n; ++i) {
+    for (R_xlen_t i = 0; i < n; ++i) {
       double t    = (tlen == 1 ? target_vec[0] : target_vec[i]);
       double diff = t - variable_vec[i];
       // Degree 0 counts ties (x <= target), as the non-excess path does.
@@ -132,19 +161,19 @@ NumericVector UPM_RCPP(const double &degree,
   nns_check_degree(degree, "degree");
   NumericVector variable_vec = as<NumericVector>(clone(variable));
   NumericVector target_vec;
-  if (is_supplied_target(target)) {
+  if (is_supplied_target(target, "target")) {
     target_vec = as<NumericVector>(target);
   } else {
     target_vec = NumericVector::create(mean(variable_vec));
   }
   
   if (excess_ret) {
-    int n = variable_vec.size();
-    int tlen = target_vec.size();
+    const R_xlen_t n = variable_vec.size();
+    const R_xlen_t tlen = target_vec.size();
     if (!(tlen == 1 || tlen == n))
       Rcpp::stop("When excess_ret=TRUE, target must be length 1 or same length as variable");
     NumericVector out(n);
-    for (int i = 0; i < n; ++i) {
+    for (R_xlen_t i = 0; i < n; ++i) {
       double t    = (tlen == 1 ? target_vec[0] : target_vec[i]);
       double diff = variable_vec[i] - t;
       if (diff > 0) {
@@ -166,8 +195,8 @@ NumericVector UPM_RCPP(const double &degree,
 //'   This function generates a standardized univariate lower partial moment
 //'   of any non‑negative degree for a given target.
 //' @param degree numeric; degree = 0 gives frequency (CDF), degree = 1 gives area.
-//' @param target numeric vector; threshold(s). There is no default: pass \code{NULL} to use \code{mean(variable)}.
-//' @param variable numeric vector or data‑frame column to evaluate.
+//' @param target numeric vector; threshold(s). There is no default: pass \code{NULL} to use \code{mean(variable)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error.
+//' @param variable numeric vector or data‑frame column to evaluate. A factor is an error.
 //' @return Numeric vector of standardized lower partial moments. For
 //'   \code{degree > 0}, a target at which every observation equals the target
 //'   (0/0) returns the \code{degree = 0} ratio.
@@ -189,15 +218,8 @@ NumericVector UPM_RCPP(const double &degree,
  NumericVector LPM_ratio_RCPP(const double &degree, const RObject &target, const RObject &variable) {
    nns_check_degree(degree, "degree");
    NumericVector target_vec, variable_vec;
-   if (is<NumericVector>(variable))
-     variable_vec=as<NumericVector>(variable);
-   else if (is<IntegerVector>(variable))
-     variable_vec=as<NumericVector>(variable);
-   else if (is<DataFrame>(variable))
-     variable_vec=Rcpp::internal::convert_using_rfunction(Rcpp::internal::convert_using_rfunction(variable, "unlist"), "as.vector");
-   else
-     Rcpp::stop("variable should be numeric vector, or data table");
-   if (is_supplied_target(target)){
+   variable_vec = numeric_input(variable, "variable");
+   if (is_supplied_target(target, "target")){
      target_vec = as<NumericVector>(target);
    }else{
      target_vec = NumericVector(1);
@@ -216,8 +238,8 @@ NumericVector UPM_RCPP(const double &degree,
 //'   This function generates a standardized univariate upper partial moment
 //'   of any non‑negative degree for a given target.
 //' @param degree numeric; degree = 0 gives frequency, degree = 1 gives area.
-//' @param target numeric vector; threshold(s). There is no default: pass \code{NULL} to use \code{mean(variable)}.
-//' @param variable numeric vector or data‑frame column to evaluate.
+//' @param target numeric vector; threshold(s). There is no default: pass \code{NULL} to use \code{mean(variable)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error.
+//' @param variable numeric vector or data‑frame column to evaluate. A factor is an error.
 //' @return Numeric vector of standardized upper partial moments. For
 //'   \code{degree > 0}, a target at which every observation equals the target
 //'   (0/0) returns the \code{degree = 0} ratio.
@@ -236,15 +258,8 @@ NumericVector UPM_RCPP(const double &degree,
  NumericVector UPM_ratio_RCPP(const double &degree, const RObject &target, const RObject &variable) {
    nns_check_degree(degree, "degree");
    NumericVector target_vec, variable_vec;
-   if (is<NumericVector>(variable))
-     variable_vec=as<NumericVector>(variable);
-   else if (is<IntegerVector>(variable))
-     variable_vec=as<NumericVector>(variable);
-   else if (is<DataFrame>(variable))
-     variable_vec=Rcpp::internal::convert_using_rfunction(Rcpp::internal::convert_using_rfunction(variable, "unlist"), "as.vector");
-   else
-     Rcpp::stop("variable should be numeric vector, or data table");
-   if (is_supplied_target(target)){
+   variable_vec = numeric_input(variable, "variable");
+   if (is_supplied_target(target, "target")){
      target_vec = as<NumericVector>(target);
    }else{
      target_vec = NumericVector(1);
@@ -268,23 +283,17 @@ NumericVector CoLPM_RCPP(
    nns_check_degree(degree_lpm, "degree_lpm");
    nns_check_degree(degree_y, "degree_y");
    NumericVector target_x_vec, target_y_vec, x_vec, y_vec;
-   if (is<NumericVector>(x))    x_vec=as<NumericVector>(x);
-   else if (is<IntegerVector>(x))	x_vec=as<NumericVector>(x);
-   else if (is<DataFrame>(x))   x_vec=Rcpp::internal::convert_using_rfunction(Rcpp::internal::convert_using_rfunction(x, "unlist"), "as.vector");
-   else                         Rcpp::stop("x should be numeric vector, or data table");
+   x_vec = numeric_input(x, "x");
    
-   if (is<NumericVector>(y))    y_vec=as<NumericVector>(y);
-   else if (is<IntegerVector>(y))	y_vec=as<NumericVector>(y);
-   else if (is<DataFrame>(y))   y_vec=Rcpp::internal::convert_using_rfunction(Rcpp::internal::convert_using_rfunction(y, "unlist"), "as.vector");
-   else                         Rcpp::stop("y should be numeric vector, or data table");
+   y_vec = numeric_input(y, "y");
    
-   if (is_supplied_target(target_x)){
+   if (is_supplied_target(target_x, "target_x")){
      target_x_vec = as<NumericVector>(target_x);
    }else{
      target_x_vec = NumericVector(1);
      target_x_vec[0] = mean(x_vec);
    }
-   if (is_supplied_target(target_y)){
+   if (is_supplied_target(target_y, "target_y")){
      target_y_vec = as<NumericVector>(target_y);
    }else{
      target_y_vec = NumericVector(1);
@@ -310,23 +319,17 @@ NumericVector CoUPM_RCPP(
    nns_check_degree(degree_upm, "degree_upm");
    nns_check_degree(degree_y, "degree_y");
    NumericVector target_x_vec, target_y_vec, x_vec, y_vec;
-   if (is<NumericVector>(x))    x_vec=as<NumericVector>(x);
-   else if (is<IntegerVector>(x))	x_vec=as<NumericVector>(x);
-   else if (is<DataFrame>(x))   x_vec=Rcpp::internal::convert_using_rfunction(Rcpp::internal::convert_using_rfunction(x, "unlist"), "as.vector");
-   else                         Rcpp::stop("x should be numeric vector, or data table");
+   x_vec = numeric_input(x, "x");
    
-   if (is<NumericVector>(y))    y_vec=as<NumericVector>(y);
-   else if (is<IntegerVector>(y))	y_vec=as<NumericVector>(y);
-   else if (is<DataFrame>(y))   y_vec=Rcpp::internal::convert_using_rfunction(Rcpp::internal::convert_using_rfunction(y, "unlist"), "as.vector");
-   else                         Rcpp::stop("y should be numeric vector, or data table");
+   y_vec = numeric_input(y, "y");
    
-   if (is_supplied_target(target_x)){
+   if (is_supplied_target(target_x, "target_x")){
      target_x_vec = as<NumericVector>(target_x);
    }else{
      target_x_vec = NumericVector(1);
      target_x_vec[0] = mean(x_vec);
    }
-   if (is_supplied_target(target_y)){
+   if (is_supplied_target(target_y, "target_y")){
      target_y_vec = as<NumericVector>(target_y);
    }else{
      target_y_vec = NumericVector(1);
@@ -350,7 +353,7 @@ NumericVector CoUPM_RCPP(
 //' @param degree_upm numeric; UPM degree = 0 gives frequency, = 1 gives area.
 //' @param x numeric vector of observations.
 //' @param y numeric vector of the same length as x.
-//' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}.
+//' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error, as are factor \code{x} or \code{y}.
 //' @param target_y numeric vector; thresholds for y. There is no default: pass \code{NULL} to use \code{mean(y)}. \code{target_x} and \code{target_y} must be non-empty and the same length, or one of them length 1.
 //' @return Numeric vector of divergent LPM values.
 //' @author Fred Viole, OVVO Financial Systems
@@ -370,23 +373,17 @@ NumericVector CoUPM_RCPP(
    nns_check_degree(degree_lpm, "degree_lpm");
    nns_check_degree(degree_upm, "degree_upm");
    NumericVector target_x_vec, target_y_vec, x_vec, y_vec;
-   if (is<NumericVector>(x))    x_vec=as<NumericVector>(x);
-   else if (is<IntegerVector>(x))	x_vec=as<NumericVector>(x);
-   else if (is<DataFrame>(x))   x_vec=Rcpp::internal::convert_using_rfunction(Rcpp::internal::convert_using_rfunction(x, "unlist"), "as.vector");
-   else                         Rcpp::stop("x should be numeric vector, or data table");
+   x_vec = numeric_input(x, "x");
    
-   if (is<NumericVector>(y))    y_vec=as<NumericVector>(y);
-   else if (is<IntegerVector>(y))	y_vec=as<NumericVector>(y);
-   else if (is<DataFrame>(y))   y_vec=Rcpp::internal::convert_using_rfunction(Rcpp::internal::convert_using_rfunction(y, "unlist"), "as.vector");
-   else                         Rcpp::stop("y should be numeric vector, or data table");
+   y_vec = numeric_input(y, "y");
    
-   if (is_supplied_target(target_x)){
+   if (is_supplied_target(target_x, "target_x")){
      target_x_vec = as<NumericVector>(target_x);
    }else{
      target_x_vec = NumericVector(1);
      target_x_vec[0] = mean(x_vec);
    }
-   if (is_supplied_target(target_y)){
+   if (is_supplied_target(target_y, "target_y")){
      target_y_vec = as<NumericVector>(target_y);
    }else{
      target_y_vec = NumericVector(1);
@@ -410,7 +407,7 @@ NumericVector CoUPM_RCPP(
 //' @param degree_upm numeric; UPM degree = 0 gives frequency, = 1 gives area.
 //' @param x numeric vector of observations.
 //' @param y numeric vector of the same length as x.
-//' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}.
+//' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error, as are factor \code{x} or \code{y}.
 //' @param target_y numeric vector; thresholds for y. There is no default: pass \code{NULL} to use \code{mean(y)}. \code{target_x} and \code{target_y} must be non-empty and the same length, or one of them length 1.
 //' @return Numeric vector of divergent UPM values.
 //' @author Fred Viole, OVVO Financial Systems
@@ -430,23 +427,17 @@ NumericVector CoUPM_RCPP(
    nns_check_degree(degree_lpm, "degree_lpm");
    nns_check_degree(degree_upm, "degree_upm");
    NumericVector target_x_vec, target_y_vec, x_vec, y_vec;
-   if (is<NumericVector>(x))    x_vec=as<NumericVector>(x);
-   else if (is<IntegerVector>(x))	x_vec=as<NumericVector>(x);
-   else if (is<DataFrame>(x))   x_vec=Rcpp::internal::convert_using_rfunction(Rcpp::internal::convert_using_rfunction(x, "unlist"), "as.vector");
-   else                         Rcpp::stop("x should be numeric vector, or data table");
+   x_vec = numeric_input(x, "x");
    
-   if (is<NumericVector>(y))    y_vec=as<NumericVector>(y);
-   else if (is<IntegerVector>(y))	y_vec=as<NumericVector>(y);
-   else if (is<DataFrame>(y))   y_vec=Rcpp::internal::convert_using_rfunction(Rcpp::internal::convert_using_rfunction(y, "unlist"), "as.vector");
-   else                         Rcpp::stop("y should be numeric vector, or data table");
+   y_vec = numeric_input(y, "y");
    
-   if (is_supplied_target(target_x)){
+   if (is_supplied_target(target_x, "target_x")){
      target_x_vec = as<NumericVector>(target_x);
    }else{
      target_x_vec = NumericVector(1);
      target_x_vec[0] = mean(x_vec);
    }
-   if (is_supplied_target(target_y)){
+   if (is_supplied_target(target_y, "target_y")){
      target_y_vec = as<NumericVector>(target_y);
    }else{
      target_y_vec = NumericVector(1);
@@ -486,9 +477,11 @@ NumericVector CoUPM_RCPP(
    else
      variable_matrix = Rcpp::internal::convert_using_rfunction(variable, "as.matrix");
    
+   if (variable_matrix.nrow() == 0)
+     Rcpp::stop("`variable` must have at least one row");
    size_t variable_cols=variable_matrix.cols();
    NumericVector tgt;
-   if((is_supplied_target(target) || (is<DataFrame>(target) && !target.isNULL()))){
+   if (is_supplied_target(target, "target")) {
      tgt=as<NumericVector>(target);
    }else{
      tgt=colMeans(variable_matrix);

@@ -934,7 +934,7 @@ List PMMatrix_CPv(
   }
   
   size_t rows = variable.rows();
-  if (rows == 0) return List::create();
+  if (rows == 0) Rcpp::stop("`variable` must have at least one row");
   
   // 1. Allocate continuous intermediate deviation matrices
   NumericMatrix D_lower(rows, variable_cols);
@@ -1032,4 +1032,4 @@ List PMMatrix_CPv(
       Named("cov.matrix") = covMat
     )
   );
-}
+}

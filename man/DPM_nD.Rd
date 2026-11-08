@@ -7,7 +7,7 @@
 DPM_nD(data, target, degree = 0, norm = TRUE)
 }
 \arguments{
-\item{data}{A numeric matrix with observations in rows and variables in columns.}
+\item{data}{A numeric matrix with observations in rows and variables in columns, with at least one row.}
 
 \item{target}{A numeric vector, length equal to ncol(data).}
 

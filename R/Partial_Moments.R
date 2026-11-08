@@ -6,11 +6,12 @@
 #' @param target numeric; Set to \code{target = mean(variable)} for classical equivalences, but does not have to be.
 #'   When \code{excess_ret = FALSE}, this can be a scalar or a vectorized target for the standard partial moment calculation.
 #'   When \code{excess_ret = TRUE}, it is interpreted element-wise as the benchmark/threshold relative to \code{variable}.
-#' @param variable a numeric vector. \link{data.frame} or \link{list} type objects are not permissible.
+#'   \code{NULL} uses \code{mean(variable)}; a zero-length target returns \code{numeric(0)}. A factor, character or list target is an error.
+#' @param variable a numeric vector. \link{data.frame} or \link{list} type objects are not permissible. A factor is an error: its level codes are not its values.
 #' @param excess_ret logical; \code{FALSE} (default). If \code{TRUE}, switches from the standard vectorized-target
 #'   partial moment to an element-wise excess-deviation calculation. For \code{LPM}, this computes
 #'   \code{pmax(target - variable, 0)} raised to \code{degree} and averaged. In this mode, \code{target}
-#'   must have length 1 or the same length as \code{variable}.
+#'   must have length 1 or the same length as \code{variable}. Must be a single \code{TRUE} or \code{FALSE} (\code{NA} is an error).
 #' @return LPM of variable
 #' @author Fred Viole, OVVO Financial Systems
 #' @references Viole, F. and Nawrocki, D. (2013) "Nonlinear Nonparametric Statistics: Using Partial Moments" (ISBN: 1490523995, 2nd edition: \url{https://ovvo-financial.github.io/NNS/book/})
@@ -21,8 +22,10 @@
 #' @export
 
 LPM <- function(degree, target, variable, excess_ret = FALSE) {
-  target   <- as.numeric(target)
-  variable <- as.numeric(variable)
+  excess_ret <- .nns_as_flag(excess_ret, "excess_ret")
+  variable <- .nns_as_numeric(variable, "variable")
+  # NULL uses mean(variable), as in LPM.ratio, Co.LPM and PM.matrix.
+  target   <- if (is.null(target)) mean(variable) else .nns_as_numeric(target, "target", null_ok = TRUE)
   
   if (!all(is.finite(variable))) stop("`variable` must be finite.")
   if (!all(is.finite(target))) stop("`target` must be finite.")
@@ -44,11 +47,12 @@ LPM <- function(degree, target, variable, excess_ret = FALSE) {
 #' @param target numeric; Set to \code{target = mean(variable)} for classical equivalences, but does not have to be.
 #'   When \code{excess_ret = FALSE}, this can be a scalar or a vectorized target for the standard partial moment calculation.
 #'   When \code{excess_ret = TRUE}, it is interpreted element-wise as the benchmark/threshold relative to \code{variable}.
-#' @param variable a numeric vector. \link{data.frame} or \link{list} type objects are not permissible.
+#'   \code{NULL} uses \code{mean(variable)}; a zero-length target returns \code{numeric(0)}. A factor, character or list target is an error.
+#' @param variable a numeric vector. \link{data.frame} or \link{list} type objects are not permissible. A factor is an error: its level codes are not its values.
 #' @param excess_ret logical; \code{FALSE} (default). If \code{TRUE}, switches from the standard vectorized-target
 #'   partial moment to an element-wise excess-deviation calculation. For \code{UPM}, this computes
 #'   \code{pmax(variable - target, 0)} raised to \code{degree} and averaged. In this mode, \code{target}
-#'   must have length 1 or the same length as \code{variable}.
+#'   must have length 1 or the same length as \code{variable}. Must be a single \code{TRUE} or \code{FALSE} (\code{NA} is an error).
 #' @return UPM of variable
 #' @author Fred Viole, OVVO Financial Systems
 #' @references Viole, F. and Nawrocki, D. (2013) "Nonlinear Nonparametric Statistics: Using Partial Moments" (ISBN: 1490523995, 2nd edition: \url{https://ovvo-financial.github.io/NNS/book/})
@@ -59,8 +63,10 @@ LPM <- function(degree, target, variable, excess_ret = FALSE) {
 #' @export
 
 UPM <- function(degree, target, variable, excess_ret = FALSE) {
-  target   <- as.numeric(target)
-  variable <- as.numeric(variable)
+  excess_ret <- .nns_as_flag(excess_ret, "excess_ret")
+  variable <- .nns_as_numeric(variable, "variable")
+  # NULL uses mean(variable), as in LPM.ratio, Co.LPM and PM.matrix.
+  target   <- if (is.null(target)) mean(variable) else .nns_as_numeric(target, "target", null_ok = TRUE)
   
   if (!all(is.finite(variable))) stop("`variable` must be finite.")
   if (!all(is.finite(target))) stop("`target` must be finite.")
@@ -78,7 +84,7 @@ UPM <- function(degree, target, variable, excess_ret = FALSE) {
 #'
 #' This function generates an n‑dimensional co‑lower partial moment (n >= 2) for any degree or target.
 #'
-#' @param data   A numeric matrix with observations in rows and variables in columns.
+#' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row.
 #' @param target A numeric vector, length equal to ncol(data).
 #' @param degree numeric; degree for lower deviations (0 = frequency, 1 = area).
 #' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}.
@@ -91,7 +97,7 @@ UPM <- function(degree, target, variable, excess_ret = FALSE) {
 #' @export
 Co.LPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
   data   <- as.matrix(data)
-  target <- as.numeric(target)
+  target <- .nns_as_numeric(target, "target")
   degree <- as.numeric(degree)
   norm   <- as.logical(norm)
   
@@ -130,7 +136,7 @@ Co.LPM_nD.batch <- function(data, targets, degree = 0.0, norm = TRUE) {
 #'
 #' This function generates an n‑dimensional co‑upper partial moment (n >= 2) for any degree or target.
 #'
-#' @param data   A numeric matrix with observations in rows and variables in columns.
+#' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row.
 #' @param target A numeric vector, length equal to ncol(data).
 #' @param degree numeric; degree for upper deviations (0 = frequency, 1 = area).
 #' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}.
@@ -143,7 +149,7 @@ Co.LPM_nD.batch <- function(data, targets, degree = 0.0, norm = TRUE) {
 #' @export
 Co.UPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
   data   <- as.matrix(data)
-  target <- as.numeric(target)
+  target <- .nns_as_numeric(target, "target")
   degree <- as.numeric(degree)
   norm   <- as.logical(norm)
   
@@ -158,7 +164,7 @@ Co.UPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
 #'
 #' This function generates the aggregate n‑dimensional divergent partial moment (n >= 2) for any degree or target.
 #'
-#' @param data   A numeric matrix with observations in rows and variables in columns.
+#' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row.
 #' @param target A numeric vector, length equal to ncol(data).
 #' @param degree numeric; degree for upper deviations (0 = frequency, 1 = area).
 #' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}.
@@ -171,7 +177,7 @@ Co.UPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
 #' @export
 DPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
   data   <- as.matrix(data)
-  target <- as.numeric(target)
+  target <- .nns_as_numeric(target, "target")
   degree <- as.numeric(degree)
   norm   <- as.logical(norm)
   
@@ -187,9 +193,9 @@ DPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
 #'
 #' This function generates an empirical CDF using partial moment ratios \link{LPM.ratio}, and resulting survival, hazard and cumulative hazard functions.
 #'
-#' @param variable a numeric vector or data.frame of >= 2 variables for joint CDF.
+#' @param variable a numeric vector, a one-column data.frame or matrix (univariate), or a data.frame or matrix of >= 2 variables for joint CDF. A factor is an error.
 #' @param degree numeric; \code{(degree = 0)} (default) is frequency, the empirical distribution of \code{variable}; \code{(degree = 1)} is area, the share of deviation area below each point, which is not \eqn{P(X \le t)}.
-#' @param target numeric; \code{NULL} (default) Must lie within support of each variable (one value per column for multivariate \code{variable}).
+#' @param target numeric; \code{NULL} (default) Must be finite and lie within support of each variable. For univariate \code{variable} a vector of targets is evaluated element-wise; for multivariate \code{variable} give one value per column.
 #' @param type options("CDF", "survival", "hazard", "cumulative hazard"); \code{"CDF"} (default) Selects type of function to return.  For multivariate \code{variable} the joint survival is \eqn{P(X_1 > t_1, \ldots, X_d > t_d)} at \code{degree = 0}, by inclusion-exclusion over the column subsets for \eqn{d \le 3} and as the share of observations above \eqn{t} in every column for larger \eqn{d}, and the joint upper partial moment \link{Co.UPM_nD} at \code{degree > 0}, normalised like the CDF.  The multivariate cumulative hazard is the transform \eqn{-\log S(t)} and requires \code{degree = 0}; it is not automatically an integral of a scalar multivariate hazard. Multivariate \code{type = "hazard"} is unsupported and raises an error: a joint density-over-survival or a coordinate-hazard definition requires a separate estimator, and dividing the joint CDF by survival does not estimate either.  At \code{degree > 0} with two or more columns, each target's co-partial moment is normalised by its own total, so the "CDF" and "survival" values are generalised co-partial-moment ratios, not a joint distribution function: they can assign a negative probability to a rectangle.  At \code{degree = 0}, and in one dimension at any degree, they are proper distribution functions; at positive degree the univariate induced law describes deviation-area balance rather than the frequency law of the original variable.
 #' @param plot logical; plots CDF.
 #' @return Returns:
@@ -232,10 +238,12 @@ NNS.CDF <- function(variable,
                     type   = "CDF",
                     plot   = TRUE) {
   
-  # — Flatten tibbles/data.tables
-  if (any(class(variable) %in% c("tbl","data.table")) && ncol(variable)==1) {
-    variable <- as.vector(unlist(variable))
+  # — Flatten one-column data frames (including tibbles/data.tables)
+  if (is.data.frame(variable) && ncol(variable)==1) {
+    variable <- unlist(variable, use.names = FALSE)
+    if (!is.factor(variable)) variable <- as.vector(variable)
   }
+  if (is.factor(variable)) stop("`variable` must be numeric, not a factor.")
   if (any(class(variable) %in% c("tbl","data.table"))) {
     variable <- as.data.frame(variable)
   }
@@ -249,8 +257,10 @@ NNS.CDF <- function(variable,
 
   # — Bounds check
   if (!is.null(target)) {
+    target <- .nns_as_numeric(target, "target", null_ok = TRUE)
+    if (!all(is.finite(target))) stop("`target` must be finite.")
     if (is.null(dim(variable))||ncol(variable)==1) {
-      if (target<min(variable)||target>max(variable)) stop("target out of bounds")
+      if (any(target<min(variable) | target>max(variable))) stop("target out of bounds")
     } else {
       if (length(target) != ncol(variable)) stop("target must have one value per column of variable")
       lo <- apply(variable, 2, min); hi <- apply(variable, 2, max)
@@ -467,7 +477,7 @@ NNS.CDF <- function(variable,
 #'
 #' This function returns the first 4 moments of the distribution.
 #'
-#' @param x a numeric vector.
+#' @param x a numeric vector. A factor is an error.
 #' @param population logical; \code{TRUE} (default) returns the population (unadjusted) statistics. \code{FALSE} returns the sample-adjusted statistics (variance with \code{n - 1}, sample skewness and sample excess kurtosis).
 #' @return Returns:
 #' \itemize{
@@ -488,7 +498,7 @@ NNS.CDF <- function(variable,
 #' @export
 
 NNS.moments <- function(x, population = TRUE) {
-  x <- as.numeric(x)
+  x <- .nns_as_numeric(x, "x")
   
   if (!all(is.finite(x))) stop("`x` must be finite.")
   
@@ -533,8 +543,8 @@ NNS.moments <- function(x, population = TRUE) {
 #' @description Builds a list containing CUPM, DUPM, DLPM, CLPM and the overall covariance matrix.
 #' @param LPM_degree numeric; lower partial moment degree (0 = freq, 1 = area).
 #' @param UPM_degree numeric; upper partial moment degree (0 = freq, 1 = area).
-#' @param target numeric vector; thresholds for each column. There is no default: pass \code{NULL} to use \code{colMeans(variable)}.
-#' @param variable numeric matrix or data.frame.
+#' @param target numeric vector; thresholds for each column. There is no default: pass \code{NULL} to use \code{colMeans(variable)}. The strings \code{"mean"} and \code{"means"} are accepted as legacy aliases for \code{NULL}; any other non-numeric target is an error.
+#' @param variable numeric matrix or data.frame with at least one row.
 #' @param pop_adj logical; \code{TRUE} applies the sample adjustment \code{n / (n - 1)} to the co-/divergent moments (with both degrees 1, \code{target = NULL} and \code{norm = FALSE}, the covariance matrix then equals \code{cov()}). It is ignored when either degree is 0.
 #' @param norm logical; default FALSE. If TRUE, each quadrant matrix is cell-wise normalized so their sum is 1 at each (i,j).  
 #' @return A list: $cupm, $dupm, $dlpm, $clpm, $cov.matrix.
@@ -563,6 +573,11 @@ NNS.moments <- function(x, population = TRUE) {
 #' PM.matrix(1, 1, target = apply(A, 2, "median"), variable = A, pop_adj = TRUE)  
 #' @export
 PM.matrix <- function(LPM_degree, UPM_degree, target, variable, pop_adj, norm = FALSE) {
+  # Legacy spelling used in the vignette and book: exactly "mean"/"means" is
+  # the same as NULL. Any other non-numeric target is an error.
+  if (is.character(target) && length(target) == 1L && target %in% c("mean", "means")) {
+    target <- NULL
+  }
   .Call(`_NNS_PMMatrix_RCPP`, LPM_degree, UPM_degree, target, variable, pop_adj, norm)
 }
 
@@ -574,7 +589,7 @@ PM.matrix <- function(LPM_degree, UPM_degree, target, variable, pop_adj, norm = 
 #' @param degree_lpm numeric; degree for x ("degree_x"). degree = 0 gives frequency, degree = 1 gives area.
 #' @param x numeric vector of observations.
 #' @param y numeric vector of the same length as x.
-#' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}.
+#' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error, as are factor \code{x} or \code{y}.
 #' @param target_y numeric vector; thresholds for y. There is no default: pass \code{NULL} to use \code{mean(y)}. \code{target_x} and \code{target_y} must be non-empty and the same length, or one of them length 1.
 #' @param degree_y numeric; optional degree for y. If omitted, `degree_lpm` is
 #'   used for both x and y.
@@ -603,7 +618,7 @@ Co.LPM <- function(degree_lpm, x, y, target_x, target_y, degree_y = NULL) {
 #' @param degree_upm numeric; degree for x ("degree_x"). degree = 0 gives frequency, degree = 1 gives area.
 #' @param x numeric vector of observations.
 #' @param y numeric vector of the same length as x.
-#' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}.
+#' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error, as are factor \code{x} or \code{y}.
 #' @param target_y numeric vector; thresholds for y. There is no default: pass \code{NULL} to use \code{mean(y)}. \code{target_x} and \code{target_y} must be non-empty and the same length, or one of them length 1.
 #' @param degree_y numeric; optional degree for y. If omitted, `degree_upm` is
 #'   used for both x and y.

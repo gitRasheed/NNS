@@ -11,14 +11,15 @@ UPM(degree, target, variable, excess_ret = FALSE)
 
 \item{target}{numeric; Set to \code{target = mean(variable)} for classical equivalences, but does not have to be.
 When \code{excess_ret = FALSE}, this can be a scalar or a vectorized target for the standard partial moment calculation.
-When \code{excess_ret = TRUE}, it is interpreted element-wise as the benchmark/threshold relative to \code{variable}.}
+When \code{excess_ret = TRUE}, it is interpreted element-wise as the benchmark/threshold relative to \code{variable}.
+\code{NULL} uses \code{mean(variable)}; a zero-length target returns \code{numeric(0)}. A factor, character or list target is an error.}
 
-\item{variable}{a numeric vector. \link{data.frame} or \link{list} type objects are not permissible.}
+\item{variable}{a numeric vector. \link{data.frame} or \link{list} type objects are not permissible. A factor is an error: its level codes are not its values.}
 
 \item{excess_ret}{logical; \code{FALSE} (default). If \code{TRUE}, switches from the standard vectorized-target
 partial moment to an element-wise excess-deviation calculation. For \code{UPM}, this computes
 \code{pmax(variable - target, 0)} raised to \code{degree} and averaged. In this mode, \code{target}
-must have length 1 or the same length as \code{variable}.}
+must have length 1 or the same length as \code{variable}. Must be a single \code{TRUE} or \code{FALSE} (\code{NA} is an error).}
 }
 \value{
 UPM of variable

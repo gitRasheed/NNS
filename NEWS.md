@@ -19,6 +19,44 @@
   and univariate `NNS.CDF()` with more than 32 observations, return `Inf` (or
   the corresponding 0/1 ratio) instead of `NaN` when an intermediate power sum
   overflows, matching the 32-or-fewer-target path; `Inf/Inf` remains `NaN`.
+* `LPM()` and `UPM()` require `excess_ret` to be a single `TRUE` or `FALSE`
+  (numeric 0/1 still work); `NA`, vectors and strings now give "`excess_ret`
+  must be TRUE or FALSE." for every target length. `NA` used to run the
+  excess-return path for a scalar target.
+* `LPM()` and `UPM()` with `target = NULL` now use `mean(variable)`, like
+  `LPM.ratio()`, `Co.LPM()` and `PM.matrix()`, instead of returning
+  `numeric(0)`. A zero-length target still returns `numeric(0)`.
+* Factors are rejected with "`x` must be numeric, not a factor." (named after
+  the argument) instead of being computed on their level codes, as data or
+  target, in `LPM()`, `UPM()`, `LPM.ratio()`, `UPM.ratio()`, `Co.LPM()`,
+  `Co.UPM()`, `D.LPM()`, `D.UPM()`, the `_nD` functions, `NNS.CDF()`,
+  `LPM.VaR()`, `UPM.VaR()`, `NNS.moments()` and the stochastic dominance
+  functions (`NNS.FSD()`, `NNS.SSD()`, `NNS.TSD()` and their `.uni`
+  versions), also when the factor is the column of a one-column data frame.
+* A target that is not `NULL`, numeric or logical (a string, list, data frame
+  or factor) is now an error in `LPM.ratio()`, `UPM.ratio()`, `Co.LPM()`,
+  `Co.UPM()`, `D.LPM()`, `D.UPM()` and `PM.matrix()` instead of silently
+  becoming `mean(variable)`. A logical target is coerced as `LPM()` does
+  (`TRUE` is 1, `NA` gives "`target` must be finite."). `PM.matrix()` keeps
+  accepting exactly `target = "mean"` and `"means"` as aliases for `NULL`.
+* `LPM()`, `UPM()`, `LPM.VaR()`, `UPM.VaR()`, `NNS.moments()`, `NNS.CDF()`
+  targets and the stochastic dominance functions now reject character and
+  list data ("`x` must be numeric.") instead of parsing or coercing it.
+* `LPM.VaR()` and `UPM.VaR()` reject infinite values in `x` with "`x` must be
+  finite." at every degree. Degrees 1-4 used to fail with "missing value
+  where TRUE/FALSE needed", and degree 0 returned a quantile. `NA`/`NaN` are
+  still dropped.
+* `NNS.CDF()` accepts a one-column data frame as univariate data and a vector
+  of targets for univariate data (evaluated element-wise); a missing target
+  gives "`target` must be finite.".
+* `PM.matrix()` with a zero-row `variable` errors with "`variable` must have
+  at least one row" for every target, instead of returning `list()` or a
+  non-finite target error; `Co.LPM_nD()`, `Co.UPM_nD()` and `DPM_nD()` on
+  zero-row data error with "`data` must have at least one row", as the batch
+  backend used by multivariate `NNS.CDF()` already did, instead of returning
+  `NaN` or 0.
+* `LPM()`/`UPM()` with `excess_ret = TRUE` index `variable` with `R_xlen_t`,
+  so vectors longer than `.Machine$integer.max` are no longer truncated.
 
 # NNS 13.3 (development changes)
 

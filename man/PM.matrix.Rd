@@ -11,9 +11,9 @@ PM.matrix(LPM_degree, UPM_degree, target, variable, pop_adj, norm = FALSE)
 
 \item{UPM_degree}{numeric; upper partial moment degree (0 = freq, 1 = area).}
 
-\item{target}{numeric vector; thresholds for each column. There is no default: pass \code{NULL} to use \code{colMeans(variable)}.}
+\item{target}{numeric vector; thresholds for each column. There is no default: pass \code{NULL} to use \code{colMeans(variable)}. The strings \code{"mean"} and \code{"means"} are accepted as legacy aliases for \code{NULL}; any other non-numeric target is an error.}
 
-\item{variable}{numeric matrix or data.frame.}
+\item{variable}{numeric matrix or data.frame with at least one row.}
 
 \item{pop_adj}{logical; \code{TRUE} applies the sample adjustment \code{n / (n - 1)} to the co-/divergent moments (with both degrees 1, \code{target = NULL} and \code{norm = FALSE}, the covariance matrix then equals \code{cov()}). It is ignored when either degree is 0.}
 

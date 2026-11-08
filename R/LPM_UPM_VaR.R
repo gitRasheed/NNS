@@ -4,7 +4,7 @@
 #'
 #' @param percentile numeric [0, 1]; The percentile for left-tail VaR.
 #' @param degree integer; \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, percentile, type = 7)}), which on tied data need not be an exact inverse of \code{LPM.ratio(0, ., x)}. Use it for probability statements, such as a VaR exceeded with a given frequency.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the \code{percentile}-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies below it, so it is not a quantile of \code{x} (for exponential data the degree-1 5\% point has about a quarter of the observations below it).  Higher degrees weight large deviations more.
-#' @param x a numeric vector.
+#' @param x a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error.
 #' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area below it (\code{degree > 0}).
 #' @author Fred Viole, OVVO Financial Systems
 #' @references Viole, F. and Nawrocki, D. (2013) "Nonlinear Nonparametric Statistics: Using Partial Moments" (ISBN: 1490523995, 2nd edition: \url{https://ovvo-financial.github.io/NNS/book/})
@@ -41,7 +41,7 @@ LPM.VaR <- function(percentile, degree, x) {
 #'
 #' @param percentile numeric [0, 1]; The percentile for right-tail VaR.
 #' @param degree integer; \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, 1 - percentile, type = 7)}), which on tied data need not be an exact inverse of \code{UPM.ratio(0, ., x)}. Use it for probability statements.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the (1 - \code{percentile})-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies above it, so it is not a quantile of \code{x}.  Higher degrees weight large deviations more.
-#' @param x a numeric vector.
+#' @param x a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error.
 #' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area above it (\code{degree > 0}).
 #' @author Fred Viole, OVVO Financial Systems
 #' @references Viole, F. and Nawrocki, D. (2013) "Nonlinear Nonparametric Statistics: Using Partial Moments" (ISBN: 1490523995, 2nd edition: \url{https://ovvo-financial.github.io/NNS/book/})
@@ -76,15 +76,18 @@ UPM.VaR <- function(percentile, degree, x) {
 
 .NNS_prepare_VaR_x <- function(x) {
   if (inherits(x, c("tbl", "data.table"))) {
-    x <- as.numeric(unlist(x))
+    x <- unlist(x, use.names = FALSE)
   }
   
-  x <- as.numeric(x)
+  x <- .nns_as_numeric(x, "x", call = sys.call(-1L))
   x <- x[!is.na(x)]
   
   if (!length(x)) {
     stop("x must contain at least one non-NA numeric value.")
   }
+  # NA/NaN are dropped above; +/-Inf would reach the degree > 0 solvers as
+  # Inf - Inf, so every degree rejects it the same way.
+  if (!all(is.finite(x))) .nns_stop_arg("`x` must be finite.", sys.call(-1L))
   
   x
 }

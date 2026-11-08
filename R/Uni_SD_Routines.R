@@ -20,19 +20,8 @@
 #' @export
 
 NNS.FSD.uni <- function(x, y, type = "discrete"){
-  to_numeric_vector <- function(v, arg_name){
-    if(any(class(v)%in%c("tbl","data.table")) || is.data.frame(v) || is.matrix(v) || any(class(v) %in% c("xts", "zoo"))){
-      if(!is.null(dim(v)) && ncol(v) > 1){
-        stop(sprintf("%s must be a single-column object or numeric vector.", arg_name))
-      }
-      v <- as.vector(unlist(v, use.names = FALSE))
-    }
-    
-    as.numeric(v)
-  }
-  
-  x <- to_numeric_vector(x, "x")
-  y <- to_numeric_vector(y, "y")
+  x <- .nns_single_column_numeric(x, "x")
+  y <- .nns_single_column_numeric(y, "y")
   
   if(anyNA(x) || anyNA(y)) {
     stop("You have some missing values, please address.")
@@ -64,19 +53,8 @@ NNS.FSD.uni <- function(x, y, type = "discrete"){
 #' @export
 
 NNS.SSD.uni <- function(x, y){
-  to_numeric_vector <- function(v, arg_name){
-    if(any(class(v)%in%c("tbl","data.table")) || is.data.frame(v) || is.matrix(v) || any(class(v) %in% c("xts", "zoo"))){
-      if(!is.null(dim(v)) && ncol(v) > 1){
-        stop(sprintf("%s must be a single-column object or numeric vector.", arg_name))
-      }
-      v <- as.vector(unlist(v, use.names = FALSE))
-    }
-    
-    as.numeric(v)
-  }
-  
-  x <- to_numeric_vector(x, "x")
-  y <- to_numeric_vector(y, "y")
+  x <- .nns_single_column_numeric(x, "x")
+  y <- .nns_single_column_numeric(y, "y")
   
   if(anyNA(x) || anyNA(y)) {
     stop("You have some missing values, please address.")
@@ -104,19 +82,8 @@ NNS.SSD.uni <- function(x, y){
 #' @export
 
 NNS.TSD.uni <- function(x, y){
-  to_numeric_vector <- function(v, arg_name){
-    if(any(class(v)%in%c("tbl","data.table")) || is.data.frame(v) || is.matrix(v) || any(class(v) %in% c("xts", "zoo"))){
-      if(!is.null(dim(v)) && ncol(v) > 1){
-        stop(sprintf("%s must be a single-column object or numeric vector.", arg_name))
-      }
-      v <- as.vector(unlist(v, use.names = FALSE))
-    }
-    
-    as.numeric(v)
-  }
-  
-  x <- to_numeric_vector(x, "x")
-  y <- to_numeric_vector(y, "y")
+  x <- .nns_single_column_numeric(x, "x")
+  y <- .nns_single_column_numeric(y, "y")
   
   if(anyNA(x) || anyNA(y)) {
     stop("You have some missing values, please address.")
