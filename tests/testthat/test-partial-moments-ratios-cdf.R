@@ -157,6 +157,15 @@ test_that("R04: constant and one-point samples follow the 0/0 step convention", 
       expect_identical(UPM.ratio(d, NULL, rep(2.5, 4)), 0, info = d)
     }
   })
+  aud_case("the 0/0 fill at degree > 0, scalar and vector targets", {
+    expect_equal(LPM.ratio(1, 3, rep(3, 4)), 1)
+    expect_equal(UPM.ratio(2, 3, rep(3, 4)), 0)
+    expect_equal(LPM.ratio(1, rep(3, 40), 3), rep(1, 40))
+    expect_equal(NNS.CDF(rep(2, 4), 1, plot = FALSE)$Function$CDF, rep(1, 4))
+    na_or_error <- function(expr) tryCatch(all(is.na(expr)), error = function(e) TRUE)
+    expect_true(na_or_error(LPM.ratio(NA_real_, 2, 1:3)))
+    expect_true(na_or_error(UPM.ratio(NA_real_, 2, 1:3)))
+  })
 })
 
 # Lean: LPMratio_eq_one_of_forall_le, LPMratio_eq_zero_of_forall_lt, LPMratio_eq_zero_of_forall_ge, UPMratio_eq_one_of_forall_ge | BUGS: none
@@ -566,5 +575,154 @@ test_that("R11: NNS.CDF survival, cumulative hazard, hazard and target.value agr
       h <- aud_cdf_fun(x, 0, "hazard")$Function[["h(x)"]]
       expect_true(all(h >= 0 & h <= 1e6))
     }
+  })
+})
+
+# pin: NNS-Python reference values
+test_that("R12: NNS-Python reference values: LPM.ratio, UPM.ratio and the survival curve", {
+  withr::local_seed(20261108)
+  x <- nns_py$x
+  x_df <- as.data.frame(x)
+  ref <- data.frame(fn = rep(c("LPM.ratio", "UPM.ratio"), each = 3), degree = rep(c(0, 1, 2), 2),
+                    expected = c(0.49, 0.5000000000000002, 0.49720627, 0.51, 0.4999999999999999, 0.5027937984146681))
+  ref <- rbind(cbind(ref, input = "vector"), cbind(ref, input = "frame"))
+  ref$label <- sprintf("%s(degree = %g) at the mean, %s input", ref$fn, ref$degree, ref$input)
+  aud_cases(ref, function(r) {
+    got <- if (r$input == "vector") {
+      match.fun(r$fn)(degree = r$degree, target = mean(x), variable = x)
+    } else {
+      match.fun(r$fn)(degree = r$degree, target = colMeans(x_df), variable = x_df)
+    }
+    expect_equal(got, r$expected, tolerance = 1e-5)
+  })
+  aud_case("NNS.CDF survival curve of a sample with ties", {
+    A <- c(1,1,2,2,3,3,4,4,5,5,2.5)
+    T1 <- data.frame(matrix(
+      c(
+        1.0, 1.0, 2.0, 2.0, 2.5, 3.0, 3.0, 4.0, 4.0, 5.0, 5.0,
+        0.8181818, 0.8181818, 0.6363636, 0.6363636, 0.5454545, 0.3636364, 0.3636364, 0.1818182, 0.1818182,0.0000000,0.0000000
+      ),
+      ncol=2
+    ))
+    colnames(T1) <- c("x", "S(x)")
+    B <- NNS.CDF(A, type="survival")
+    expect_equal(as.data.frame(B$Function), T1, tolerance=1e-5)
+    expect_equal(B$target.value, numeric(0), tolerance=1e-5)
+  })
+})
+
+test_that("R13: multivariate NNS.CDF: degree-0 joint survival, degree > 0 survival, cumulative hazard and unsupported hazards", {
+  withr::local_seed(20261108)
+  cdf_moments_var <- fx_cdf_moments_var()
+  aud_case("degree-0 survival for d = 3 matches strict joint counts with ties", env = cdf_moments_var, {
+    set.seed(7)
+    A <- matrix(round(rnorm(90), 1), ncol = 3)
+    S <- NNS.CDF(A, 0, type = "survival", plot = FALSE)$Function[[4]]
+    expect_equal(S, apply(A, 1, strict_joint_survival, A = A), tolerance = 1e-12)
+    t <- colMeans(A)
+    expect_equal(NNS.CDF(A, 0, target = t, type = "survival", plot = FALSE)$target.value,
+                 strict_joint_survival(A, t), tolerance = 1e-12)
+  })
+  aud_case("unsupported multivariate hazard never returns a CDF divided by survival", {
+    set.seed(7)
+    A <- matrix(rnorm(80), ncol = 2)
+    expect_error(NNS.CDF(A, 0, target = A[5, ], type = "hazard", plot = FALSE),
+                 "joint density or coordinate-hazard definition")
+  })
+  aud_case("bivariate cumulative hazard target.value equals the row value at that target", {
+    set.seed(7)
+    A <- matrix(rnorm(80), ncol = 2)
+    out <- NNS.CDF(A, 0, target = A[5, ], type = "cumulative hazard", plot = FALSE)
+    expect_equal(out$target.value, out$Function[[3]][5], tolerance = 1e-12)
+  })
+  aud_case("degree > 0 multivariate survival is the normalised joint UPM", {
+    set.seed(7)
+    A <- matrix(rnorm(90), ncol = 3)
+    S <- NNS.CDF(A, 1, type = "survival", plot = FALSE)$Function[[4]]
+    expect_equal(S, apply(A, 1, function(t) Co.UPM_nD(A, t, degree = 1)), tolerance = 1e-12)
+  })
+  aud_case("degree > 0 survival is 0 with a coordinate at its maximum", {
+    B <- cbind(c(0, 1, 2, 4), c(1, 0, 3, 2))
+    expect_equal(NNS.CDF(B, 1, target = c(4, 1), type = "survival", plot = FALSE)$target.value, 0)
+  })
+  aud_case("degree-0 joint survival with many columns is the joint upper share", {
+    set.seed(9)
+    x <- matrix(sample(0:4, 400, TRUE), 20, 20)
+    s <- sapply(1:20, function(i) mean(colSums(t(x) > x[i, ]) == 20))
+    h <- NNS.CDF(x, degree = 0, type = "cumulative hazard", plot = FALSE)$Function$CDF
+    expect_equal(h, pmax(-log(pmax(s, 1e-10)), 0))
+  })
+  aud_case("multivariate cumulative hazard needs degree 0 (#100)", {
+    X <- cbind(c(0, 1, 2, 3), c(0, 2, 1, 3))
+    expect_error(NNS.CDF(X, degree = 1, type = "hazard", plot = FALSE), "not implemented")
+    expect_error(NNS.CDF(X, degree = 1, type = "cumulative hazard", plot = FALSE), "needs degree = 0")
+    expect_true(is.list(NNS.CDF(X, degree = 0, type = "cumulative hazard", plot = FALSE)))
+    # One dimension at degree 1 is a proper distribution function and keeps its hazards.
+    set.seed(1)
+    expect_true(all(is.finite(NNS.CDF(rnorm(50), degree = 1, type = "hazard", plot = FALSE)$Function[[2]])))
+    # The degree-0 joint CDF gives every rectangle nonnegative mass.
+    A <- matrix(rnorm(200), 100, 2)
+    f <- function(t) NNS.CDF(A, degree = 0, target = t, plot = FALSE)$target.value
+    expect_gte(f(c(.5, .5)) - f(c(-.5, .5)) - f(c(.5, -.5)) + f(c(-.5, -.5)), 0)
+  })
+})
+
+test_that("R14: univariate NNS.CDF hazards: tie runs and constant data; NA dropped; large constant sample at degree > 0", {
+  withr::local_seed(20261108)
+  aud_case("hazard is finite with tie runs at the minimum, interior and maximum", {
+    x <- c(rep(0, 12), 1, 2, rep(3, 12), 4, 5, rep(6, 12))
+    expect_true(all(is.finite(NNS.CDF(x, type = "hazard", plot = FALSE)$Function[[2]])))
+  })
+  aud_case("hazard of a constant variable stops with a clear message", {
+    expect_error(NNS.CDF(rep(2, 5), type = "hazard", plot = FALSE), "at least two distinct values")
+  })
+  aud_case("NNS.CDF drops missing observations", {
+    y <- c(1, 2, NA, 4)
+    expect_equal(NNS.CDF(y, plot = FALSE)$Function$CDF, c(1, 2, 3) / 3)
+    expect_equal(NNS.CDF(y, target = 2, plot = FALSE)$target.value, 2 / 3)
+  })
+  aud_case("degree > 0 CDF of a large constant sample is 1 and not quadratic", {
+    elapsed <- system.time(z <- NNS.CDF(rep(2, 1e5), 1, plot = FALSE))[["elapsed"]]
+    expect_true(all(z$Function$CDF == 1))
+    expect_lt(elapsed, 1)
+  })
+})
+
+test_that("R15: NNS.CDF target.value equals the curve at data points, lies between neighbours and clamps the hazard", {
+  withr::local_seed(20261108)
+  cdf_target_value <- fx_cdf_target_value()
+  aud_case("univariate target.value equals the curve at each data point", env = cdf_target_value, {
+    for (x in cdf_target_data()) for (degree in 0:1) for (type in cdf_types) {
+      curve <- NNS.CDF(x, degree, type = type, plot = FALSE)$Function[[2]]
+      at <- vapply(sort(x), function(t) cdf_at(x, degree, type, t), numeric(1))
+      expect_equal(at, curve, tolerance = 1e-12, info = paste(type, degree))
+    }
+  })
+  aud_case("univariate target.value lies between the neighbouring curve values", env = cdf_target_value, {
+    for (x in cdf_target_data()) for (degree in 0:1) for (type in cdf_types[-3]) {
+      xs <- sort(unique(x))
+      curve <- NNS.CDF(x, degree, type = type, plot = FALSE)$Function[[2]]
+      curve <- curve[!duplicated(sort(x))]
+      mid <- (xs[-1] + xs[-length(xs)]) / 2
+      at <- vapply(mid, function(t) cdf_at(x, degree, type, t), numeric(1))
+      lo <- pmin(curve[-1], curve[-length(curve)])
+      hi <- pmax(curve[-1], curve[-length(curve)])
+      expect_true(all(at >= lo - 1e-12 & at <= hi + 1e-12), info = paste(type, degree))
+    }
+  })
+  aud_case("hazard target.value between data points is finite and clamped like the curve", env = cdf_target_value, {
+    for (x in cdf_target_data()) for (degree in 0:1) {
+      xs <- sort(unique(x))
+      mid <- (xs[-1] + xs[-length(xs)]) / 2
+      at <- vapply(mid, function(t) cdf_at(x, degree, "hazard", t), numeric(1))
+      expect_true(all(is.finite(at) & at >= 0 & at <= 1e6))
+    }
+  })
+  aud_case("cumulative hazard at a target is -log of the survival there", env = cdf_target_value, {
+    expect_equal(cdf_at(1:20, 0, "cumulative hazard", 19), -log(.05))
+    expect_equal(cdf_at(1:20, 0, "cumulative hazard", 10), -log(.5))
+    h <- NNS.CDF(1:20, 0, target = 20, type = "cumulative hazard", plot = FALSE)
+    expect_true(is.finite(h$target.value))
+    expect_equal(h$target.value, h$Function[[2]][20])
   })
 })
