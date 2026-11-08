@@ -283,7 +283,8 @@ test_that("V06: BUGS #8, #10: integer-degree VaR at tiny percentiles, far cluste
 # The breaks are tested by the sign of h = (1 - p) LPM - p UPM. On tied decimal data
 # whose decimal ratio at an order statistic is exactly p, rounding leaves h a few eps
 # off 0 at the break, and an exact sign test returned the order statistic +/- 1 ulp
-# (NNS.boost then dropped every learner tied at the cutoff).
+# (NNS.boost then dropped every learner tied at the cutoff). These cases pass on the
+# pre-audit release too; V05 holds the tie-snap failures there.
 test_that("V07: tie-snap: integer-degree VaR returns an order statistic whose ratio is p, including 0", {
   withr::local_seed(20261108)
   aud_case("integer-degree VaR returns a tied decimal order statistic whose ratio is p", {

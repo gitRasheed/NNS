@@ -71,6 +71,7 @@ test_that("I02: excess_ret must be TRUE or FALSE, and a zero-length target with 
 })
 
 # Lean: none | BUGS: #7
+# Skipped unless NNS_BIGMEM_GB >= 64, so the #7 failures before the fix that always run are in I02 and I06.
 test_that("I03: LPM/UPM excess_ret handle vectors longer than .Machine$integer.max (BUGS #7)", {
   withr::local_seed(20261108)
   skip_on_cran()

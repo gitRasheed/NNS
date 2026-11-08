@@ -78,6 +78,7 @@ test_that("R02: degree-0 ratios are the ECDF (ties low) and the strict survival 
 })
 
 # Lean: LPMratio_eq_sum_div, LPMratio_one_mean, UPMratio_one_mean, LPMratioDefault_one, LPMratio_one_eq_half_iff | BUGS: #12
+# These cases also pass before the fix; the #12 failures there are in N04, C12, C15, R08 and V04.
 test_that("R03: degree > 0 LPM.ratio is L / (L + U), exactly 1/2 at the mean, and a NULL target is the mean", {
   withr::local_seed(20261108)
   fr <- aud_fx_ratio()

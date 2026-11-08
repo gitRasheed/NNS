@@ -717,10 +717,11 @@ test_that("U10: BUGS #1, #2, #17: integer degrees keep the left-fold product up 
     expect_equal(Co.LPM(40, -0.3, -0.3, 1, 1, degree_y = 1), 1.3^40 * 1.3, tolerance = tol)
   })
   aud_case("the cost of a huge integer degree does not grow with the degree", {
-    # The left fold took about 11 s for degree 1e7 and n = 1000 and would take
-    # hours for 2^31 - 1; pow takes microseconds. The bound only checks that the
-    # calls do not hang, so it is loose enough for slow or instrumented builds.
-    el <- system.time(r1 <- LPM(2^31 - 1, 2, rep(1, 1000)))[["elapsed"]]
+    # The left fold is a chain of dependent multiplies, about 1 ns each: 11 s for
+    # degree 1e7 at n = 1000 and minutes for 2^31 - 1 at n = 100, so a fold build
+    # fails the bound rather than hanging. pow takes microseconds, and the bound
+    # is loose enough for slow or instrumented builds.
+    el <- system.time(r1 <- LPM(2^31 - 1, 2, rep(1, 100)))[["elapsed"]]
     el <- el + system.time(r2 <- UPM(1e7, 0, rep(1, 1000)))[["elapsed"]]
     el <- el + system.time(r3 <- Co.LPM(2e8, c(0, 0.5, 2), c(0, 0.5, 2), 1, 1))[["elapsed"]]
     expect_lt(el, 60)
