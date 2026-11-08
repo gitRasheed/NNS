@@ -21,6 +21,16 @@ static inline void stop_if_factor(const RObject &v, const char *what) {
   if (Rf_isFactor(v)) Rcpp::stop("`%s` must be numeric, not a factor.", what);
 }
 
+// unlist() and as.matrix() turn a factor column of mixed data into level codes
+// or strings, so check the columns before flattening.
+static inline void stop_if_factor_columns(const RObject &v, const char *what) {
+  stop_if_factor(v, what);
+  if (is<DataFrame>(v)) {
+    List cols(v);
+    for (R_xlen_t j = 0; j < cols.size(); ++j) stop_if_factor(cols[j], what);
+  }
+}
+
 // NULL means "use the mean" (the caller computes it). Double, integer and
 // logical targets are used as given (integer targets such as 2L or 1:3 are not
 // replaced by the mean; a logical NA becomes NA_real_ and is then rejected as
@@ -36,11 +46,10 @@ static inline bool is_supplied_target(const RObject &target, const char *what) {
 
 // Numeric vector, or a data frame column flattened with unlist/as.vector.
 static inline NumericVector numeric_input(const RObject &v, const char *what) {
-  stop_if_factor(v, what);
+  stop_if_factor_columns(v, what);
   if (is<NumericVector>(v) || is<IntegerVector>(v)) return as<NumericVector>(v);
   if (is<DataFrame>(v)) {
     RObject u = Rcpp::internal::convert_using_rfunction(v, "unlist");
-    stop_if_factor(u, what);
     return Rcpp::internal::convert_using_rfunction(u, "as.vector");
   }
   Rcpp::stop("`%s` must be numeric.", what);
@@ -473,6 +482,7 @@ NumericVector CoUPM_RCPP(
      Rcpp::stop("variable can't be null");
      return List::create();
    }
+   stop_if_factor_columns(variable, "variable");
    NumericMatrix variable_matrix;
    if (is<NumericMatrix>(variable))
      variable_matrix = as<NumericMatrix>(variable);

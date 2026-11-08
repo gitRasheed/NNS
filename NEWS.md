@@ -41,8 +41,9 @@
   functions (`NNS.FSD()`, `NNS.SSD()`, `NNS.TSD()` and their `.uni`
   versions), also when the factor is the column of a one-column data frame.
   A factor column of multi-column data is rejected the same way in the `_nD`
-  functions, multivariate `NNS.CDF()` and `LPM.VaR()`/`UPM.VaR()`, where it
-  used to fail with "`data` must be finite." or be flattened to level codes.
+  functions, multivariate `NNS.CDF()`, `LPM.VaR()`/`UPM.VaR()`, the ratios,
+  `Co.*`, `D.*` and `PM.matrix()`, where it used to fail with "`data` must be
+  finite." or a type conversion error, or be flattened to level codes.
 * A target that is not `NULL`, numeric or logical (a string, list, data frame
   or factor) is now an error in `LPM.ratio()`, `UPM.ratio()`, `Co.LPM()`,
   `Co.UPM()`, `D.LPM()`, `D.UPM()` and `PM.matrix()` instead of silently

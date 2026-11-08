@@ -69,6 +69,23 @@ test_that("a data.frame holding a factor column is rejected like a bare factor",
                "`variable` must be numeric, not a factor.", fixed = TRUE)
 })
 
+test_that("a factor column of a multi-column data.frame is rejected, not flattened to codes", {
+  mixed <- data.frame(a = 1:2, b = factor(c("x", "y")))
+  first <- data.frame(b = factor(c("x", "y")), a = 1:2)
+  for (df in list(mixed, first)) {
+    expect_error(LPM.ratio(0, 2, df), "`variable` must be numeric, not a factor.", fixed = TRUE)
+    expect_error(UPM.ratio(0, 2, df), "`variable` must be numeric, not a factor.", fixed = TRUE)
+    expect_error(Co.LPM(1, df, df, 0, 0), "`x` must be numeric, not a factor.", fixed = TRUE)
+    expect_error(Co.UPM(1, 1:4, df, 0, 0), "`y` must be numeric, not a factor.", fixed = TRUE)
+    expect_error(D.LPM(1, 1, df, 1:4, 0, 0), "`x` must be numeric, not a factor.", fixed = TRUE)
+    expect_error(D.UPM(1, 1, 1:4, df, 0, 0), "`y` must be numeric, not a factor.", fixed = TRUE)
+    expect_error(PM.matrix(1, 1, NULL, df, TRUE), "`variable` must be numeric, not a factor.", fixed = TRUE)
+  }
+  numeric_df <- data.frame(a = 1:2, b = 3:4)
+  expect_identical(LPM.ratio(0, 2, numeric_df), LPM.ratio(0, 2, c(1, 2, 3, 4)))
+  expect_identical(Co.LPM(1, numeric_df, numeric_df, 2, 2), Co.LPM(1, 1:4, 1:4, 2, 2))
+})
+
 test_that("co-moments reject a factor target", {
   expect_error(Co.LPM(1, x5, x5, factor("z"), 1), "`target_x` must be numeric, not a factor.", fixed = TRUE)
 })
