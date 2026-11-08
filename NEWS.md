@@ -114,6 +114,8 @@
   finite.". `NA`/`NaN` keep the "missing values" error.
 * `NNS.FSD()`, `NNS.SSD()` and `NNS.TSD()` compute their plot curves only when
   `plot = TRUE`; the verdict never used them.
+* The `NNS.TSD()` plot draws the LPM2 curves against the threshold values, like
+  `NNS.SSD()` and `NNS.FSD()`, instead of against their index.
 
 # NNS 13.3 (development changes)
 

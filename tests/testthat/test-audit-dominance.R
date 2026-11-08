@@ -135,3 +135,16 @@ test_that("the verdict does not depend on plot", {
   expect_identical(NNS.SSD(x, y, plot = TRUE), NNS.SSD(x, y, plot = FALSE))
   expect_identical(NNS.TSD(x, y, plot = TRUE), NNS.TSD(x, y, plot = FALSE))
 })
+
+# ---- TSD plot axis (#27) ----------------------------------------------------
+
+test_that("NNS.TSD plots against the thresholds, as NNS.SSD does", {
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off())
+  x <- c(0, 0.01, 0.02, 10); y <- c(1, 2, 3, 4)
+  NNS.TSD(x, y, plot = TRUE)
+  usr <- graphics::par("usr")[1:2]
+  # the x-axis spans the data range [0, 10], not the index range [1, 8]
+  expect_lte(usr[1], 0)
+  expect_gte(usr[2], 10)
+})
