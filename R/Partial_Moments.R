@@ -2,7 +2,7 @@
 #'
 #' This function generates a univariate lower partial moment for any degree or target.
 #'
-#' @param degree numeric; \code{(degree = 0)} is frequency, \code{(degree = 1)} is area.
+#' @param degree numeric; \code{(degree = 0)} is frequency, \code{(degree = 1)} is area. Must be a finite number \code{>= 0}; any \code{degree > 0}, however small, gives ties at the target weight 0.
 #' @param target numeric; Set to \code{target = mean(variable)} for classical equivalences, but does not have to be.
 #'   When \code{excess_ret = FALSE}, this can be a scalar or a vectorized target for the standard partial moment calculation.
 #'   When \code{excess_ret = TRUE}, it is interpreted element-wise as the benchmark/threshold relative to \code{variable}.
@@ -40,7 +40,7 @@ LPM <- function(degree, target, variable, excess_ret = FALSE) {
 #'
 #' This function generates a univariate upper partial moment for any degree or target.
 #'
-#' @param degree numeric; \code{(degree = 0)} is frequency, \code{(degree = 1)} is area.
+#' @param degree numeric; \code{(degree = 0)} is frequency, \code{(degree = 1)} is area. Must be a finite number \code{>= 0}.
 #' @param target numeric; Set to \code{target = mean(variable)} for classical equivalences, but does not have to be.
 #'   When \code{excess_ret = FALSE}, this can be a scalar or a vectorized target for the standard partial moment calculation.
 #'   When \code{excess_ret = TRUE}, it is interpreted element-wise as the benchmark/threshold relative to \code{variable}.

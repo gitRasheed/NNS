@@ -7,6 +7,7 @@
 #include <RcppParallel.h>
 
 #include <algorithm>
+#include <climits>
 #include <cmath>
 #include <cstddef>
 #include <memory>
@@ -28,12 +29,36 @@ double UPM_C(const double &degree,
              const double &target,
              const RcppParallel::RVector<double> &variable);
 
-// Rejects negative and NaN degrees. Called from the R-facing wrappers before
-// any parallel work starts.
+// Rejects negative, NaN and infinite degrees. Called from the R-facing
+// wrappers before any parallel work starts.
 inline void nns_check_degree(const double degree, const char *name) {
   if (!(degree >= 0.0)) {
     Rcpp::stop("'%s' must be a non-negative number", name);
   }
+  if (!std::isfinite(degree)) {
+    Rcpp::stop("`%s` must be finite.", name);
+  }
+}
+
+// Exact integer test shared by every kernel (direct scans and the prefix
+// backend), so a degree takes the integer path everywhere or nowhere. It never
+// converts a value outside the int range (undefined behaviour in C++), so a
+// degree above INT_MAX is treated as non-integer and goes to std::pow.
+inline bool nns_is_integer_degree(const double v) {
+  return std::isfinite(v) && std::fabs(v) <= static_cast<double>(INT_MAX) &&
+    v == std::trunc(v);
+}
+
+// Integer powers up to this degree are a left-fold product (1 * v * v ...),
+// which keeps results bit-identical to earlier releases. Higher degrees use
+// std::pow, so the cost per element no longer grows with the degree.
+static const int NNS_FOLD_MAX_DEGREE = 32;
+
+inline double nns_int_pow(const double value, const int n) {
+  if (n > NNS_FOLD_MAX_DEGREE) return std::pow(value, static_cast<double>(n));
+  double result = 1.0;
+  for (int i = 0; i < n; ++i) result *= value;
+  return result;
 }
 
 namespace nns_pm_detail {
@@ -43,14 +68,13 @@ namespace nns_pm_detail {
 // the hot NNS use cases: degree 0, 1, 2, and other small integer degrees.
 static const int PREFIX_MAX_DEGREE = 32;
 
+// Uses the same exact integer test as LPM_C/UPM_C: a degree such as 1e-13 or
+// 2 + 1e-13 is not rounded to an integer here, it falls back to the direct scan.
 inline bool prefix_supported_degree(const double degree, int &degree_int) {
-  if (!std::isfinite(degree) || degree < 0.0) return false;
+  if (degree < 0.0 || !nns_is_integer_degree(degree)) return false;
+  if (degree > static_cast<double>(PREFIX_MAX_DEGREE)) return false;
   
-  const double rounded = std::round(degree);
-  if (std::fabs(degree - rounded) > 1e-12) return false;
-  if (rounded > static_cast<double>(PREFIX_MAX_DEGREE)) return false;
-  
-  degree_int = static_cast<int>(rounded);
+  degree_int = static_cast<int>(degree);
   return true;
 }
 
@@ -129,7 +153,10 @@ struct PrefixPartialMomentBackend {
     for (std::size_t j = 0; j < w; ++j) {
       double acc = (j == 0U) ? 1.0 : 0.0;
       for (std::size_t l = 0; l <= j; ++l) {
-        if (prev[l] != 0.0) acc += binom[j * w + l] * dpow[j - l] * prev[l];
+        // Skip exact-zero factors: an overflowed prev (Inf) times a zero or
+        // underflowed delta power would give NaN instead of the true +Inf.
+        if (prev[l] != 0.0 && dpow[j - l] != 0.0)
+          acc += binom[j * w + l] * dpow[j - l] * prev[l];
       }
       next[j] = acc;
     }
@@ -142,7 +169,9 @@ struct PrefixPartialMomentBackend {
     double out = 0.0;
     double gpow = 1.0;  // gap^(d-j), built from j = d downwards
     for (std::size_t jj = w; jj-- > 0U;) {
-      if (sums[jj] != 0.0) out += binom[d * w + jj] * gpow * sums[jj];
+      // As in step(): 0 * Inf would turn an overflow into NaN. All terms are
+      // >= 0, so skipping a zero term never changes a finite result.
+      if (sums[jj] != 0.0 && gpow != 0.0) out += binom[d * w + jj] * gpow * sums[jj];
       gpow *= gap;
     }
     return out;

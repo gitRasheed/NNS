@@ -22,17 +22,11 @@ static inline void nns_parallel_for(std::size_t begin, std::size_t end, W& worke
   else parallelFor(begin, end, worker);
 }
 
-static double repeatMultiplication(double value, int n) {
-  double result = 1.0;
-  for (int i = 0; i < n; ++i) result *= value;
-  return result;
-}
-
 static inline double lower_component(double diff, double degree, bool degree_is_int) {
   if (degree == 0) return diff >= 0.0 ? 1.0 : 0.0;
   if (diff < 0.0) return 0.0;
   return degree_is_int
-  ? repeatMultiplication(diff, static_cast<int>(degree))
+  ? nns_int_pow(diff, static_cast<int>(degree))
     : std::pow(diff, degree);
 }
 
@@ -40,12 +34,8 @@ static inline double upper_component(double diff, double degree, bool degree_is_
   if (degree == 0) return diff > 0.0 ? 1.0 : 0.0;
   if (diff < 0.0) return 0.0;
   return degree_is_int
-  ? repeatMultiplication(diff, static_cast<int>(degree))
+  ? nns_int_pow(diff, static_cast<int>(degree))
     : std::pow(diff, degree);
-}
-
-inline bool isInteger(double v) {
-  return v == static_cast<int>(v);
 }
 
 /////////////////
@@ -59,13 +49,13 @@ double LPM_C(const double &degree, const double &target, const RVector<double> &
   for (size_t i = 0; i < n; i++) {
     value = target - variable[i];
     if (value >= 0) {
-      if (isInteger(degree)) {
+      if (nns_is_integer_degree(degree)) {
         if (degree == 0) {
           out += 1;
         } else if (degree == 1) {
           out += value;
         } else {
-          out += repeatMultiplication(value, static_cast<int>(degree));
+          out += nns_int_pow(value, static_cast<int>(degree));
         }
       } else {
         out += std::pow(value, degree);
@@ -84,13 +74,13 @@ double UPM_C(const double &degree, const double &target, const RVector<double> &
   for (size_t i = 0; i < n; i++) {
     value = variable[i] - target;
     if (value > 0) {
-      if (isInteger(degree)) {
+      if (nns_is_integer_degree(degree)) {
         if (degree == 0) {
           out += 1;
         } else if (degree == 1) {
           out += value;
         } else {
-          out += repeatMultiplication(value, static_cast<int>(degree));
+          out += nns_int_pow(value, static_cast<int>(degree));
         }
       } else {
         out += std::pow(value, degree);
@@ -136,8 +126,8 @@ struct CoLPM_SumWorker : public Worker {
       for (std::size_t j = 0; j < d; ++j) {
         double diff = target[j] - data(i, j);
         if (diff < 0.0) { prod = 0.0; break; }
-        prod *= isInteger(degree)
-          ? repeatMultiplication(diff, static_cast<int>(degree))
+        prod *= nns_is_integer_degree(degree)
+          ? nns_int_pow(diff, static_cast<int>(degree))
             : std::pow(diff, degree);
       }
       output[i] = prod;
@@ -181,8 +171,8 @@ struct CoUPM_SumWorker : public Worker {
       for (std::size_t j = 0; j < d; ++j) {
         double diff = data(i, j) - target[j];
         if (diff < 0.0) { prod = 0.0; break; }
-        prod *= isInteger(degree)
-          ? repeatMultiplication(diff, static_cast<int>(degree))
+        prod *= nns_is_integer_degree(degree)
+          ? nns_int_pow(diff, static_cast<int>(degree))
             : std::pow(diff, degree);
       }
       output[i] = prod;
@@ -235,8 +225,8 @@ struct DpmSumWorker : public Worker {
       double prod = 1.0;
       for (std::size_t j = 0; j < d; ++j) {
         double abs_dev = std::abs(data(i, j) - target[j]);
-        prod *= isInteger(degree)
-          ? repeatMultiplication(abs_dev, static_cast<int>(degree))
+        prod *= nns_is_integer_degree(degree)
+          ? nns_int_pow(abs_dev, static_cast<int>(degree))
             : std::pow(abs_dev, degree);
       }
       output[i] = prod;
@@ -368,7 +358,7 @@ struct CoLPMnDBatchWorker : public Worker {
       targets(targets_),
       degree(degree_),
       norm(norm_),
-      degree_is_int(isInteger(degree_)),
+      degree_is_int(nns_is_integer_degree(degree_)),
       output(output_) {}
   
   void operator()(std::size_t begin, std::size_t end) override {
@@ -425,7 +415,7 @@ struct CoLPMnDBatchWorker : public Worker {
           if (diff <= 0.0) all_above_strict = false;
           
           dpm_prod *= degree_is_int
-          ? repeatMultiplication(std::abs(diff), static_cast<int>(degree))
+          ? nns_int_pow(std::abs(diff), static_cast<int>(degree))
             : std::pow(std::abs(diff), degree);
         }
         
@@ -564,8 +554,8 @@ double CoUPM_C(
   double out=0;
   bool d_x_0=(degree_x==0);
   bool d_y_0=(degree_y==0);
-  bool x_is_int=isInteger(degree_x);
-  bool y_is_int=isInteger(degree_y);
+  bool x_is_int=nns_is_integer_degree(degree_x);
+  bool y_is_int=nns_is_integer_degree(degree_y);
   for(size_t i=0; i<min_size; i++){
     double x1=(x[i]-target_x);
     double y1=(y[i]-target_y);
@@ -577,11 +567,11 @@ double CoUPM_C(
     else y1 = (y1 < 0 ? 0 : y1);
     
     if(!d_x_0){
-      if(x_is_int) x1 = repeatMultiplication(x1, static_cast<int>(degree_x));
+      if(x_is_int) x1 = nns_int_pow(x1, static_cast<int>(degree_x));
       else x1 = std::pow(x1, degree_x);
     }
     if(!d_y_0){
-      if(y_is_int) y1 = repeatMultiplication(y1, static_cast<int>(degree_y));
+      if(y_is_int) y1 = nns_int_pow(y1, static_cast<int>(degree_y));
       else y1 = std::pow(y1, degree_y);
     }
     out += x1 * y1;
@@ -602,8 +592,8 @@ double CoLPM_C(
   double out=0;
   bool d_x_0=(degree_x==0);
   bool d_y_0=(degree_y==0);
-  bool x_is_int=isInteger(degree_x);
-  bool y_is_int=isInteger(degree_y);
+  bool x_is_int=nns_is_integer_degree(degree_x);
+  bool y_is_int=nns_is_integer_degree(degree_y);
   for(size_t i=0; i<min_size; i++){
     double x1=(target_x-x[i]);
     double y1=(target_y-y[i]);
@@ -615,11 +605,11 @@ double CoLPM_C(
     else y1 = (y1 < 0 ? 0 : y1);
     
     if(!d_x_0){
-      if(x_is_int) x1 = repeatMultiplication(x1, static_cast<int>(degree_x));
+      if(x_is_int) x1 = nns_int_pow(x1, static_cast<int>(degree_x));
       else x1 = std::pow(x1, degree_x);
     }
     if(!d_y_0){
-      if(y_is_int) y1 = repeatMultiplication(y1, static_cast<int>(degree_y));
+      if(y_is_int) y1 = nns_int_pow(y1, static_cast<int>(degree_y));
       else y1 = std::pow(y1, degree_y);
     }
     out += x1 * y1;
@@ -638,8 +628,8 @@ double DLPM_C(
   if (min_size<=0)
     return 0;
   double out=0;
-  bool dont_use_pow_lpm=isInteger(degree_lpm),
-    dont_use_pow_upm=isInteger(degree_upm),
+  bool dont_use_pow_lpm=nns_is_integer_degree(degree_lpm),
+    dont_use_pow_upm=nns_is_integer_degree(degree_upm),
     d_lpm_0=(degree_lpm==0), d_upm_0=(degree_upm==0);
   for(size_t i=0; i<min_size; i++){
     double x1=(x[i]-target_x);
@@ -652,14 +642,14 @@ double DLPM_C(
     else y1 = (y1 < 0 ? 0 : y1);
     
     if(dont_use_pow_lpm && dont_use_pow_upm){
-      if(!d_upm_0) x1 = repeatMultiplication(x1, static_cast<int>(degree_upm));
-      if(!d_lpm_0) y1 = repeatMultiplication(y1, static_cast<int>(degree_lpm));
+      if(!d_upm_0) x1 = nns_int_pow(x1, static_cast<int>(degree_upm));
+      if(!d_lpm_0) y1 = nns_int_pow(y1, static_cast<int>(degree_lpm));
       out += x1 * y1;
     } else if(dont_use_pow_lpm && !dont_use_pow_upm){
-      if(!d_lpm_0) y1 = repeatMultiplication(y1, static_cast<int>(degree_lpm));
+      if(!d_lpm_0) y1 = nns_int_pow(y1, static_cast<int>(degree_lpm));
       out += std::pow(x1, degree_upm) * y1;
     } else if(dont_use_pow_upm && !dont_use_pow_lpm){
-      if(!d_upm_0) x1 = repeatMultiplication(x1, static_cast<int>(degree_upm));
+      if(!d_upm_0) x1 = nns_int_pow(x1, static_cast<int>(degree_upm));
       out += x1 * std::pow(y1, degree_lpm);
     } else out += std::pow(x1, degree_upm) * std::pow(y1, degree_lpm);
   }
@@ -678,8 +668,8 @@ double DUPM_C(
     return 0;
   double out=0;
   
-  bool dont_use_pow_lpm=(isInteger(degree_lpm)),
-    dont_use_pow_upm=(isInteger(degree_upm)),
+  bool dont_use_pow_lpm=(nns_is_integer_degree(degree_lpm)),
+    dont_use_pow_upm=(nns_is_integer_degree(degree_upm)),
     d_lpm_0=(degree_lpm==0), d_upm_0=(degree_upm==0);
   for(size_t i=0; i<min_size; i++){
     double x1=(target_x-x[i]);
@@ -692,14 +682,14 @@ double DUPM_C(
     else y1 = (y1 < 0 ? 0 : y1);
     
     if(dont_use_pow_lpm && dont_use_pow_upm){
-      if(!d_lpm_0) x1 = repeatMultiplication(x1, static_cast<int>(degree_lpm));
-      if(!d_upm_0) y1 = repeatMultiplication(y1, static_cast<int>(degree_upm));
+      if(!d_lpm_0) x1 = nns_int_pow(x1, static_cast<int>(degree_lpm));
+      if(!d_upm_0) y1 = nns_int_pow(y1, static_cast<int>(degree_upm));
       out += x1 * y1;
     } else if(dont_use_pow_lpm && !dont_use_pow_upm){
-      if(!d_lpm_0) x1 = repeatMultiplication(x1, static_cast<int>(degree_lpm));
+      if(!d_lpm_0) x1 = nns_int_pow(x1, static_cast<int>(degree_lpm));
       out += x1 * std::pow(y1, degree_upm);
     } else if(dont_use_pow_upm && !dont_use_pow_lpm){
-      if(!d_upm_0) y1 = repeatMultiplication(y1, static_cast<int>(degree_upm));
+      if(!d_upm_0) y1 = nns_int_pow(y1, static_cast<int>(degree_upm));
       out += std::pow(x1, degree_lpm) * y1;
     } else out += std::pow(x1, degree_lpm) * std::pow(y1, degree_upm);
   }
@@ -772,8 +762,8 @@ void PMMatrix_Cv(
   if(rows == 0)
     return;
   
-  bool lpm_is_int = isInteger(degree_lpm);
-  bool upm_is_int = isInteger(degree_upm);
+  bool lpm_is_int = nns_is_integer_degree(degree_lpm);
+  bool upm_is_int = nns_is_integer_degree(degree_upm);
   for(size_t i=0; i<rows; i++){
     double x_lower = lower_component(target_x - x_rvec[i], degree_lpm, lpm_is_int);
     double x_upper = upper_component(x_rvec[i] - target_x, degree_upm, upm_is_int);
@@ -823,7 +813,7 @@ struct PrecomputeDeviationsWorker : public Worker {
                              NumericMatrix& D_lower_, NumericMatrix& D_upper_)
     : variable(variable_), target(target_),
       degree_lpm(degree_lpm_), degree_upm(degree_upm_),
-      lpm_is_int(isInteger(degree_lpm_)), upm_is_int(isInteger(degree_upm_)),
+      lpm_is_int(nns_is_integer_degree(degree_lpm_)), upm_is_int(nns_is_integer_degree(degree_upm_)),
       D_lower(D_lower_), D_upper(D_upper_) {}
   
   void operator()(std::size_t begin, std::size_t end) override {
@@ -1042,4 +1032,4 @@ List PMMatrix_CPv(
       Named("cov.matrix") = covMat
     )
   );
-}
+}

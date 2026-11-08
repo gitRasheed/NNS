@@ -8,24 +8,12 @@
 
 using namespace Rcpp;
 
-static inline double repeatMultiplication(double value, int n) {
-  double result = 1.0;
-  for (int i = 0; i < n; ++i) {
-    result *= value;
-  }
-  return result;
-}
-
 //static inline double fastPow(double a, double b) {
 //union { double d; int x[2]; } u = { a };
 //  u.x[1] = (int)(b * (u.x[1] - 1072632447) + 1072632447);
 //  u.x[0] = 0;
 //  return u.d;
 //}
-
-static inline bool isInteger(double value) {
-  return value == static_cast<int>(value);
-}
 
 // Integer targets (2L, 1:3) are used as given, not replaced by mean(variable).
 static inline bool is_supplied_target(const RObject &target) {
@@ -126,7 +114,7 @@ NumericVector LPM_RCPP(const double &degree,
       if (diff > 0 || (degree == 0 && diff == 0)) {
         if      (degree == 0)       out[i] = 1;
         else if (degree == 1)       out[i] = diff;
-        else if (isInteger(degree)) out[i] = repeatMultiplication(diff, (int)degree);
+        else if (nns_is_integer_degree(degree)) out[i] = nns_int_pow(diff, (int)degree);
         else                         out[i] = std::pow(diff, degree);
       }
     }
@@ -162,7 +150,7 @@ NumericVector UPM_RCPP(const double &degree,
       if (diff > 0) {
         if      (degree == 0)       out[i] = 1;
         else if (degree == 1)       out[i] = diff;
-        else if (isInteger(degree)) out[i] = repeatMultiplication(diff, (int)degree);
+        else if (nns_is_integer_degree(degree)) out[i] = nns_int_pow(diff, (int)degree);
         else                         out[i] = std::pow(diff, degree);
       }
     }
@@ -217,7 +205,6 @@ NumericVector UPM_RCPP(const double &degree,
    }
    stop_if_not_finite(variable_vec, "variable");
    stop_if_not_finite(target_vec, "target");
-   if (!(degree >= 0)) Rcpp::stop("'degree' must be a non-negative number");
    return fill_degenerate_ratio(LPM_ratio_CPv(degree, target_vec, variable_vec),
                                 degree, target_vec, variable_vec, true);
  }
@@ -265,7 +252,6 @@ NumericVector UPM_RCPP(const double &degree,
    }
    stop_if_not_finite(variable_vec, "variable");
    stop_if_not_finite(target_vec, "target");
-   if (!(degree >= 0)) Rcpp::stop("'degree' must be a non-negative number");
    return fill_degenerate_ratio(UPM_ratio_CPv(degree, target_vec, variable_vec),
                                 degree, target_vec, variable_vec, false);
  }
