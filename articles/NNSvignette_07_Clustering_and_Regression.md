@@ -3,9 +3,7 @@
 ``` r
 
 library(NNS)
-library(data.table)
 require(knitr)
-require(rgl)
 ```
 
 ## Clustering and Regression
@@ -22,9 +20,11 @@ References.
 quadrants, and then assigns a quadrant identification (1:4) at each
 partition.
 
-**`NNS.part`** returns a `data.table` of observations along with their
-final quadrant identification. It also returns the regression points,
-which are the quadrant means used in **`NNS.reg`**.
+**`NNS.part`** returns a `data.frame` of observations along with their
+final quadrant identification. It also returns regression points that
+summarize observations within occupied cells. Their location follows the
+chosen reduction rule; these points support the subsequent **`NNS.reg`**
+fit.
 
 ``` r
 
@@ -38,9 +38,11 @@ for(i in 1 : 4){NNS.part(x, y, order = i, Voronoi = TRUE, obs.req = 0)}
 #### X-only Partitioning
 
 **`NNS.part`** offers a partitioning based on $`x`$ values only
-**`NNS.part(x, y, type = "XONLY", ...)`**, using the entire bandwidth in
-its regression point derivation, and shares the same limit condition as
-partitioning via both $`x`$ and $`y`$ values.
+**`NNS.part(x, y, type = "XONLY", ...)`**, using the response
+observations within each predictor cell to form regression points.
+Consistency requires suitable shrinking cells and growing cell
+occupancy; a fixed order or occupancy cutoff alone does not establish
+those conditions.
 
 ``` r
 
@@ -57,31 +59,33 @@ $`y`$ partitioning.
     ## [1] 4
     ## 
     ## $dt
-    ##          x         y quadrant prior.quadrant
-    ##      <num>     <num>   <char>         <char>
-    ##   1: -5.00 -125.0000    q1111           q111
-    ##   2: -4.95 -121.2874    q1111           q111
-    ##   3: -4.90 -117.6490    q1111           q111
-    ##   4: -4.85 -114.0841    q1111           q111
-    ##   5: -4.80 -110.5920    q1111           q111
-    ##  ---                                        
-    ## 197:  4.80  110.5920    q2222           q222
-    ## 198:  4.85  114.0841    q2222           q222
-    ## 199:  4.90  117.6490    q2222           q222
-    ## 200:  4.95  121.2874    q2222           q222
-    ## 201:  5.00  125.0000    q2222           q222
+    ##       x         y quadrant prior.quadrant
+    ## 1 -5.00 -125.0000    q1111           q111
+    ## 2 -4.95 -121.2874    q1111           q111
+    ## 3 -4.90 -117.6490    q1111           q111
+    ## 4 -4.85 -114.0841    q1111           q111
+    ## 5 -4.80 -110.5920    q1111           q111
+    ## 6 -4.75 -107.1719    q1111           q111
+    ## ---
+    ##        x        y quadrant prior.quadrant
+    ## 196 4.75 107.1719    q2222           q222
+    ## 197 4.80 110.5920    q2222           q222
+    ## 198 4.85 114.0841    q2222           q222
+    ## 199 4.90 117.6490    q2222           q222
+    ## 200 4.95 121.2874    q2222           q222
+    ## 201 5.00 125.0000    q2222           q222
+    ## --- [ 201 rows x 4 cols ]; showing first and last 6. Use as.data.frame(x) for all. ---
     ## 
     ## $regression.points
-    ##    quadrant          x            y
-    ##      <char>      <num>        <num>
-    ## 1:     q111 -4.4523966 -89.31996002
-    ## 2:     q112 -3.2250000 -31.51531806
-    ## 3:     q121 -2.0023966  -7.46341667
-    ## 4:     q122 -0.7590415  -0.51890098
-    ## 5:     q211  0.3739355   0.08338409
-    ## 6:     q212  1.3499632   2.26930682
-    ## 7:     q221  2.6206250  16.42843100
-    ## 8:     q222  4.1955267  75.78894504
+    ##   quadrant      x           y
+    ## 1     q111 -4.375 -84.9871094
+    ## 2     q112 -3.100 -30.6047500
+    ## 3     q121 -1.850  -5.8342500
+    ## 4     q122 -0.600  -0.2723437
+    ## 5     q211  0.650   0.3331250
+    ## 6     q212  1.900   6.2745313
+    ## 7     q221  3.150  28.9026563
+    ## 8     q222  4.400  79.7522344
 
 ### Clusters Used in Regression
 
@@ -93,13 +97,16 @@ endpoints and central point) for the order of `NNS` partitioning.
 for(i in 1 : 3){NNS.part(x, y, order = i, obs.req = 0, Voronoi = TRUE, type = "XONLY") ; NNS.reg(x, y, order = i, ncores = 1)}
 ```
 
-![](NNSvignette_07_Clustering_and_Regression_files/figure-html/depreg%7D-1.png)![](NNSvignette_07_Clustering_and_Regression_files/figure-html/depreg%7D-2.png)![](NNSvignette_07_Clustering_and_Regression_files/figure-html/depreg%7D-3.png)![](NNSvignette_07_Clustering_and_Regression_files/figure-html/depreg%7D-4.png)![](NNSvignette_07_Clustering_and_Regression_files/figure-html/depreg%7D-5.png)![](NNSvignette_07_Clustering_and_Regression_files/figure-html/depreg%7D-6.png)
+![](NNSvignette_07_Clustering_and_Regression_files/figure-html/depreg-1.png)![](NNSvignette_07_Clustering_and_Regression_files/figure-html/depreg-2.png)![](NNSvignette_07_Clustering_and_Regression_files/figure-html/depreg-3.png)![](NNSvignette_07_Clustering_and_Regression_files/figure-html/depreg-4.png)![](NNSvignette_07_Clustering_and_Regression_files/figure-html/depreg-5.png)![](NNSvignette_07_Clustering_and_Regression_files/figure-html/depreg-6.png)
 
 ## NNS Regression `NNS.reg()`
 
-**`NNS.reg`** can fit any $`f(x)`$, for both uni- and multivariate
-cases. **`NNS.reg`** returns a self-evident list of values provided
-below.
+**`NNS.reg`** estimates nonlinear relationships in univariate and
+multivariate settings using partition summaries and interpolation or
+distance weighting. Its fit depends on the observed support, selected
+resolution, and reduction rule. The examples below show its main
+outputs. Set `type = "REG"` when a numeric response should be treated as
+regression even if its values could trigger automatic classification.
 
 ### Univariate:
 
@@ -111,10 +118,10 @@ NNS.reg(x, y, ncores = 1)
 ![](NNSvignette_07_Clustering_and_Regression_files/figure-html/nonlinear-1.png)
 
     ## $R2
-    ## [1] 0.9999858
+    ## [1] 0.9999996
     ## 
     ## $SE
-    ## [1] 0.1822738
+    ## [1] 0.04417645
     ## 
     ## $Prediction.Accuracy
     ## NULL
@@ -126,76 +133,21 @@ NNS.reg(x, y, ncores = 1)
     ## NULL
     ## 
     ## $derivative
-    ##     Coefficient X.Lower.Range X.Upper.Range
-    ##           <num>         <num>         <num>
-    ##  1: 74.25250000    -5.0000000    -4.9750000
-    ##  2: 72.47650000    -4.9750000    -4.8500000
-    ##  3: 68.69350000    -4.8500000    -4.7250000
-    ##  4: 64.88656716    -4.7250000    -4.5854167
-    ##  5: 61.01480519    -4.5854167    -4.4250000
-    ##  6: 57.64628788    -4.4250000    -4.2875000
-    ##  7: 52.29438889    -4.2875000    -4.1000000
-    ##  8: 55.28971014    -4.1000000    -3.9562500
-    ##  9: 39.55816092    -3.9562500    -3.7750000
-    ## 10: 41.08694030    -3.7750000    -3.6354167
-    ## 11: 38.01863636    -3.6354167    -3.4750000
-    ## 12: 34.69626866    -3.4750000    -3.3354167
-    ## 13: 31.88168831    -3.3354167    -3.1750000
-    ## 14: 29.28265152    -3.1750000    -3.0375000
-    ## 15: 25.79438889    -3.0375000    -2.8500000
-    ## 16: 23.18416667    -2.8500000    -2.6875000
-    ## 17: 20.17544872    -2.6875000    -2.5250000
-    ## 18: 18.23350000    -2.5250000    -2.4000000
-    ## 19: 16.36150000    -2.4000000    -2.2750000
-    ## 20: 15.45634921    -2.2750000    -2.1437500
-    ## 21: 12.10506173    -2.1437500    -1.9750000
-    ## 22: 10.84291045    -1.9750000    -1.8354167
-    ## 23:  9.17837079    -1.8354167    -1.6500000
-    ## 24:  7.71713333    -1.6500000    -1.4937500
-    ## 25:  5.67487654    -1.4937500    -1.3250000
-    ## 26:  4.77015152    -1.3250000    -1.1875000
-    ## 27:  3.65525641    -1.1875000    -1.0250000
-    ## 28:  2.71828358    -1.0250000    -0.8854167
-    ## 29:  1.97577922    -0.8854167    -0.7250000
-    ## 30:  1.29696970    -0.7250000    -0.5875000
-    ## 31:  0.71536082    -0.5875000    -0.3854167
-    ## 32:  0.26031250    -0.3854167    -0.1854167
-    ## 33:  0.08077922    -0.1854167    -0.1052083
-    ## 34:  0.01168831    -0.1052083    -0.0250000
-    ## 35:  0.00625000    -0.0250000     0.0750000
-    ## 36:  0.05125000     0.0750000     0.1750000
-    ## 37:  0.17050000     0.1750000     0.3000000
-    ## 38:  0.40450000     0.3000000     0.4250000
-    ## 39:  0.68125000     0.4250000     0.5250000
-    ## 40:  0.99625000     0.5250000     0.6250000
-    ## 41:  1.30261905     0.6250000     0.7562500
-    ## 42:  2.23351852     0.7562500     0.9250000
-    ## 43:  2.85625000     0.9250000     1.0250000
-    ## 44:  3.47125000     1.0250000     1.1250000
-    ## 45:  4.21750000     1.1250000     1.2500000
-    ## 46:  5.19250000     1.2500000     1.3750000
-    ## 47:  6.18250000     1.3750000     1.5000000
-    ## 48:  7.35250000     1.5000000     1.6250000
-    ## 49:  7.76690476     1.6250000     1.7562500
-    ## 50: 10.84596774     1.7562500     1.9500000
-    ## 51: 10.93692308     1.9500000     2.1125000
-    ## 52: 14.30505155     2.1125000     2.3145833
-    ## 53: 17.95467391     2.3145833     2.5062500
-    ## 54: 21.46451613     2.5062500     2.7000000
-    ## 55: 20.50807692     2.7000000     2.8625000
-    ## 56: 26.01343750     2.8625000     3.0625000
-    ## 57: 32.71687737     3.0625000     3.2671585
-    ## 58: 34.19048114     3.2671585     3.5000000
-    ## 59: 33.57759494     3.5000000     3.6645833
-    ## 60: 46.95453488     3.6645833     3.8437500
-    ## 61: 42.67514286     3.8437500     4.0625000
-    ## 62: 57.09307692     4.0625000     4.2250000
-    ## 63: 55.24078947     4.2250000     4.3437500
-    ## 64: 59.68593153     4.3437500     4.5671585
-    ## 65: 66.33740696     4.5671585     4.8301031
-    ## 66: 72.01977335     4.8301031     5.0000000
-    ##     Coefficient X.Lower.Range X.Upper.Range
-    ##           <num>         <num>         <num>
+    ##   Coefficient X.Lower.Range X.Upper.Range
+    ## 1    74.25250        -5.000        -4.950
+    ## 2    70.76031        -4.950        -4.775
+    ## 3    66.10469        -4.775        -4.600
+    ## 4    61.43250        -4.600        -4.450
+    ## 5    57.42750        -4.450        -4.300
+    ## 6    53.08844        -4.300        -4.125
+    ## ---
+    ## 60     54.8325          4.20          4.35
+    ## 61     58.7475          4.35          4.50
+    ## 62     62.7975          4.50          4.65
+    ## 63     66.9825          4.65          4.80
+    ## 64     71.3025          4.80          4.95
+    ## 65     74.2525          4.95          5.00
+    ## --- [ 65 rows x 3 cols ]; showing first and last 6. Use as.data.frame(x) for all. ---
     ## 
     ## $Point.est
     ## NULL
@@ -204,92 +156,43 @@ NNS.reg(x, y, ncores = 1)
     ## NULL
     ## 
     ## $regression.points
-    ##              x             y
-    ##          <num>         <num>
-    ##  1: -5.0000000 -1.250000e+02
-    ##  2: -4.9750000 -1.231437e+02
-    ##  3: -4.8500000 -1.140841e+02
-    ##  4: -4.7250000 -1.054974e+02
-    ##  5: -4.5854167 -9.644035e+01
-    ##  6: -4.4250000 -8.665256e+01
-    ##  7: -4.2875000 -7.872620e+01
-    ##  8: -4.1000000 -6.892100e+01
-    ##  9: -3.9562500 -6.097310e+01
-    ## 10: -3.7750000 -5.380319e+01
-    ## 11: -3.6354167 -4.806814e+01
-    ## 12: -3.4750000 -4.196931e+01
-    ## 13: -3.3354167 -3.712629e+01
-    ## 14: -3.1750000 -3.201194e+01
-    ## 15: -3.0375000 -2.798557e+01
-    ## 16: -2.8500000 -2.314913e+01
-    ## 17: -2.6875000 -1.938170e+01
-    ## 18: -2.5250000 -1.610319e+01
-    ## 19: -2.4000000 -1.382400e+01
-    ## 20: -2.2750000 -1.177881e+01
-    ## 21: -2.1437500 -9.750167e+00
-    ## 22: -1.9750000 -7.707437e+00
-    ## 23: -1.8354167 -6.193948e+00
-    ## 24: -1.6500000 -4.492125e+00
-    ## 25: -1.4937500 -3.286323e+00
-    ## 26: -1.3250000 -2.328687e+00
-    ## 27: -1.1875000 -1.672792e+00
-    ## 28: -1.0250000 -1.078812e+00
-    ## 29: -0.8854167 -6.993854e-01
-    ## 30: -0.7250000 -3.824375e-01
-    ## 31: -0.5875000 -2.041042e-01
-    ## 32: -0.3854167 -5.954167e-02
-    ## 33: -0.1854167 -7.479167e-03
-    ## 34: -0.1052083 -1.000000e-03
-    ## 35: -0.0250000 -6.250000e-05
-    ## 36:  0.0750000  5.625000e-04
-    ## 37:  0.1750000  5.687500e-03
-    ## 38:  0.3000000  2.700000e-02
-    ## 39:  0.4250000  7.756250e-02
-    ## 40:  0.5250000  1.456875e-01
-    ## 41:  0.6250000  2.453125e-01
-    ## 42:  0.7562500  4.162813e-01
-    ## 43:  0.9250000  7.931875e-01
-    ## 44:  1.0250000  1.078813e+00
-    ## 45:  1.1250000  1.425938e+00
-    ## 46:  1.2500000  1.953125e+00
-    ## 47:  1.3750000  2.602188e+00
-    ## 48:  1.5000000  3.375000e+00
-    ## 49:  1.6250000  4.294063e+00
-    ## 50:  1.7562500  5.313469e+00
-    ## 51:  1.9500000  7.414875e+00
-    ## 52:  2.1125000  9.192125e+00
-    ## 53:  2.3145833  1.208294e+01
-    ## 54:  2.5062500  1.552425e+01
-    ## 55:  2.7000000  1.968300e+01
-    ## 56:  2.8625000  2.301556e+01
-    ## 57:  3.0625000  2.821825e+01
-    ## 58:  3.2671585  3.491404e+01
-    ## 59:  3.5000000  4.287500e+01
-    ## 60:  3.6645833  4.840131e+01
-    ## 61:  3.8437500  5.681400e+01
-    ## 62:  4.0625000  6.614919e+01
-    ## 63:  4.2250000  7.542681e+01
-    ## 64:  4.3437500  8.198666e+01
-    ## 65:  4.5671585  9.532100e+01
-    ## 66:  4.8301031  1.127641e+02
-    ## 67:  5.0000000  1.250000e+02
-    ##              x             y
-    ##          <num>         <num>
+    ##        x          y
+    ## 1 -5.000 -125.00000
+    ## 2 -4.950 -121.28738
+    ## 3 -4.775 -108.90432
+    ## 4 -4.600  -97.33600
+    ## 5 -4.450  -88.12113
+    ## 6 -4.300  -79.50700
+    ## ---
+    ##       x         y
+    ## 61 4.35  82.31287
+    ## 62 4.50  91.12500
+    ## 63 4.65 100.54463
+    ## 64 4.80 110.59200
+    ## 65 4.95 121.28738
+    ## 66 5.00 125.00000
+    ## --- [ 66 rows x 2 cols ]; showing first and last 6. Use as.data.frame(x) for all. ---
     ## 
     ## $Fitted.xy
-    ##          x         y     y.hat   NNS.ID gradient  residuals standard.errors
-    ##      <num>     <num>     <num>   <char>    <num>      <num>           <num>
-    ##   1: -5.00 -125.0000 -125.0000 q1111111 74.25250  0.0000000      0.00000000
-    ##   2: -4.95 -121.2874 -121.3318 q1111112 72.47650 -0.0444000      0.07380015
-    ##   3: -4.90 -117.6490 -117.7080 q1111121 72.47650 -0.0589500      0.07380015
-    ##   4: -4.85 -114.0841 -114.0841 q1111121 68.69350  0.0000000      0.05069967
-    ##   5: -4.80 -110.5920 -110.6495 q1111122 68.69350 -0.0574500      0.05069967
-    ##  ---                                                                       
-    ## 197:  4.80  110.5920  110.7671 q2222221 66.33741  0.1751022      0.27620216
-    ## 198:  4.85  114.0841  114.1970 q2222222 72.01977  0.1129090      0.12572307
-    ## 199:  4.90  117.6490  117.7980 q2222222 72.01977  0.1490227      0.12572307
-    ## 200:  4.95  121.2874  121.3990 q2222222 72.01977  0.1116363      0.12572307
-    ## 201:  5.00  125.0000  125.0000 q2222222 72.01977  0.0000000      0.12572307
+    ##       x         y     y.hat NNS.ID gradient   residuals
+    ## 1 -5.00 -125.0000 -125.0000      1 74.25250  0.00000000
+    ## 2 -4.95 -121.2874 -121.2874      2 70.76031  0.00000000
+    ## 3 -4.90 -117.6490 -117.7494      2 70.76031 -0.10035937
+    ## 4 -4.85 -114.0841 -114.2113      2 70.76031 -0.12721875
+    ## 5 -4.80 -110.5920 -110.6733      2 70.76031 -0.08132812
+    ## 6 -4.75 -107.1719 -107.2517      3 66.10469 -0.07982812
+    ## ---
+    ##        x        y    y.hat NNS.ID gradient residuals
+    ## 196 4.75 107.1719 107.2429     63  66.9825   0.07100
+    ## 197 4.80 110.5920 110.5920     64  71.3025   0.00000
+    ## 198 4.85 114.0841 114.1571     64  71.3025   0.07300
+    ## 199 4.90 117.6490 117.7223     64  71.3025   0.07325
+    ## 200 4.95 121.2874 121.2874     65  71.3025   0.00000
+    ## 201 5.00 125.0000 125.0000     65  74.2525   0.00000
+    ## --- [ 201 rows x 6 cols ]; showing first and last 6. Use as.data.frame(x) for all. ---
+    ## 
+    ## $class.levels
+    ## NULL
 
 ### Multivariate:
 
@@ -309,34 +212,40 @@ NNS.reg(z, g, order = "max", plot = FALSE, ncores = 1)
     ## [1] 1
     ## 
     ## $rhs.partitions
-    ##         Var1  Var2
-    ##        <num> <num>
-    ##     1: -5.00    -5
-    ##     2: -4.95    -5
-    ##     3: -4.90    -5
-    ##     4: -4.85    -5
-    ##     5: -4.80    -5
-    ##    ---            
-    ## 40397:  4.80     5
-    ## 40398:  4.85     5
-    ## 40399:  4.90     5
-    ## 40400:  4.95     5
-    ## 40401:  5.00     5
+    ##    Var1  Var2
+    ## 1 -5.00 -5.00
+    ## 2 -4.95 -4.95
+    ## 3 -4.90 -4.90
+    ## 4 -4.85 -4.85
+    ## 5 -4.80 -4.80
+    ## 6 -4.75 -4.75
+    ## ---
+    ##     Var1 Var2
+    ## 196 4.75 4.75
+    ## 197 4.80 4.80
+    ## 198 4.85 4.85
+    ## 199 4.90 4.90
+    ## 200 4.95 4.95
+    ## 201 5.00 5.00
+    ## --- [ 201 rows x 2 cols ]; showing first and last 6. Use as.data.frame(x) for all. ---
     ## 
     ## $RPM
-    ##         Var1  Var2         y.hat
-    ##        <num> <num>         <num>
-    ##     1:  -4.8 -4.80  7.105427e-15
-    ##     2:  -4.8 -2.55 -8.726063e+01
-    ##     3:  -4.8 -2.50 -8.806700e+01
-    ##     4:  -4.8 -2.45 -8.883587e+01
-    ##     5:  -4.8 -2.40 -8.956800e+01
-    ##    ---                          
-    ## 40397:  -2.6 -2.80  3.776000e+00
-    ## 40398:  -2.6 -2.75  2.770875e+00
-    ## 40399:  -2.6 -2.70  1.807000e+00
-    ## 40400:  -2.6 -2.65  8.836250e-01
-    ## 40401:  -2.6 -2.60  1.776357e-15
+    ##   Var1  Var2      y.hat
+    ## 1   -5 -5.00    0.00000
+    ## 2   -5 -4.55  -29.45363
+    ## 3   -5 -0.05 -110.14988
+    ## 4   -5  0.00 -110.00000
+    ## 5   -5  0.05 -109.85012
+    ## 6   -5  0.10 -109.70100
+    ## ---
+    ##       Var1  Var2     y.hat
+    ## 40396 -0.1 -0.35 -0.708125
+    ## 40397 -0.1 -0.30 -0.574000
+    ## 40398 -0.1 -0.25 -0.435375
+    ## 40399 -0.1 -0.20 -0.293000
+    ## 40400 -0.1 -0.15 -0.147625
+    ## 40401 -0.1 -0.10  0.000000
+    ## --- [ 40401 rows x 3 cols ]; showing first and last 6. Use as.data.frame(x) for all. ---
     ## 
     ## $Point.est
     ## NULL
@@ -345,19 +254,28 @@ NNS.reg(z, g, order = "max", plot = FALSE, ncores = 1)
     ## NULL
     ## 
     ## $Fitted.xy
-    ##         Var1  Var2          y      y.hat      NNS.ID residuals
-    ##        <num> <num>      <num>      <num>      <char>     <num>
-    ##     1: -5.00    -5   0.000000   0.000000     201.201         0
-    ##     2: -4.95    -5   3.562625   3.562625     402.201         0
-    ##     3: -4.90    -5   7.051000   7.051000     603.201         0
-    ##     4: -4.85    -5  10.465875  10.465875     804.201         0
-    ##     5: -4.80    -5  13.808000  13.808000    1005.201         0
-    ##    ---                                                        
-    ## 40397:  4.80     5 -13.808000 -13.808000 39597.40401         0
-    ## 40398:  4.85     5 -10.465875 -10.465875 39798.40401         0
-    ## 40399:  4.90     5  -7.051000  -7.051000 39999.40401         0
-    ## 40400:  4.95     5  -3.562625  -3.562625 40200.40401         0
-    ## 40401:  5.00     5   0.000000   0.000000 40401.40401         0
+    ##    Var1 Var2         y     y.hat NNS.ID residuals
+    ## 1 -5.00   -5  0.000000  0.000000    1.1         0
+    ## 2 -4.95   -5  3.562625  3.562625    2.1         0
+    ## 3 -4.90   -5  7.051000  7.051000    3.1         0
+    ## 4 -4.85   -5 10.465875 10.465875    4.1         0
+    ## 5 -4.80   -5 13.808000 13.808000    5.1         0
+    ## 6 -4.75   -5 17.078125 17.078125    6.1         0
+    ## ---
+    ##       Var1 Var2          y      y.hat  NNS.ID residuals
+    ## 40396 4.75    5 -17.078125 -17.078125 196.201         0
+    ## 40397 4.80    5 -13.808000 -13.808000 197.201         0
+    ## 40398 4.85    5 -10.465875 -10.465875 198.201         0
+    ## 40399 4.90    5  -7.051000  -7.051000 199.201         0
+    ## 40400 4.95    5  -3.562625  -3.562625 200.201         0
+    ## 40401 5.00    5   0.000000   0.000000 201.201         0
+    ## --- [ 40401 rows x 6 cols ]; showing first and last 6. Use as.data.frame(x) for all. ---
+    ## 
+    ## $n.best
+    ## [1] 1
+    ## 
+    ## $dist
+    ## [1] "NNS"
 
 ### Inter/Extrapolation
 
@@ -368,85 +286,133 @@ similar dimensions to $`x`$ and called specifically with
 
 ### NNS Dimension Reduction Regression
 
-**`NNS.reg`** also provides a dimension reduction regression by
-including a parameter **`NNS.reg(x, y, dim.red.method = "cor", ...)`**.
-Reducing all regressors to a single dimension using the returned
-equation **`NNS.reg(..., dim.red.method = "cor", ...)$equation`**.
+`dim.red.method = "cor"` builds a signed synthetic predictor from the
+selected correlations. For a continuous response, `$equation` reports
+its coefficients and denominator. The response is fitted as a nonlinear
+function of that index; the index itself is not a linear prediction
+equation for the response.
 
 ``` r
 
-NNS.reg(iris[ , 1 : 4], iris[ , 5], dim.red.method = "cor", location = "topleft", ncores = 1)$equation
+regression_x <- iris[, 2:4]
+regression_y <- iris$Sepal.Length
+reduced <- NNS.reg(regression_x, regression_y, dim.red.method = "cor",
+                   plot = FALSE, ncores = 1)
+reduced$equation
 ```
 
-![](NNSvignette_07_Clustering_and_Regression_files/figure-html/nonlinear_class-1.png)
+    ##       Variable Coefficient
+    ## 1  Sepal.Width  -0.1667777
+    ## 2 Petal.Length   0.8818981
+    ## 3  Petal.Width   0.8342888
+    ## 4  DENOMINATOR   3.0000000
 
-    ##        Variable Coefficient
-    ##          <char>       <num>
-    ## 1: Sepal.Length   0.7980781
-    ## 2:  Sepal.Width  -0.4402896
-    ## 3: Petal.Length   0.9354305
-    ## 4:  Petal.Width   0.9381792
-    ## 5:  DENOMINATOR   4.0000000
-
-Thus, our model for this regression would be:
-``` math
-Species = \frac{0.798*Sepal.Length -0.44*Sepal.Width +0.935*Petal.Length +0.938*Petal.Width}{4} 
-```
+With retained coefficients $`c_j`$, the index is
+$`X^\star = \sum_j c_j X_j / \sum_j \mathbf{1}\{|c_j| > 0\}`$, and the
+regression estimates a function $`\hat y = g(X^\star)`$.
 
 #### Threshold
 
-**`NNS.reg(x, y, dim.red.method = "cor", threshold = ...)`** offers a
-method of reducing regressors further by controlling the absolute value
-of required correlation.
+`threshold` retains coefficients whose absolute association meets the
+cutoff. This controls which coordinates contribute to the synthetic
+index; it does not establish a significance level.
 
 ``` r
 
-NNS.reg(iris[ , 1 : 4], iris[ , 5], dim.red.method = "cor", threshold = .75, location = "topleft", ncores = 1)$equation
+reduced_threshold <- NNS.reg(regression_x, regression_y,
+                            dim.red.method = "cor", threshold = .75,
+                            point.est = regression_x[1:10, ],
+                            plot = FALSE, ncores = 1)
+reduced_threshold$equation
 ```
 
-![](NNSvignette_07_Clustering_and_Regression_files/figure-html/nonlinear%20class%20threshold-1.png)
-
-    ##        Variable Coefficient
-    ##          <char>       <num>
-    ## 1: Sepal.Length   0.7980781
-    ## 2:  Sepal.Width   0.0000000
-    ## 3: Petal.Length   0.9354305
-    ## 4:  Petal.Width   0.9381792
-    ## 5:  DENOMINATOR   3.0000000
-
-Thus, our model for this further reduced dimension regression would be:
-``` math
-Species = \frac{\: 0.798*Sepal.Length + 0*Sepal.Width +0.935*Petal.Length +0.938*Petal.Width}{3} 
-```
-
-and the `point.est = (...)` operates in the same manner as the full
-regression above, again called with **`NNS.reg(...)$Point.est`**.
+    ##       Variable Coefficient
+    ## 1  Sepal.Width   0.0000000
+    ## 2 Petal.Length   0.8818981
+    ## 3  Petal.Width   0.8342888
+    ## 4  DENOMINATOR   2.0000000
 
 ``` r
 
-NNS.reg(iris[ , 1 : 4], iris[ , 5], dim.red.method = "cor", threshold = .75, point.est = iris[1 : 10, 1 : 4], location = "topleft", ncores = 1)$Point.est
+reduced_threshold$Point.est
 ```
 
-![](NNSvignette_07_Clustering_and_Regression_files/figure-html/final-1.png)
-
-    ##  [1] 1 1 1 1 1 1 1 1 1 1
+    ##  [1] 4.984375 4.984375 4.833689 5.085714 4.984375 5.183574 4.980726 5.085714
+    ##  [9] 4.984375 4.831294
 
 ## Classification
 
-For a classification problem, we simply set
-**`NNS.reg(x, y, type = "CLASS", ...)`**.
-
-**NOTE: Base category of response variable should be 1, not 0 for
-classification problems.**
+Set `type = "CLASS"` for nominal classes. Factor, character, logical,
+and numeric `0/1` responses are classified automatically. Numeric class
+values need not start at one. Factor and character predictions retain
+numeric codes with the mapping returned in `$class.levels`.
 
 ``` r
 
-NNS.reg(iris[ , 1 : 4], iris[ , 5], type = "CLASS", point.est = iris[1 : 10, 1 : 4], location = "topleft", ncores = 1)$Point.est
+classification <- NNS.reg(iris[, 1:4], iris$Species, type = "CLASS",
+                          point.est = iris[1:10, 1:4], plot = FALSE, ncores = 1)
+classification$class.levels[classification$Point.est]
 ```
 
-![](NNSvignette_07_Clustering_and_Regression_files/figure-html/class-1.png)
+    ##  [1] "setosa" "setosa" "setosa" "setosa" "setosa" "setosa" "setosa" "setosa"
+    ##  [9] "setosa" "setosa"
 
-    ##  [1] 1 1 1 1 1 1 1 1 1 1
+``` r
+
+classification$Point.probabilities
+```
+
+    ##       setosa versicolor virginica
+    ##  [1,]      1          0         0
+    ##  [2,]      1          0         0
+    ##  [3,]      1          0         0
+    ##  [4,]      1          0         0
+    ##  [5,]      1          0         0
+    ##  [6,]      1          0         0
+    ##  [7,]      1          0         0
+    ##  [8,]      1          0         0
+    ##  [9,]      1          0         0
+    ## [10,]      1          0         0
+
+With dimension reduction, classification uses one signed index per class
+indicator. Its `$equation` is therefore a named list, with one equation
+per class. Class probabilities are combined before labels are chosen;
+the numeric labels are never interpolation coordinates.
+
+``` r
+
+class_reduced <- NNS.reg(iris[, 1:4], iris$Species, dim.red.method = "cor",
+                         plot = FALSE, ncores = 1)
+class_reduced$equation
+```
+
+    ## $setosa
+    ##       Variable Coefficient
+    ## 1 Sepal.Length  -0.7495899
+    ## 2  Sepal.Width   0.6225472
+    ## 3 Petal.Length  -0.8173813
+    ## 4  Petal.Width  -0.8205282
+    ## 5  DENOMINATOR   4.0000000
+    ## 
+    ## $versicolor
+    ##       Variable Coefficient
+    ## 1 Sepal.Length  0.11686803
+    ## 2  Sepal.Width -0.48249049
+    ## 3 Petal.Length  0.01454939
+    ## 4  Petal.Width  0.01608235
+    ## 5  DENOMINATOR  4.00000000
+    ## 
+    ## $virginica
+    ##       Variable Coefficient
+    ## 1 Sepal.Length   0.6327219
+    ## 2  Sepal.Width  -0.1400567
+    ## 3 Petal.Length   0.8028319
+    ## 4  Petal.Width   0.8044458
+    ## 5  DENOMINATOR   4.0000000
+
+These examples demonstrate fitted outputs at training observations.
+Independent classification accuracy requires heldout observations, as
+shown in the classification vignette.
 
 ## Cross-Validation `NNS.stack()`
 
@@ -459,7 +425,7 @@ function as well as the `threshold` parameter in the dimension reduction
 
 or continuous dependent variables:
 
-**`NNS.stack(..., type = NULL, ...)`**.
+**`NNS.stack(..., type = "REG", ...)`**.
 
 Any objective function `obj.fn` can be called using
 [`expression()`](https://rdrr.io/r/base/expression.html) with the terms
@@ -469,64 +435,57 @@ Any objective function `obj.fn` can be called using
 
 ``` r
 
-NNS.stack(IVs.train = iris[ , 1 : 4], 
-          DV.train = iris[ , 5], 
-          IVs.test = iris[1 : 10, 1 : 4],
-          dim.red.method = "cor",
-          obj.fn = expression( mean(round(predicted) == actual) ),
-          objective = "max", type = "CLASS", 
-          folds = 1, ncores = 1)
+set.seed(123)
+stack_fit <- NNS.stack(IVs.train = iris[, 1:4],
+                       DV.train = iris$Species,
+                       IVs.test = iris[1:10, 1:4],
+                       dim.red.method = "cor",
+                       obj.fn = expression(mean(predicted == actual)),
+                       objective = "max", type = "CLASS",
+                       folds = 1, ncores = 1, status = FALSE)
+stack_fit[c("OBJfn.reg", "OBJfn.dim.red", "NNS.reg.n.best",
+            "NNS.dim.red.count", "weights", "class.levels")]
 ```
+
+    ## $OBJfn.reg
+    ## [1] 0.9722222
+    ## 
+    ## $OBJfn.dim.red
+    ## [1] 0.8888889
+    ## 
+    ## $NNS.reg.n.best
+    ## [1] 1
+    ## 
+    ## $NNS.dim.red.count
+    ## [1] 1
+    ## 
+    ## $weights
+    ##       reg   dim.red 
+    ## 0.5446865 0.4553135 
+    ## 
+    ## $class.levels
+    ## [1] "setosa"     "versicolor" "virginica"
 
 ``` r
-Folds Remaining = 0 
-Current NNS.reg(... , threshold = 0.9350 ) | eval(obj.fn) = 1.000000 | MAX Iterations Remaining = 2
-Current NNS.reg(... , threshold = 0.7950 ) | eval(obj.fn) = 0.973684 | MAX Iterations Remaining = 1
-Current NNS.reg(... , threshold = 0.4400 ) | eval(obj.fn) = 0.894737 | MAX Iterations Remaining = 0
-Current NNS.reg(. , n.best = 1 ) | eval(obj.fn) = 0.868421 | MAX Iterations Remaining = 12
-Current NNS.reg(. , n.best = 2 ) | eval(obj.fn) = 0.736842 | MAX Iterations Remaining = 11
-Current NNS.reg(. , n.best = 3 ) | eval(obj.fn) = 0.763158 | MAX Iterations Remaining = 10
-Current NNS.reg(. , n.best = 4 ) | eval(obj.fn) = 0.736842 | MAX Iterations Remaining = 9
-$OBJfn.reg
-[1] 0.9733333
 
-$NNS.reg.n.best
-[1] 1
-
-$probability.threshold
-[1] 0.495
-
-$OBJfn.dim.red
-[1] 0.9666667
-
-$NNS.dim.red.threshold
-[1] 0.935
-
-$reg
- [1] 1 1 1 1 1 1 1 1 1 1
-
-$reg.pred.int
-NULL
-
-$dim.red
- [1] 1 1 1 1 1 1 1 1 1 1
-
-$dim.red.pred.int
-NULL
-
-$stack
- [1] 1 1 1 1 1 1 1 1 1 1
-
-$pred.int
-NULL
+stack_fit$class.levels[stack_fit$stack]
 ```
+
+    ##  [1] "setosa" "setosa" "setosa" "setosa" "setosa" "setosa" "setosa" "setosa"
+    ##  [9] "setosa" "setosa"
+
+The displayed objectives describe internal tuning folds. The final
+predictions above are at supplied training rows and are not an
+independent test score. For nominal models, the selected dimension count
+is reported directly; a single scalar coefficient threshold cannot
+summarize the class-specific equations.
 
 ## Increasing Dimensions
 
-Given multicollinearity is not an issue for nonparametric regressions as
-it is for OLS, in the case of an ill-fit univariate model a better
-option may be to increase the dimensionality of regressors with a copy
-of itself and cross-validate the number of clusters `n.best` via:
+A duplicated predictor changes its weight in the multivariate geometry
+and can be used to compare that prediction path with univariate
+interpolation. It adds no information. Choose this representation and
+the neighbor count `n.best` using heldout performance:
 
 **`NNS.stack(IVs.train = cbind(x, x), DV.train = y, method = 1, ...)`**.
 
@@ -542,11 +501,14 @@ nns.params = NNS.stack(IVs.train = cbind(x, x),
 
 ``` r
 
-NNS.reg(cbind(x, x), y, 
-        n.best = nns.params$NNS.reg.n.best,
-        point.est = cbind(x, x), 
-        residual.plot = TRUE,  
-        ncores = 1, confidence.interval = .95)
+duplicated_fit <- NNS.reg(cbind(x, x), y,
+                          n.best = nns.params$NNS.reg.n.best,
+                          point.est = cbind(x, x), plot = FALSE,
+                          residual.plot = FALSE, ncores = 1,
+                          confidence.interval = .95)
+plot(x, y, pch = 19, col = "steelblue", main = "Tuned multivariate prediction path")
+o <- order(x)
+lines(x[o], duplicated_fit$Point.est[o], col = "red", lwd = 2)
 ```
 
 ![](NNSvignette_07_Clustering_and_Regression_files/figure-html/stack2res-1.png)
@@ -609,7 +571,7 @@ y_mis[miss] <- NA
 
 # ---- Increasing dimensions trick ----
 # Duplicate x so the distance operates in a 2D space: cbind(x, x).
-# This sharpens nearest-neighbor selection even in a nominally univariate setting.
+# This chooses the multivariate neighbor path; duplication adds no information.
 x2_train <- cbind(x[!miss], x[!miss])
 x2_miss  <- cbind(x[miss],  x[miss])
 
@@ -618,7 +580,7 @@ y_hat_uni <- NNS::NNS.reg(
   x         = x2_train,             # predictors (duplicated x)
   y         = y[!miss],             # observed responses
   point.est = x2_miss,              # rows to impute
-  order     = "max",                # dependence-maximizing order
+  order     = "max",                # maximum requested partition order
   n.best    = 1,                    # 1-NN donor
   plot      = FALSE
 )$Point.est
@@ -640,7 +602,7 @@ legend("topleft",
        bty    = "n")
 ```
 
-![](images/uni_impute.png)
+![](NNSvignette_07_Clustering_and_Regression_files/figure-html/uniimpute-1.png)
 
 ### Multivariate Imputation
 
@@ -674,7 +636,7 @@ y_hat_mv <- NNS::NNS.reg(
   x         = X_obs,     # all observed predictors
   y         = y_obs,     # observed responses
   point.est = X_mis,     # rows to impute
-  order     = "max",     # dependence-maximizing order
+  order     = "max",     # maximum requested partition order
   n.best    = 1,         # 1-NN donor
   plot      = FALSE
 )$Point.est
@@ -701,27 +663,23 @@ legend("topleft",
        bty    = "n")
 ```
 
-![](images/multi_impute.png)
+![](NNSvignette_07_Clustering_and_Regression_files/figure-html/multiimpute-1.png)
 
 ### A Note on Uncertainty Propagation
 
-A common concern with local imputation methods is whether imputation
-uncertainty propagates correctly into downstream inference. `NNS`
-addresses this through bootstrap multiple imputation: resampling
-complete cases across `m` iterations generates between-imputation
-variance that flows through standard Rubin’s rules pooling identically
-to any classical procedure.
+A completed data set does not by itself represent imputation
+uncertainty. Bootstrap model refits can produce multiple completed data
+sets, but valid pooled inference also depends on the missingness
+assumptions, estimand, imputation design, and sampling calibration.
+Applying Rubin’s pooling formula alone does not establish those
+conditions. A smaller pooled standard error is not, by itself, evidence
+of more accurate uncertainty.
 
-Empirically, `NNS` bootstrap MI outperforms MICE with predictive mean
-matching on nonlinear data — producing a pooled estimate closer to the
-true parameter with a smaller pooled SE. The advantage comes not from
-compressing uncertainty but from a more accurate imputation model, which
-reduces between-imputation variance driven by model error rather than
-genuine data uncertainty.
-
-See [NNS Multiple Imputation vs
+[NNS Multiple Imputation vs
 MICE](https://github.com/OVVO-Financial/NNS/blob/NNS-Beta-Version/examples/NNS_MI_vs_MICE.md)
-for the full reproducible comparison.
+supplies an illustrative simulation. A general comparison requires
+repeated samples and assessment of bias, interval coverage, and the
+missingness mechanism.
 
 ## References
 

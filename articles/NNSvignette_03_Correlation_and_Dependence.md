@@ -3,7 +3,6 @@
 ``` r
 
 library(NNS)
-library(data.table)
 require(knitr)
 require(rgl)
 ```
@@ -73,10 +72,10 @@ NNS.dep(x, y)
 ```
 
     ## $Correlation
-    ## [1] 0.9595032
+    ## [1] 0.9169329
     ## 
     ## $Dependence
-    ## [1] 0.9595032
+    ## [1] 0.9169329
 
 ### Cyclic Relationship
 
@@ -104,10 +103,10 @@ NNS.dep(x, y)
 ```
 
     ## $Correlation
-    ## [1] 0.202252
+    ## [1] 0.09141861
     ## 
     ## $Dependence
-    ## [1] 0.8197963
+    ## [1] 0.8050198
 
 ### Asymmetrical Analysis
 
@@ -132,10 +131,10 @@ NNS.dep(x, y, asym = TRUE)
 ```
 
     ## $Correlation
-    ## [1] 0.202252
+    ## [1] 0.09141861
     ## 
     ## $Dependence
-    ## [1] 0.8197963
+    ## [1] 0.8050198
 
 ``` r
 
@@ -150,10 +149,10 @@ NNS.dep(y, x, asym = TRUE)
 ```
 
     ## $Correlation
-    ## [1] 0.07270847
+    ## [1] -0.05928228
     ## 
     ## $Dependence
-    ## [1] 0.4086234
+    ## [1] 0.05928228
 
 ### Dependence
 
@@ -175,17 +174,20 @@ NNS.dep(df$x, df$y)
 ```
 
     ## $Correlation
-    ## [1] 0.05834412
+    ## [1] -0.05131028
     ## 
     ## $Dependence
-    ## [1] 0.46764
+    ## [1] 0.8634874
 
 ## p-values for `NNS.dep()`
 
-p-values and confidence intervals can be obtained from sampling random
-permutations of $`y \rightarrow y_p`$ and running **`NNS.dep(x,$y_p$)`**
-to compare against a null hypothesis of 0 correlation, or independence
-between $`(x, y)`$.
+Permutation p-values and null reference intervals can be obtained by
+permuting $`y`$ and recomputing `NNS.dep(x, y_perm)`. Quantiles of those
+shuffled statistics describe the null distribution; they are not
+confidence intervals for the original population dependence. The
+permutation interpretation requires exchangeability under the null, so
+unrestricted shuffling is not automatically appropriate for serial,
+clustered, or other dependent observations.
 
 Simply set **`NNS.dep(..., p.value = TRUE, print.map = TRUE)`** to run
 100 permutations and plot the results.
@@ -207,24 +209,24 @@ NNS.dep(x, y, p.value = TRUE, print.map = TRUE)
 ![](NNSvignette_03_Correlation_and_Dependence_files/figure-html/permutattions_res-1.png)
 
     ## $Correlation
-    ## [1] 0.2957015
+    ## [1] 0.002403968
     ## 
     ## $`Correlation p.value`
-    ## [1] 0.18
+    ## [1] 0.8712871
     ## 
     ## $`Correlation 95% CIs`
     ##       2.5%      97.5% 
-    ## -0.1544429  0.4062421 
+    ## -0.1996010  0.1585008 
     ## 
     ## $Dependence
-    ## [1] 0.7932674
+    ## [1] 0.935499
     ## 
     ## $`Dependence p.value`
-    ## [1] 0
+    ## [1] 0.00990099
     ## 
     ## $`Dependence 95% CIs`
-    ##      2.5%     97.5% 
-    ## 0.5467152 0.6782456
+    ##       2.5%      97.5% 
+    ## 0.03359598 0.26350373
 
 ## Multivariate Dependence `NNS.copula()`
 
@@ -241,7 +243,7 @@ x = rnorm(1000); y = rnorm(1000); z = rnorm(1000)
 NNS.copula(cbind(x, y, z), plot = TRUE, independence.overlay = TRUE)
 ```
 
-    ## [1] 0.3278775
+    ## [1] 0.1978452
 
 ## References
 

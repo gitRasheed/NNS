@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">NNS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -17,6 +17,8 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/examples/">Examples</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/book/">Book</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/OVVO-Financial/NNS/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -51,15 +53,15 @@
 
 
 <dt id="arg-degree">degree<a class="anchor" aria-label="anchor" href="#arg-degree"></a></dt>
-<dd><p>numeric; <code>(degree = 0)</code> (default) is frequency, <code>(degree = 1)</code> is area.</p></dd>
+<dd><p>numeric; <code>(degree = 0)</code> (default) is frequency, the empirical distribution of <code>variable</code>; <code>(degree = 1)</code> is area, the share of deviation area below each point, which is not \(P(X \le t)\).</p></dd>
 
 
 <dt id="arg-target">target<a class="anchor" aria-label="anchor" href="#arg-target"></a></dt>
-<dd><p>numeric; <code>NULL</code> (default) Must lie within support of each variable.</p></dd>
+<dd><p>numeric; <code>NULL</code> (default) Must lie within support of each variable (one value per column for multivariate <code>variable</code>).</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>options("CDF", "survival", "hazard", "cumulative hazard"); <code>"CDF"</code> (default) Selects type of function to return for bi-variate analysis.  Multivariate analysis is restricted to <code>"CDF"</code>.</p></dd>
+<dd><p>options("CDF", "survival", "hazard", "cumulative hazard"); <code>"CDF"</code> (default) Selects type of function to return.  For multivariate <code>variable</code> the joint survival is \(P(X_1 &gt; t_1, \ldots, X_d &gt; t_d)\) at <code>degree = 0</code>, by inclusion-exclusion over the column subsets for \(d \le 3\) and as the share of observations above \(t\) in every column for larger \(d\), and the joint upper partial moment <a href="Co.UPM_nD.html">Co.UPM_nD</a> at <code>degree &gt; 0</code>, normalised like the CDF.  The multivariate cumulative hazard is the transform \(-\log S(t)\) and requires <code>degree = 0</code>; it is not automatically an integral of a scalar multivariate hazard. Multivariate <code>type = "hazard"</code> is unsupported and raises an error: a joint density-over-survival or a coordinate-hazard definition requires a separate estimator, and dividing the joint CDF by survival does not estimate either.  At <code>degree &gt; 0</code> with two or more columns, each target's co-partial moment is normalised by its own total, so the "CDF" and "survival" values are generalised co-partial-moment ratios, not a joint distribution function: they can assign a negative probability to a rectangle.  At <code>degree = 0</code>, and in one dimension at any degree, they are proper distribution functions; at positive degree the univariate induced law describes deviation-area balance rather than the frequency law of the original variable.</p></dd>
 
 
 <dt id="arg-plot">plot<a class="anchor" aria-label="anchor" href="#arg-plot"></a></dt>
@@ -68,7 +70,7 @@
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Returns:</p><ul><li><p><code>"Function"</code> a data.table containing the observations and resulting CDF of the variable.</p></li>
+    <p>Returns:</p><ul><li><p><code>"Function"</code> a data.frame (class <code>NNS.data.frame</code>) containing the observations and the resulting function of the variable.</p></li>
 <li><p><code>"target.value"</code> value from the <code>target</code> argument.</p></li>
 </ul></div>
     <div class="section level2">
@@ -91,7 +93,7 @@
 <span class="r-in"><span><span class="co">## Empirical CDF (degree = 0)</span></span></span>
 <span class="r-in"><span><span class="fu">NNS.CDF</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co">## Continuous CDF (degree = 1)</span></span></span>
+<span class="r-in"><span><span class="co">## Area-weighted CDF (degree = 1): the share of deviation area below each point</span></span></span>
 <span class="r-in"><span><span class="fu">NNS.CDF</span><span class="op">(</span><span class="va">x</span>, <span class="fl">1</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co">## Joint CDF</span></span></span>
@@ -114,7 +116,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

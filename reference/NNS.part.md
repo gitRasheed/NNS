@@ -1,13 +1,9 @@
 # NNS Partition Map
 
-Creates partitions based on partial moment quadrant centroids,
-iteratively assigning identifications to observations based on those
-quadrants (unsupervised partitional and hierarchical clustering method).
-Basis for correlation, dependence
-[NNS.dep](https://OVVO-Financial.github.io/NNS/reference/NNS.dep.md),
-regression
-[NNS.reg](https://OVVO-Financial.github.io/NNS/reference/NNS.reg.md)
-routines.
+Creates partitions based on partial-moment quadrant centroids. Numeric
+orders use the compiled recursive partitioner. \`order = "max"\` returns
+the maximum observable partition representation without passing an
+invalid integer to C++.
 
 ## Usage
 
@@ -28,101 +24,67 @@ NNS.part(
 
 - x:
 
-  a numeric vector.
+  Numeric vector.
 
 - y:
 
-  a numeric vector with compatible dimensions to `x`.
+  Numeric vector of the same length as x.
 
 - Voronoi:
 
-  logical; `FALSE` (default) Displays a Voronoi type diagram using
-  partial moment quadrants.
+  Logical; draw the partition map.
 
 - type:
 
-  `NULL` (default) Controls the partitioning basis. Set to
-  `(type = "XONLY")` for X-axis based partitioning. Defaults to `NULL`
-  for both X and Y-axis partitioning.
+  NULL or "XONLY".
 
 - order:
 
-  integer; Number of partial moment quadrants to be generated.
-  `(order = "max")` will institute a perfect fit.
+  NULL, a positive integer, or "max".
 
 - obs.req:
 
-  integer; (8 default) Required observations per cluster where quadrants
-  will not be further partitioned if observations are not greater than
-  the entered value. Reduces minimum number of necessary observations in
-  a quadrant to 1 when `(obs.req = 1)`.
+  Nonnegative integer minimum-observation stopping control.
 
 - min.obs.stop:
 
-  logical; `TRUE` (default) Stopping condition where quadrants will not
-  be further partitioned if a single cluster contains less than the
-  entered value of `obs.req`.
+  Logical stopping control.
 
 - noise.reduction:
 
-  the method of determining regression points options for the dependent
-  variable `y`: ("mean", "median", "mode", "off");
-  `(noise.reduction = "mean")` uses means for partitions.
-  `(noise.reduction = "median")` uses medians instead of means for
-  partitions, while `(noise.reduction = "mode")` uses modes instead of
-  means for partitions. Defaults to `(noise.reduction = "off")` where an
-  overall central tendency measure is used, which is the default for the
-  independent variable `x`.
+  One of "mean", "median", "mode", "mode_class", or "off".
 
 ## Value
 
-Returns:
+A list containing \`order\`, \`dt\`, and \`regression.points\`.
 
-- `"dt"` a `data.table` of `x` and `y` observations with their partition
-  assignment `"quadrant"` in the 3rd column and their prior partition
-  assignment `"prior.quadrant"` in the 4th column.
+- `order`: the order actually completed. It can be smaller than the
+  requested `order` when `obs.req` / `min.obs.stop` stop the recursion
+  (e.g. `order = 3` returns 2 for `n = 200` with the default
+  `obs.req = 8`).
 
-- `"regression.points"` the `data.table` of regression points for that
-  given `(order = ...)`.
+- `dt`: the observations with their final `quadrant` and
+  `prior.quadrant` labels.
 
-- `"order"` the `order` of the final partition given `"min.obs.stop"`
-  stopping condition.
+- `regression.points`: for a numeric `order`, one (x, y) centroid per
+  `prior.quadrant`, i.e. per cell of the previous order: `order = 1`
+  gives 4 final quadrants but a single regression point (`"q"`),
+  `order = 2` gives up to 16 quadrants and 4 points.
 
-## Note
+## Details
 
-`min.obs.stop = FALSE` will not generate regression points due to
-unequal partitioning of quadrants from individual cluster observations.
-
-## References
-
-Viole, F. and Nawrocki, D. (2013) "Nonlinear Nonparametric Statistics:
-Using Partial Moments" (ISBN: 1490523995, 2nd edition:
-<https://ovvo-financial.github.io/NNS/book/>)
-
-## Author
-
-Fred Viole, OVVO Financial Systems
-
-## Examples
-
-``` r
-if (FALSE) { # \dontrun{
-set.seed(123)
-x <- rnorm(100) ; y <- rnorm(100)
-NNS.part(x, y)
-
-## Data.table of observations and partitions
-NNS.part(x, y, order = 1)$dt
-
-## Regression points
-NNS.part(x, y, order = 1)$regression.points
-
-## Voronoi style plot
-NNS.part(x, y, Voronoi = TRUE)
-
-## Examine final counts by quadrant
-DT <- NNS.part(x, y)$dt
-DT[ , counts := .N, by = quadrant]
-DT
-} # }
-```
+For a numeric `order`, each cell is split at a centre per coordinate,
+set by `noise.reduction`: `"mean"` and `"median"` use the mean and
+median, `"mode"` uses the continuous `NNS.mode(multi = FALSE)`,
+`"mode_class"` uses
+[NNS.gravity](https://OVVO-Financial.github.io/NNS/reference/NNS.gravity.md)
+for x and `NNS.mode(discrete = TRUE)` for y, and `"off"` uses
+[NNS.gravity](https://OVVO-Financial.github.io/NNS/reference/NNS.gravity.md).
+Regression points are the same centres of each `prior.quadrant`.
+`order = "max"` makes no splits: every observation is its own regression
+point, or with `type = "XONLY"` each distinct x gets the y centre of its
+observations. Quadrant labels append one digit per order. With split
+centres `cx` and `cy`, the digit for the default joint partition
+(`type = NULL`) is `1 + (x <= cx) + 2 * (y <= cy)`: 1 = upper-right, 2 =
+upper-left, 3 = lower-right, 4 = lower-left. For `type = "XONLY"` the
+digit is 1 for `x <= cx` and 2 for `x > cx`.

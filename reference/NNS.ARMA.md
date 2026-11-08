@@ -45,7 +45,12 @@ NNS.ARMA(
 - seasonal.factor:
 
   logical or integer(s); `TRUE` (default) Automatically selects the best
-  seasonal lag from the seasonality test. To use weighted average of all
+  seasonal lag from the seasonality test,
+  [NNS.seas](https://OVVO-Financial.github.io/NNS/reference/NNS.seas.md)'s
+  `best.period` without its permutation test. For a
+  significance-filtered lag, run `NNS.seas(variable, p.value = TRUE)`
+  first and pass its `best.period` (or `periods`) here; `best.period` is
+  1 when no period is significant. To use weighted average of all
   seasonal lags set to `(seasonal.factor = FALSE)`. Otherwise, directly
   input known frequency integer lag to use, i.e.
   `(seasonal.factor = 12)` for monthly data. Multiple frequency integers
@@ -58,19 +63,23 @@ NNS.ARMA(
   `(weights = NULL)` each `seasonal.factor` is weighted on its
   [NNS.seas](https://OVVO-Financial.github.io/NNS/reference/NNS.seas.md)
   result and number of observations it contains, else an `"equal"`
-  weight is used.
+  weight is used. Numeric weights must have one value per seasonal lag
+  and are treated as relative weights (rescaled to sum to 1). With
+  `(dynamic = TRUE)` the lags are re-selected at every step, so only
+  `NULL` or `"equal"` weights are accepted.
 
 - best.periods:
 
-  integer; \[2\] (default) used in conjunction with
+  integer; 1 (default) used in conjunction with
   `(seasonal.factor = FALSE)`, uses the `best.periods` number of
   detected seasonal lags instead of `ALL` lags when
   `(seasonal.factor = FALSE, best.periods = NULL)`.
 
 - modulo:
 
-  integer(s); NULL (default) Used to find the nearest multiple(s) in the
-  reported seasonal period.
+  integer(s); NULL (default) Adds the multiples of `modulo` on either
+  side of each detected period (period 7 with `modulo = 5` gives 5 and
+  10).
 
 - mod.only:
 
@@ -81,7 +90,8 @@ NNS.ARMA(
 
   logical; `FALSE` (default) If the variable can be negative, set to
   `(negative.values = TRUE)`. If there are negative values within the
-  variable, `negative.values` will automatically be detected.
+  training data `variable[1 : training.set]`, `negative.values` will
+  automatically be detected.
 
 - method:
 
@@ -119,17 +129,32 @@ NNS.ARMA(
 
 - pred.int:
 
-  numeric \[0, 1\]; `NULL` (default) Plots and returns the associated
-  prediction intervals for the final estimate. Constructed using the
-  maximum entropy bootstrap
-  [NNS.meboot](https://OVVO-Financial.github.io/NNS/reference/NNS.meboot.md)
-  on the final estimates.
+  numeric \[0, 1\]; `NULL` (default) Plots and returns lower and upper
+  bands around the forecasts. The forecast path itself is resampled with
+  the maximum entropy bootstrap
+  ([NNS.MC](https://OVVO-Financial.github.io/NNS/reference/NNS.MC.md)
+  over `rho` from -1 to 1), the bounds at each step are
+  [LPM.VaR](https://OVVO-Financial.github.io/NNS/reference/LPM.VaR.md)
+  and
+  [UPM.VaR](https://OVVO-Financial.github.io/NNS/reference/UPM.VaR.md)
+  of the replicates at probability `(1 - pred.int) / 2`, widened by the
+  spread of the per-lag linear estimates; a one-point (`h = 1`) or
+  constant path has no dispersion to resample, so its band is the path
+  widened by that spread alone (zero width with a single seasonal lag);
+  [NNS.ARMA.optim](https://OVVO-Financial.github.io/NNS/reference/NNS.ARMA.optim.md)
+  gives intervals from validation errors. The band therefore describes
+  the dispersion of the forecast path, not the uncertainty of the
+  outcome at each horizon: it does not widen with the horizon, and it is
+  not calibrated to contain future values with probability `pred.int`.
+  [NNS.ARMA.optim](https://OVVO-Financial.github.io/NNS/reference/NNS.ARMA.optim.md)
+  derives its interval from validation errors instead.
 
 ## Value
 
 Returns a vector of forecasts of length `(h)` if no `pred.int`
 specified. Else, returns a `data.table` with the forecasts as well as
-lower and upper prediction intervals per forecast point.
+the lower and upper forecast-path bands per forecast point (see
+`pred.int`).
 
 ## Note
 

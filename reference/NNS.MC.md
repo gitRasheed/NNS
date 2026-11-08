@@ -2,8 +2,9 @@
 
 Monte Carlo sampling from the maximum entropy bootstrap routine
 [NNS.meboot](https://OVVO-Financial.github.io/NNS/reference/NNS.meboot.md),
-ensuring the replicates are sampled from the full \[-1,1\] correlation
-space.
+ensuring the replicates are sampled across the full \[-1,1\] range of
+`rho` (the target dependence of the detrended residuals, see
+[NNS.meboot](https://OVVO-Financial.github.io/NNS/reference/NNS.meboot.md)).
 
 ## Usage
 
@@ -33,16 +34,17 @@ NNS.MC(
 
 - reps:
 
-  numeric; number of replicates to generate, `30` default.
+  numeric; number of replicates to generate for each `rho` value, `30`
+  default. The defaults give 201 `rho` values and 6030 replicates.
 
 - lower_rho:
 
-  numeric `[-1,1]`; `.01` default will set the `from` argument in
+  numeric `[-1,1]`; `-1` default will set the `from` argument in
   `seq(from, to, by)`.
 
 - upper_rho:
 
-  numeric `[-1,1]`; `.01` default will set the `to` argument in
+  numeric `[-1,1]`; `1` default will set the `to` argument in
   `seq(from, to, by)`.
 
 - by:
@@ -52,8 +54,9 @@ NNS.MC(
 
 - exp:
 
-  numeric; `1` default will exponentially weight maximum rho value if
-  `exp > 1`. Shrinks values towards `upper_rho`.
+  positive finite numeric; `1` default will exponentially weight maximum
+  rho value if `exp > 1`. Shrinks values towards `upper_rho`, keeping
+  them within `[lower_rho, upper_rho]`.
 
 - type:
 

@@ -15,13 +15,18 @@ NNS.VAR(
   tau = 1,
   dim.red.method = "cor",
   naive.weights = TRUE,
-  obj.fn = expression(mean((predicted - actual)^2)/(NNS::Co.LPM(1, predicted, actual,
-    target_x = mean(predicted), target_y = mean(actual)) + NNS::Co.UPM(1, predicted,
-    actual, target_x = mean(predicted), target_y = mean(actual)))),
+  obj.fn = expression({
+     .denom <- NNS::Co.LPM(1, predicted, actual, target_x =
+    mean(predicted), target_y = mean(actual)) + NNS::Co.UPM(1, predicted, actual,
+    target_x = mean(predicted), target_y = mean(actual))
+     if (.denom == 0) Inf else
+mean((predicted - actual)^2)/.denom
+ }),
   objective = "min",
   status = TRUE,
   ncores = NULL,
-  nowcast = FALSE
+  nowcast = FALSE,
+  validation = c("pipeline", "observed")
 )
 ```
 
@@ -45,18 +50,17 @@ NNS.VAR(
 
 - dim.red.method:
 
-  options: ("cor", "NNS.dep", "NNS.caus", "all") method for reducing
-  regressors via
-  [NNS.stack](https://OVVO-Financial.github.io/NNS/reference/NNS.stack.md).
-  `(dim.red.method = "cor")` (default) uses standard linear correlation
-  for dimension reduction in the lagged variable matrix.
-  `(dim.red.method = "NNS.dep")` uses
-  [NNS.dep](https://OVVO-Financial.github.io/NNS/reference/NNS.dep.md)
-  for nonlinear dependence weights, while
-  `(dim.red.method = "NNS.caus")` uses
-  [NNS.caus](https://OVVO-Financial.github.io/NNS/reference/NNS.caus.md)
-  for causal weights. `(dim.red.method = "all")` averages all methods
-  for further feature engineering.
+  options: ("cor", "NNS.dep", "NNS.caus", "all") method for screening
+  lagged regressors with
+  [NNS.reg](https://OVVO-Financial.github.io/NNS/reference/NNS.reg.md)
+  before the multivariate
+  [NNS.stack](https://OVVO-Financial.github.io/NNS/reference/NNS.stack.md)
+  fit. `dim.red.method = "cor"` (default) uses signed Spearman
+  rank-correlation coefficients, screened by magnitude. `"NNS.dep"` uses
+  nonlinear dependence weights, and `"NNS.caus"` uses directional
+  association weights. `"all"` averages the Spearman, dependence,
+  directional-association, and unit-weight coefficients. The coefficient
+  cutoff is selected by scoring `NNS.reg` validation forecasts.
 
 - naive.weights:
 
@@ -94,28 +98,52 @@ NNS.VAR(
   logical; `FALSE` (default) internal call for frequency alignment in
   downstream nowcasting applications.
 
+- validation:
+
+  `"pipeline"` (default) tunes with a chronological holdout whose
+  predictors are built by completing and forecasting each series using
+  only its prefix. Only observed holdout targets are scored.
+  `"observed"` retains the former conditional-regression validation on
+  realized covariates; it is not a deployment forecast score.
+
 ## Value
 
 Returns the following matrices of forecasted variables:
 
-- `"interpolated_and_extrapolated"` Returns a `data.frame` of the linear
-  interpolated and
-  [NNS.ARMA](https://OVVO-Financial.github.io/NNS/reference/NNS.ARMA.md)
-  extrapolated values to replace `NA` values in the original `variables`
-  argument. This is required for working with variables containing
-  different frequencies, e.g. where `NA` would be reported for
-  intra-quarterly data when indexed with monthly periods.
+- `"interpolated_and_extrapolated"` Returns a `data.frame` of the
+  original `variables` with their `NA` values replaced. When a
+  variable's latest values are missing, every `NA` of that variable is
+  estimated from its own observations by the
+  [NNS.stack](https://OVVO-Financial.github.io/NNS/reference/NNS.stack.md)
+  fit on the time index used in NNS 13.0:
+  [NNS.reg](https://OVVO-Financial.github.io/NNS/reference/NNS.reg.md)
+  with one nearest regression point, on the index duplicated into two
+  predictors. The latest observation keeps its own regression point, and
+  values after it (or before the first observation) extend the gradient
+  at that boundary. When only earlier values are missing, they are
+  interpolated linearly with `NNS.reg(order = "max")` on the index. This
+  is required for working with variables containing different
+  frequencies, e.g. where `NA` would be reported for intra-quarterly
+  data when indexed with monthly periods.
 
 - `"relevant_variables"` Returns the relevant variables from the
-  dimension reduction step.
+  dimension reduction step: the lagged regressors whose dimension
+  reduction coefficient meets the cross-validated threshold. These are
+  the only regressors used in the `"multivariate"` estimate.
 
 - `"univariate"` Returns the univariate
   [NNS.ARMA](https://OVVO-Financial.github.io/NNS/reference/NNS.ARMA.md)
   forecasts.
 
-- `"multivariate"` Returns the multi-variate
-  [NNS.reg](https://OVVO-Financial.github.io/NNS/reference/NNS.reg.md)
-  forecasts.
+- `"multivariate"` Returns the multi-variate forecasts:
+  [NNS.stack](https://OVVO-Financial.github.io/NNS/reference/NNS.stack.md)
+  `(method = 1, stack = FALSE)` on the relevant variables, evaluated on
+  the lag-matrix rows of the forecast period (built from the univariate
+  forecasts).
+
+- `"validation"` validation mode, origin and horizon used for tuning;
+  pipeline mode excludes future covariates from prefix completion and
+  prediction.
 
 - `"ensemble"` Returns the ensemble of both `"univariate"` and
   `"multivariate"` forecasts.
@@ -187,7 +215,9 @@ Fred Viole, OVVO Financial Systems
  replicates <- NNS.meboot(nns_estimate$ensemble[,1], rho = seq(-1,1,.25))["replicates",]
  replicates <- do.call(cbind, replicates)
 
- # Apply UPM.VaR and LPM.VaR for desired prediction interval...95 percent illustrated
+ # Apply UPM.VaR and LPM.VaR for a band around the forecast path (2.5 percent per tail).
+ # The replicates resample the forecast path itself, so the band shows the path's
+ # dispersion, not a calibrated 95 percent prediction interval (see NNS.ARMA's pred.int).
  # Tail percentage used in first argument per {LPM.VaR} and {UPM.VaR} functions
  lower_CIs <- apply(replicates, 1, function(z) LPM.VaR(0.025, 0, z))
  upper_CIs <- apply(replicates, 1, function(z) UPM.VaR(0.025, 0, z))

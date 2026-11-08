@@ -3,7 +3,6 @@
 ``` r
 
 library(NNS)
-library(data.table)
 require(knitr)
 require(rgl)
 ```
@@ -17,11 +16,14 @@ underlying function for these tests is
 
 The output from
 **[`NNS.ANOVA()`](https://OVVO-Financial.github.io/NNS/reference/NNS.ANOVA.md)**
-is a `Certainty` statistic, which compares CDFs of distributions from
-several shared quantiles and normalizes the similarity of these points
-to be within the interval $`[0,1]`$, with 1 representing identical
-distributions. For a complete analysis of `Certainty` to common p-values
-and the role of power, please see the [References](#References).
+includes a descriptive `Certainty` statistic. `means.only = TRUE`
+compares group means through their directional area balance,
+`means.only = FALSE` compares profiles over shared quantiles, and
+`medians = TRUE` compares median targets. Agreement in one mode does not
+establish equality for the other targets. The finite-sample adjustment
+can make the maximum less than one. Certainty is not a calibrated
+p-value or power; inferential calibration must match the target and
+sampling design.
 
 ### Test if Same Population
 
@@ -29,11 +31,13 @@ Below we run the analysis to whether automatic transmissions and manual
 transmissions have significantly different `mpg` distributions per the
 `mtcars` dataset.
 
-The plot on the left shows the robust `Certainty` estimate, reflecting
-the distribution of `Certainty` estimates over 100 random permutations
-of both variables. The plot on the right illustrates the control and
-treatment variables, along with the grand mean among variables, and the
-confidence interval associated with the control mean.
+The plot on the left shows the resampling distribution of `Certainty`.
+Its inferential interpretation requires the resampling scheme to match
+the target; pooled permutation calibrates equal distributions under
+exchangeability, not every equal-means null with unequal variances. The
+plot on the right illustrates the control and treatment variables, along
+with the grand mean among variables, and the confidence interval
+associated with the control mean.
 
 ``` r
 
@@ -64,27 +68,27 @@ NNS.ANOVA(control = mpg_man_trans, treatment = mpg_auto_trans, robust = TRUE)
     ## [1] 0.02345583
     ## 
     ## $`Effect_Size_LB.2.5%`
-    ## [1] 2.651417
+    ## [1] 2.44919
     ## 
     ## $`Effect_Size_UB.97.5%`
-    ## [1] 12.29762
+    ## [1] 12.20105
     ## 
     ## $Confidence_Level
     ## [1] 0.95
     ## 
     ## $`Robust Certainty Estimate`
-    ## [1] 0.01293583
+    ## [1] 0.01485973
     ## 
     ## $`Lower 95% CI`
-    ## [1] 0
+    ## [1] 0.000272993
     ## 
     ## $`Upper 95% CI`
-    ## [1] 0.08849699
+    ## [1] 0.06890714
 
-The `Certainty` shows that these two distributions clearly do not come
-from the same population. This is verified with the
-Mann-Whitney-Wilcoxon test, which also does not assume a normality to
-the underlying data as a nonparametric test of identical distributions.
+The `Certainty` describes disagreement for the selected target. The
+Mann-Whitney-Wilcoxon result below addresses a rank-based hypothesis
+under its own assumptions; it is not a universal test of all
+distributional differences or a calibration of NNS certainty.
 
 ``` r
 
@@ -137,22 +141,22 @@ NNS.ANOVA(control = x, treatment = y,
     ## [1] 0.912545
     ## 
     ## $`Effect_Size_LB.2.5%`
-    ## [1] -0.1215839
+    ## [1] -0.1226692
     ## 
     ## $`Effect_Size_UB.97.5%`
-    ## [1] 0.2556542
+    ## [1] 0.2558928
     ## 
     ## $Confidence_Level
     ## [1] 0.95
     ## 
     ## $`Robust Certainty Estimate`
-    ## [1] 0.9183685
+    ## [1] 0.9001731
     ## 
     ## $`Lower 95% CI`
-    ## [1] 0.7311398
+    ## [1] 0.7729845
     ## 
     ## $`Upper 95% CI`
-    ## [1] 0.9928339
+    ## [1] 0.9929432
 
 ``` r
 
@@ -208,22 +212,22 @@ NNS.ANOVA(control = x, treatment = y,
     ## [1] 0.1824463
     ## 
     ## $`Effect_Size_LB.2.5%`
-    ## [1] 0.900412
+    ## [1] 0.8993267
     ## 
     ## $`Effect_Size_UB.97.5%`
-    ## [1] 1.148409
+    ## [1] 1.14823
     ## 
     ## $Confidence_Level
     ## [1] 0.95
     ## 
     ## $`Robust Certainty Estimate`
-    ## [1] 0.1788691
+    ## [1] 0.1818801
     ## 
     ## $`Lower 95% CI`
-    ## [1] 0.1484567
+    ## [1] 0.1463972
     ## 
     ## $`Upper 95% CI`
-    ## [1] 0.2114944
+    ## [1] 0.2166297
 
 ``` r
 
@@ -269,34 +273,34 @@ NNS.ANOVA(control = x, treatment = y,
     ## [1] 1.054852
     ## 
     ## $Grand_Statistic
-    ## [1] 0.532031
+    ## [1] 0.5162715
     ## 
     ## $Control_CDF
-    ## [1] 0.704
+    ## [1] 0.7
     ## 
     ## $Treatment_CDF
-    ## [1] 0.305
+    ## [1] 0.3
     ## 
     ## $Certainty
-    ## [1] 0.3497634
+    ## [1] 0.3592804
     ## 
     ## $`Effect_Size_LB.2.5%`
-    ## [1] 0.8659585
+    ## [1] 0.8684753
     ## 
     ## $`Effect_Size_UB.97.5%`
-    ## [1] 1.222394
+    ## [1] 1.222264
     ## 
     ## $Confidence_Level
     ## [1] 0.95
     ## 
     ## $`Robust Certainty Estimate`
-    ## [1] 0.3448958
+    ## [1] 0.3605887
     ## 
     ## $`Lower 95% CI`
-    ## [1] 0.2856004
+    ## [1] 0.3161758
     ## 
     ## $`Upper 95% CI`
-    ## [1] 0.4308527
+    ## [1] 0.4024833
 
 ## Stochastic Superiority
 

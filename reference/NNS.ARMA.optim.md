@@ -3,7 +3,8 @@
 Wrapper function for optimizing any combination of a given
 `seasonal.factor` vector in
 [NNS.ARMA](https://OVVO-Financial.github.io/NNS/reference/NNS.ARMA.md).
-Minimum sum of squared errors (forecast-actual) is used to determine
+The objective function `obj.fn` on a validation window (the last
+`length(variable) - training.set` observations) is used to determine the
 optimum across all
 [NNS.ARMA](https://OVVO-Financial.github.io/NNS/reference/NNS.ARMA.md)
 methods.
@@ -18,15 +19,20 @@ NNS.ARMA.optim(
   seasonal.factor,
   lin.only = FALSE,
   negative.values = FALSE,
-  obj.fn = expression(mean((predicted - actual)^2)/(NNS::Co.LPM(1, predicted, actual,
-    target_x = mean(predicted), target_y = mean(actual)) + NNS::Co.UPM(1, predicted,
-    actual, target_x = mean(predicted), target_y = mean(actual)))),
+  obj.fn = expression({
+     .denom <- NNS::Co.LPM(1, predicted, actual, target_x =
+    mean(predicted), target_y = mean(actual)) + NNS::Co.UPM(1, predicted, actual,
+    target_x = mean(predicted), target_y = mean(actual))
+     if (.denom == 0) Inf else
+mean((predicted - actual)^2)/.denom
+ }),
   objective = "min",
   linear.approximation = TRUE,
   ncores = NULL,
   pred.int = 0.95,
   print.trace = TRUE,
-  plot = FALSE
+  plot = FALSE,
+  bias.correction = c("none", "split")
 )
 ```
 
@@ -61,20 +67,22 @@ NNS.ARMA.optim(
 
   logical; `FALSE` (default) If the variable can be negative, set to
   `(negative.values = TRUE)`. It will automatically select
-  `(negative.values = TRUE)` if the minimum value of the `variable` is
-  negative.
+  `(negative.values = TRUE)` if the training data
+  `variable[1 : training.set]` has a negative value, and for the
+  out-of-sample forecast if `variable` does.
 
 - obj.fn:
 
-  expression;
-  `expression(cor(predicted, actual, method = "spearman") / sum((predicted - actual)^2))`
-  (default) Rank correlation / sum of squared errors is the default
-  objective function. Any `expression(...)` using the specific terms
-  `predicted` and `actual` can be used.
+  expression; The default is the mean squared error divided by the
+  degree-1 co-movement of `predicted` and `actual`,
+  `mean((predicted - actual)^2) / (Co.LPM(1, predicted, actual, mean(predicted), mean(actual)) + Co.UPM(1, predicted, actual, mean(predicted), mean(actual)))`
+  (`Inf` when the co-movement is 0), to be minimized. Any
+  `expression(...)` using the specific terms `predicted` and `actual`
+  can be used.
 
 - objective:
 
-  options: ("min", "max") `"max"` (default) Select whether to minimize
+  options: ("min", "max") `"min"` (default) Select whether to minimize
   or maximize the objective function `obj.fn`.
 
 - linear.approximation:
@@ -92,10 +100,13 @@ NNS.ARMA.optim(
 - pred.int:
 
   numeric \[0, 1\]; 0.95 (default) Returns the associated prediction
-  intervals for the final estimate. Constructed using the maximum
-  entropy bootstrap
-  [NNS.meboot](https://OVVO-Financial.github.io/NNS/reference/NNS.meboot.md)
-  on the final estimates.
+  intervals for the final estimate. Constructed from the returned
+  model's internal validation residuals (actual - forecast), adding
+  their
+  [LPM.VaR](https://OVVO-Financial.github.io/NNS/reference/LPM.VaR.md)
+  and
+  [UPM.VaR](https://OVVO-Financial.github.io/NNS/reference/UPM.VaR.md)
+  at `(1 - pred.int)/2` to the final estimates.
 
 - print.trace:
 
@@ -107,6 +118,21 @@ NNS.ARMA.optim(
 
   logical; `FALSE` (default)
 
+- bias.correction:
+
+  `"none"` (default) returns the selected model's forecasts without an
+  additive shift. `"split"` estimates a gravity bias from the first half
+  of the validation errors and accepts it only if the objective improves
+  on the later half; at least four validation observations are required.
+  On rolling-origin forecasts of nine series (AirPassengers, UKgas,
+  LakeHuron, a random walk, sunspot.month, nottem, USAccDeaths, co2 and
+  Nile; six expanding origins, h = 12), the uncorrected forecasts had
+  the lower mean MASE on eight of the nine series, both against
+  `"split"` and against estimating and accepting the shift on the same
+  window, a rule that is no longer offered. Model selection still uses
+  the validation window, so these diagnostics are not independent
+  out-of-sample performance estimates.
+
 ## Value
 
 Returns a list containing:
@@ -116,7 +142,8 @@ Returns a list containing:
 - `$weights` the optimal weights of each seasonal period between an
   equal weight or NULL weighting
 
-- `$obj.fn` the objective function value
+- `$obj.fn` the `obj.fn` value of the returned model's internal
+  validation forecasts, after `$bias.shift`.
 
 - `$method` the method identifying which
   [NNS.ARMA](https://OVVO-Financial.github.io/NNS/reference/NNS.ARMA.md)
@@ -129,13 +156,23 @@ Returns a list containing:
   [NNS.reg](https://OVVO-Financial.github.io/NNS/reference/NNS.reg.md)
   before forecasting.
 
-- `$bias.shift` a numerical result of the overall bias of the optimum
-  objective function result. To be added to the final result when using
-  the
+- `$bias.shift` the accepted additive correction (0 when rejected or
+  disabled). Add it to the forecast from
   [NNS.ARMA](https://OVVO-Financial.github.io/NNS/reference/NNS.ARMA.md)
-  with the derived parameters.
+  with the returned model parameters, then apply the nonnegative support
+  clamp if required.
 
-- `$errors` a vector of model errors from internal calibration.
+- `$bias.validation` correction policy, estimated/applied shifts,
+  chronological estimate and acceptance rows, and raw/adjusted
+  acceptance scores.
+
+- `$raw.results` forecasts before the additive bias correction.
+
+- `$validation.forecast` the final internal validation forecasts,
+  including correction and support clamp.
+
+- `$errors` a vector of the returned model's internal validation errors
+  (forecast - actual), before `$bias.shift`.
 
 - `$results` a vector of length `h`.
 
@@ -146,6 +183,13 @@ Returns a list containing:
   point.
 
 ## Note
+
+By default no bias shift is added. With `bias.correction = "split"` the
+shift is estimated on the first half of the validation window and
+accepted on the second. Base model selection still uses the internal
+validation window, so these tuning scores are not an independent
+evaluation of the whole forecasting procedure. Evaluate the complete
+procedure at fresh chronological origins.
 
 - Typically, `(training.set = 0.8 * length(variable))` is used for
   optimization. Smaller samples could use

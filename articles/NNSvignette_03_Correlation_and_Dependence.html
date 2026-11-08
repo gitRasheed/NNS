@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">NNS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,8 @@
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/examples/">Examples</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/book/">Book</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -62,7 +64,6 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/OVVO-Financial/NNS" class="external-link">NNS</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-datatable.com" class="external-link">data.table</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="va"><a href="https://yihui.org/knitr/" class="external-link">knitr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dmurdoch/rgl" class="external-link">rgl</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
@@ -110,10 +111,10 @@ quadrants.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/NNS.dep.html">NNS.dep</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $Correlation</span></span>
-<span><span class="co">## [1] 0.9595032</span></span>
+<span><span class="co">## [1] 0.9169329</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Dependence</span></span>
-<span><span class="co">## [1] 0.9595032</span></span></code></pre>
+<span><span class="co">## [1] 0.9169329</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="cyclic-relationship">Cyclic Relationship<a class="anchor" aria-label="anchor" href="#cyclic-relationship"></a>
@@ -130,10 +131,10 @@ divergent partial moment quadrants, are properly compensated for in
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/NNS.dep.html">NNS.dep</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $Correlation</span></span>
-<span><span class="co">## [1] 0.202252</span></span>
+<span><span class="co">## [1] 0.09141861</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Dependence</span></span>
-<span><span class="co">## [1] 0.8197963</span></span></code></pre>
+<span><span class="co">## [1] 0.8050198</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="asymmetrical-analysis">Asymmetrical Analysis<a class="anchor" aria-label="anchor" href="#asymmetrical-analysis"></a>
@@ -150,20 +151,20 @@ dependence between the variables, which can be confirmed using
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/NNS.dep.html">NNS.dep</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, asym <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $Correlation</span></span>
-<span><span class="co">## [1] 0.202252</span></span>
+<span><span class="co">## [1] 0.09141861</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Dependence</span></span>
-<span><span class="co">## [1] 0.8197963</span></span></code></pre>
+<span><span class="co">## [1] 0.8050198</span></span></code></pre>
 <div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">x</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] -0.1297766</span></span></code></pre>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/NNS.dep.html">NNS.dep</a></span><span class="op">(</span><span class="va">y</span>, <span class="va">x</span>, asym <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $Correlation</span></span>
-<span><span class="co">## [1] 0.07270847</span></span>
+<span><span class="co">## [1] -0.05928228</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Dependence</span></span>
-<span><span class="co">## [1] 0.4086234</span></span></code></pre>
+<span><span class="co">## [1] 0.05928228</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="dependence">Dependence<a class="anchor" aria-label="anchor" href="#dependence"></a>
@@ -178,21 +179,24 @@ partial moment quadrants for a given subquadrant.</p>
 <div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/NNS.dep.html">NNS.dep</a></span><span class="op">(</span><span class="va">df</span><span class="op">$</span><span class="va">x</span>, <span class="va">df</span><span class="op">$</span><span class="va">y</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $Correlation</span></span>
-<span><span class="co">## [1] 0.05834412</span></span>
+<span><span class="co">## [1] -0.05131028</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Dependence</span></span>
-<span><span class="co">## [1] 0.46764</span></span></code></pre>
+<span><span class="co">## [1] 0.8634874</span></span></code></pre>
 </div>
 </div>
 <div class="section level2">
 <h2 id="p-values-for-nns-dep">p-values for <code>NNS.dep()</code><a class="anchor" aria-label="anchor" href="#p-values-for-nns-dep"></a>
 </h2>
-<p>p-values and confidence intervals can be obtained from sampling
-random permutations of
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>→</mo><msub><mi>y</mi><mi>p</mi></msub></mrow><annotation encoding="application/x-tex">y \rightarrow y_p</annotation></semantics></math>
-and running <strong><code>NNS.dep(x,$y_p$)</code></strong> to compare
-against a null hypothesis of 0 correlation, or independence between
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">(x, y)</annotation></semantics></math>.</p>
+<p>Permutation p-values and null reference intervals can be obtained by
+permuting
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>
+and recomputing <code>NNS.dep(x, y_perm)</code>. Quantiles of those
+shuffled statistics describe the null distribution; they are not
+confidence intervals for the original population dependence. The
+permutation interpretation requires exchangeability under the null, so
+unrestricted shuffling is not automatically appropriate for serial,
+clustered, or other dependent observations.</p>
 <p>Simply set
 <strong><code>NNS.dep(..., p.value = TRUE, print.map = TRUE)</code></strong>
 to run 100 permutations and plot the results.</p>
@@ -205,24 +209,24 @@ to run 100 permutations and plot the results.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/NNS.dep.html">NNS.dep</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, p.value <span class="op">=</span> <span class="cn">TRUE</span>, print.map <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><img src="NNSvignette_03_Correlation_and_Dependence_files/figure-html/permutattions_res-1.png" class="r-plt" alt="" width="480" style="display: block; margin: auto;"></p>
 <pre><code><span><span class="co">## $Correlation</span></span>
-<span><span class="co">## [1] 0.2957015</span></span>
+<span><span class="co">## [1] 0.002403968</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Correlation p.value`</span></span>
-<span><span class="co">## [1] 0.18</span></span>
+<span><span class="co">## [1] 0.8712871</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Correlation 95% CIs`</span></span>
 <span><span class="co">##       2.5%      97.5% </span></span>
-<span><span class="co">## -0.1544429  0.4062421 </span></span>
+<span><span class="co">## -0.1996010  0.1585008 </span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Dependence</span></span>
-<span><span class="co">## [1] 0.7932674</span></span>
+<span><span class="co">## [1] 0.935499</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Dependence p.value`</span></span>
-<span><span class="co">## [1] 0</span></span>
+<span><span class="co">## [1] 0.00990099</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Dependence 95% CIs`</span></span>
-<span><span class="co">##      2.5%     97.5% </span></span>
-<span><span class="co">## 0.5467152 0.6782456</span></span></code></pre>
+<span><span class="co">##       2.5%      97.5% </span></span>
+<span><span class="co">## 0.03359598 0.26350373</span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="multivariate-dependence-nns-copula">Multivariate Dependence <code>NNS.copula()</code><a class="anchor" aria-label="anchor" href="#multivariate-dependence-nns-copula"></a>
@@ -238,7 +242,7 @@ based correlation methods, which are restricted to bivariate cases.</p>
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
 <span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1000</span><span class="op">)</span>; <span class="va">y</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1000</span><span class="op">)</span>; <span class="va">z</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1000</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/NNS.copula.html">NNS.copula</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span>, <span class="va">z</span><span class="op">)</span>, plot <span class="op">=</span> <span class="cn">TRUE</span>, independence.overlay <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## [1] 0.3278775</span></span></code></pre>
+<pre><code><span><span class="co">## [1] 0.1978452</span></span></code></pre>
 </div>
 <div class="section level2">
 <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
@@ -268,7 +272,7 @@ Probabilities</a></p></li>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

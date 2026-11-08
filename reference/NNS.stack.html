@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">NNS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -17,6 +17,8 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/examples/">Examples</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/book/">Book</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/OVVO-Financial/NNS/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -47,7 +49,7 @@
 <span>  obj.fn <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="op">(</span><span class="va">predicted</span> <span class="op">-</span> <span class="va">actual</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  objective <span class="op">=</span> <span class="st">"min"</span>,</span>
 <span>  optimize.threshold <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  dist <span class="op">=</span> <span class="st">"L2"</span>,</span>
+<span>  dist <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  CV.size <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  balance <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  ts.test <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -58,7 +60,9 @@
 <span>  dim.red.method <span class="op">=</span> <span class="st">"cor"</span>,</span>
 <span>  pred.int <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  status <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  ncores <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  ncores <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">123L</span>,</span>
+<span>  .validation <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -75,11 +79,11 @@
 
 
 <dt id="arg-ivs-test">IVs.test<a class="anchor" aria-label="anchor" href="#arg-ivs-test"></a></dt>
-<dd><p>a vector, matrix or data frame of variables of numeric or factor data types with compatible dimensions to <code>(IVs.train)</code>.  If NULL, will use <code>(IVs.train)</code> as default.</p></dd>
+<dd><p>a vector, matrix or data frame of variables of numeric or factor data types with compatible dimensions to <code>(IVs.train)</code>.  If NULL, will use <code>(IVs.train)</code> as default.  Columns are matched to <code>(IVs.train)</code> by name when the two share the same predictor names, and positionally when they share no names at all (as in <code>cbind(test.x_1, test.x_2)</code> against <code>cbind(x_1, x_2)</code>).  A CSV UTF-8 byte-order mark in the first header (for example, <code>Male</code> becoming <code>X...Male</code>) is repaired before matching names. Other partial overlaps, including misspelled predictors, are ambiguous and return an error.</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p><code>NULL</code> (default).  To perform a classification of discrete integer classes from factor target variable <code>(DV.train)</code> with a base category of 1, set to <code>(type = "CLASS")</code>, else for continuous <code>(DV.train)</code> set to <code>(type = NULL)</code>.   Like a logistic regression, this setting is not necessary for target variable of two classes e.g. [0, 1].</p></dd>
+<dd><p><code>NULL</code> (default) automatically classifies factor, character, logical and two-valued numeric responses. Set <code>type = "CLASS"</code> for nominal classification of any numeric labels, or <code>type = "REG"</code> to fit a numeric response as regression regardless of its number of distinct values. Forecasting calls use <code>type = "REG"</code>.</p></dd>
 
 
 <dt id="arg-obj-fn">obj.fn<a class="anchor" aria-label="anchor" href="#arg-obj-fn"></a></dt>
@@ -91,15 +95,15 @@
 
 
 <dt id="arg-optimize-threshold">optimize.threshold<a class="anchor" aria-label="anchor" href="#arg-optimize-threshold"></a></dt>
-<dd><p>logical; <code>TRUE</code> (default) Will optimize the probability threshold value for rounding in classification problems.  If <code>FALSE</code>, returns 0.5.</p></dd>
+<dd><p>logical; <code>TRUE</code> (default) Optimizes the threshold for the second first-observed class in binary classification; multiclass decisions use the largest class probability.  If <code>FALSE</code>, returns 0.5.</p></dd>
 
 
 <dt id="arg-dist">dist<a class="anchor" aria-label="anchor" href="#arg-dist"></a></dt>
-<dd><p>options:("L1", "L2", "DTW", "FACTOR") the method of distance calculation; Selects the distance calculation used. <code>dist = "L2"</code> (default) selects the Euclidean distance and <code>(dist = "L1")</code> selects the Manhattan distance; <code>(dist = "DTW")</code> selects the dynamic time warping distance; <code>(dist = "FACTOR")</code> uses a frequency.</p></dd>
+<dd><p>options:(NULL, "NNS", "L1", "L2", "FACTOR") the method of distance calculation. <code>dist = NULL</code> is the default and selects the native blended NNS distance; <code>dist = "NNS"</code> is an explicit alias for the default. <code>dist = "L2"</code> selects Euclidean distance; <code>dist = "L1"</code> selects Manhattan distance; <code>dist = "FACTOR"</code> uses a frequency.</p></dd>
 
 
 <dt id="arg-cv-size">CV.size<a class="anchor" aria-label="anchor" href="#arg-cv-size"></a></dt>
-<dd><p>numeric [0, 1]; <code>NULL</code> (default) Sets the cross-validation size if <code>(IVs.test = NULL)</code>.  Defaults to a random value between 0.2 and 0.33 for a random sampling of the training set.</p></dd>
+<dd><p>numeric [0, 1]; <code>NULL</code> (default) Sets the holdout size for repeated holdout cross-validation (one random holdout per fold).  With <code>CV.size = NULL</code> and <code>folds &gt; 1</code>, (stratified, for classification) k-fold cross-validation is used; with <code>CV.size = NULL</code> and <code>folds = 1</code>, a single holdout of random size between 0.2 and 0.33 is used.</p></dd>
 
 
 <dt id="arg-balance">balance<a class="anchor" aria-label="anchor" href="#arg-balance"></a></dt>
@@ -123,11 +127,11 @@
 
 
 <dt id="arg-stack">stack<a class="anchor" aria-label="anchor" href="#arg-stack"></a></dt>
-<dd><p>logical; <code>TRUE</code> (default) Uses dimension reduction output in <code>n.best</code> optimization, otherwise performs both analyses independently.</p></dd>
+<dd><p>logical; <code>TRUE</code> (default) Uses dimension reduction to select actual predictor coordinates for the multivariate neighbour search; the dimension-reduction component separately uses its synthetic index. If FALSE, both components use their own full predictor designs.</p></dd>
 
 
 <dt id="arg-dim-red-method">dim.red.method<a class="anchor" aria-label="anchor" href="#arg-dim-red-method"></a></dt>
-<dd><p>options: ("cor", "NNS.dep", "NNS.caus", "equal", "all") method for determining synthetic X* coefficients.  <code>(dim.red.method = "cor")</code> uses standard linear correlation for weights.  <code>(dim.red.method = "NNS.dep")</code> (default) uses <a href="NNS.dep.html">NNS.dep</a> for nonlinear dependence weights, while <code>(dim.red.method = "NNS.caus")</code> uses <a href="NNS.caus.html">NNS.caus</a> for causal weights.  <code>(dim.red.method = "all")</code> averages all methods for further feature engineering.</p></dd>
+<dd><p>options: ("cor", "NNS.dep", "NNS.caus", "equal", "all") method for determining synthetic X* coefficients.  <code>(dim.red.method = "cor")</code> (default) uses Spearman rank correlation for weights.  <code>(dim.red.method = "NNS.dep")</code> uses <a href="NNS.dep.html">NNS.dep</a> for nonlinear dependence weights, while <code>(dim.red.method = "NNS.caus")</code> uses <a href="NNS.caus.html">NNS.caus</a> for directional association weights.  <code>(dim.red.method = "all")</code> averages all methods for further feature engineering.</p></dd>
 
 
 <dt id="arg-pred-int">pred.int<a class="anchor" aria-label="anchor" href="#arg-pred-int"></a></dt>
@@ -141,13 +145,23 @@
 <dt id="arg-ncores">ncores<a class="anchor" aria-label="anchor" href="#arg-ncores"></a></dt>
 <dd><p>integer; value specifying the number of cores to be used in the parallelized subroutine <a href="NNS.reg.html">NNS.reg</a>. If NULL (default), the number of cores to be used is equal to the number of cores of the machine - 1.</p></dd>
 
+
+<dt id="arg-seed">seed<a class="anchor" aria-label="anchor" href="#arg-seed"></a></dt>
+<dd><p>Optional integer random seed used for reproducible resampling, fold construction, and stochastic fitting steps. If `NULL`, the current random-number-generator state is used.</p></dd>
+
+
+<dt id="arg--validation">.validation<a class="anchor" aria-label="anchor" href="#arg--validation"></a></dt>
+<dd><p>Internal forecast-validation contract, normally NULL. A list with <code>IVs.train</code>, <code>DV.train</code>, <code>IVs.test</code>, and <code>DV.test</code> supplies the single chronological validation fold when <code>ts.test</code> is set, <code>folds = 1</code>, and <code>CV.size = NULL</code>. It requires exactly <code>N-ts.test</code> training rows and one through <code>ts.test</code> held-out rows; this allows scoring only observed future targets. Training prefixes and generated validation predictors must be constructed without later data. Used only for regression tuning; numeric two-level responses remain regression when this contract is supplied with type = NULL. The final model still fits all original training observations.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Returns a vector of fitted values for the dependent variable test set for all models.</p><ul><li><p><code>"NNS.reg.n.best"</code> returns the optimum <code>"n.best"</code> parameter for the <a href="NNS.reg.html">NNS.reg</a> multivariate regression.  <code>"SSE.reg"</code> returns the SSE for the <a href="NNS.reg.html">NNS.reg</a> multivariate regression.</p></li>
-<li><p><code>"OBJfn.reg"</code> returns the <code>obj.fn</code> for the <a href="NNS.reg.html">NNS.reg</a> regression.</p></li>
-<li><p><code>"NNS.dim.red.threshold"</code> returns the optimum <code>"threshold"</code> from the <a href="NNS.reg.html">NNS.reg</a> dimension reduction regression.</p></li>
-<li><p><code>"OBJfn.dim.red"</code> returns the <code>obj.fn</code> for the <a href="NNS.reg.html">NNS.reg</a> dimension reduction regression.</p></li>
+    <p>Returns a vector of fitted values for the dependent variable test set for all models.</p><ul><li><p><code>"NNS.reg.n.best"</code> returns the optimum <code>"n.best"</code> parameter for the <a href="NNS.reg.html">NNS.reg</a> multivariate regression; when all regression points (for classification, all cells) are selected, their number in the final fit. <code>NA</code> for a single predictor in regression, whose univariate <a href="NNS.reg.html">NNS.reg</a> fit has no <code>n.best</code> to tune (use <code>cbind(x, x)</code> to search one), and when <code>method</code> does not include 1.  <code>"SSE.reg"</code> returns the SSE for the <a href="NNS.reg.html">NNS.reg</a> multivariate regression.</p></li>
+<li><p><code>"OBJfn.reg"</code> returns the best <code>obj.fn</code> value of the <a href="NNS.reg.html">NNS.reg</a> regression's tuning on the out-of-fold predictions; it is selection-optimized, not an estimate of out-of-sample performance.</p></li>
+<li><p><code>"NNS.dim.red.threshold"</code> returns the coefficient cutoff at which <a href="NNS.reg.html">NNS.reg</a> on <code>(IVs.train, DV.train)</code> with the same <code>dim.red.method</code> keeps the tuned number of predictors: the smallest kept coefficient magnitude, or 0 when every predictor is kept. Ties at the cutoff keep every tied predictor. For classification it is one number when every class index shares the cutoff, as two-class indices always do, and otherwise one cutoff per class, which <a href="NNS.reg.html">NNS.reg</a> accepts as <code>threshold</code>. <code>NA</code> when <code>method</code> does not include 2.</p></li>
+<li><p><code>"NNS.dim.red.variables"</code> returns the names of the predictors carried by the final dimension reduction regression, ranked by absolute coefficient.  With <code>(stack = TRUE)</code> these are also the only predictors used by the <a href="NNS.reg.html">NNS.reg</a> multivariate regression, so they are exactly the variables behind <code>"stack"</code>.  <code>NULL</code> when <code>method</code> does not include 2.</p></li>
+<li><p><code>"NNS.dim.red.coefficients"</code> returns the named final dimension reduction coefficients for every encoded predictor column (zero for predictors not selected).  <code>NULL</code> when <code>method</code> does not include 2.</p></li>
+<li><p><code>"OBJfn.dim.red"</code> returns the best <code>obj.fn</code> value of the <a href="NNS.reg.html">NNS.reg</a> dimension reduction regression's tuning on the out-of-fold predictions; it is selection-optimized, not an estimate of out-of-sample performance.</p></li>
 <li><p><code>"probability.threshold"</code> returns the optimum probability threshold for classification, else 0.5 when set to <code>FALSE</code>.</p></li>
 <li><p><code>"reg"</code> returns <a href="NNS.reg.html">NNS.reg</a> output.</p></li>
 <li><p><code>"reg.pred.int"</code> returns the prediction intervals for the regression output.</p></li>
@@ -155,17 +169,21 @@
 <li><p><code>"dim.red.pred.int"</code> returns the prediction intervals for the dimension reduction regression output.</p></li>
 <li><p><code>"stack"</code> returns the output of the stacked model.</p></li>
 <li><p><code>"pred.int"</code> returns the prediction intervals for the stacked model.</p></li>
+<li><p><code>"weights"</code> returns the weights of <code>"reg"</code> and <code>"dim.red"</code> in <code>"stack"</code>. For classification they are proportional to the squared <code>"OBJfn.reg"</code> and <code>"OBJfn.dim.red"</code> (inverse squares when <code>objective = "min"</code>); for regression the weight is selected by <code>obj.fn</code> on the out-of-fold predictions of the blend.</p></li>
 </ul></div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Classification tunes and combines class-probability vectors from the NNS predictor cells, preserving nominal label identity. <code>probabilities</code>, <code>reg.probabilities</code>, and <code>dim.red.probabilities</code> return the final probability matrices. Class balancing resamples the training rows of each fold. The neighbour count and the dimension count are chosen by optimizing <code>obj.fn</code> on the pooled out-of-fold predictions; the default classification objective is accuracy. As in NNS 13.0, the two models' probability vectors are then blended with weights proportional to their squared objective scores (inverse squares when <code>objective = "min"</code>), so models with nearly equal scores are blended nearly equally, and the binary probability threshold is tuned on the out-of-fold predictions of that blend. <code>OBJfn.reg</code> and <code>OBJfn.dim.red</code> are the best scores of that search on the same predictions, so they are selection-optimized and overstate held-out performance; assess the final model on an independent test set. Custom objectives receive original numeric or logical response values, and factor/character codes as identified by <code>class.levels</code>. Relabelling is invariant for label-invariant objectives such as accuracy; a custom loss assigning different costs to classes can deliberately change the result.</p>
+<p>Named numeric dimension-reduction coefficients are matched to encoded predictor names in both regression and classification. Factor columns use <code>predictor__level</code> names; unnamed vectors follow encoded column order. Classification dimension reduction uses one signed index per class indicator. Its reported coefficients are a list of class-specific equations. The tuned dimension count is returned as <code>NNS.dim.red.count</code>, and <code>NNS.dim.red.threshold</code> gives the coefficient cutoff that keeps that count in every class index: one number when the class indices share it, as two-class indices always do, and otherwise one cutoff per class. The field <code>NNS.dim.red.variables</code> is the union of their active encoded columns. These equations describe the synthetic indices, not a complete saved prediction model: reconstruction also requires training-fitted scaling, the predictor cells, their class frequencies, and the selected smoothing controls. With <code>stack = TRUE</code>, the multivariate classification component retains the selected number of actual encoded coordinates ranked by maximum class-indicator dependence. <code>Prediction.set</code> contains classes attaining the requested estimated probability mass. Binary interval fields contain the range of this set for compatibility; multiclass interval fields are NULL. The sets do not assert calibrated coverage.</p>
+<p>For regression, all dimension-reduction coefficients, normalizations, and candidate predictions used in validation are fitted to the corresponding training fold. The final coefficients and regressions are refitted to the full supplied training data. Method 1 retains the selected predictor coordinates, while method 2 evaluates their signed synthetic index; the components can therefore represent different regression geometry.</p>
+    </div>
     <div class="section level2">
     <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>
 
 <ul><li><p>Incorporate any objective function from external packages (such as <code>Metrics::mape</code>) via <code>NNS.stack(..., obj.fn = expression(Metrics::mape(actual, predicted)), objective = "min")</code></p></li>
-<li><p>Like a logistic regression, the <code>(type = "CLASS")</code> setting is not necessary for target variable of two classes e.g. [0, 1].  The response variable base category should be 1 for multiple class problems.</p></li>
+<li><p>Like a logistic regression, the <code>(type = "CLASS")</code> setting is not necessary for target variable of two classes e.g. [0, 1].  Numeric class values are returned on their original scale; factor and character responses use codes with the returned <code>class.levels</code> mapping.</p></li>
 <li><p>Missing data should be handled prior as well using <a href="https://rdrr.io/r/stats/na.fail.html" class="external-link">na.omit</a> or <a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a> on the full dataset.</p></li>
-</ul><p>If error received:</p>
-<p><code>"Error in is.data.frame(x) : object 'RP' not found"</code></p>
-<p>reduce the <code>CV.size</code>.</p>
-    </div>
+</ul></div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
     <p>Viole, F. (2016) "Classification Using NNS Clustering Analysis"  <a href="https://doi.org/10.2139/ssrn.2864711" class="external-link">doi:10.2139/ssrn.2864711</a></p>
@@ -177,10 +195,12 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span> <span class="co">## Using 'iris' dataset where test set [IVs.test] is 'iris' rows 141:150.</span></span></span>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span> <span class="co">## Using 'iris' dataset with a stratified test set of ten rows per species</span></span></span>
+<span class="r-in"><span> <span class="co">## (rows 141:150 alone are all virginica).</span></span></span>
 <span class="r-in"><span> <span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span> <span class="fu">NNS.stack</span><span class="op">(</span><span class="va">iris</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">140</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>, <span class="va">iris</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">140</span>, <span class="fl">5</span><span class="op">]</span>, IVs.test <span class="op">=</span> <span class="va">iris</span><span class="op">[</span><span class="fl">141</span><span class="op">:</span><span class="fl">150</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>, type <span class="op">=</span> <span class="st">"CLASS"</span>, </span></span>
-<span class="r-in"><span> balance <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span> <span class="va">test.set</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">41</span><span class="op">:</span><span class="fl">50</span>, <span class="fl">91</span><span class="op">:</span><span class="fl">100</span>, <span class="fl">141</span><span class="op">:</span><span class="fl">150</span><span class="op">)</span></span></span>
+<span class="r-in"><span> <span class="fu">NNS.stack</span><span class="op">(</span><span class="va">iris</span><span class="op">[</span><span class="op">-</span><span class="va">test.set</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>, <span class="va">iris</span><span class="op">[</span><span class="op">-</span><span class="va">test.set</span>, <span class="fl">5</span><span class="op">]</span>, IVs.test <span class="op">=</span> <span class="va">iris</span><span class="op">[</span><span class="va">test.set</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>,</span></span>
+<span class="r-in"><span> type <span class="op">=</span> <span class="st">"CLASS"</span>, balance <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span> <span class="co">## Using 'iris' dataset to determine [n.best] and [threshold] with no test set.</span></span></span>
 <span class="r-in"><span> <span class="fu">NNS.stack</span><span class="op">(</span><span class="va">iris</span><span class="op">[</span> , <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>, <span class="va">iris</span><span class="op">[</span> , <span class="fl">5</span><span class="op">]</span>, type <span class="op">=</span> <span class="st">"CLASS"</span><span class="op">)</span></span></span>
@@ -196,7 +216,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

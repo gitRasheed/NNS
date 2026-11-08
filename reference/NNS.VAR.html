@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">NNS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -17,6 +17,8 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/examples/">Examples</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/book/">Book</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/OVVO-Financial/NNS/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -45,13 +47,18 @@
 <span>  tau <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  dim.red.method <span class="op">=</span> <span class="st">"cor"</span>,</span>
 <span>  naive.weights <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>  obj.fn <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">predicted</span> <span class="op">-</span> <span class="va">actual</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">/</span><span class="op">(</span><span class="fu">NNS</span><span class="fu">::</span><span class="fu"><a href="Co.LPM.html">Co.LPM</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">predicted</span>, <span class="va">actual</span>,</span>
-<span>    target_x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">predicted</span><span class="op">)</span>, target_y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">actual</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NNS</span><span class="fu">::</span><span class="fu"><a href="Co.UPM.html">Co.UPM</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">predicted</span>,</span>
-<span>    <span class="va">actual</span>, target_x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">predicted</span><span class="op">)</span>, target_y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">actual</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  obj.fn <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expression.html" class="external-link">expression</a></span><span class="op">(</span><span class="op">{</span></span>
+<span>     <span class="va">.denom</span> <span class="op">&lt;-</span> <span class="fu">NNS</span><span class="fu">::</span><span class="fu"><a href="Co.LPM.html">Co.LPM</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">predicted</span>, <span class="va">actual</span>, target_x <span class="op">=</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">predicted</span><span class="op">)</span>, target_y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">actual</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">NNS</span><span class="fu">::</span><span class="fu"><a href="Co.UPM.html">Co.UPM</a></span><span class="op">(</span><span class="fl">1</span>, <span class="va">predicted</span>, <span class="va">actual</span>,</span>
+<span>    target_x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">predicted</span><span class="op">)</span>, target_y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">actual</span><span class="op">)</span><span class="op">)</span></span>
+<span>     <span class="kw">if</span> <span class="op">(</span><span class="va">.denom</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span> <span class="cn">Inf</span> <span class="kw">else</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="op">(</span><span class="va">predicted</span> <span class="op">-</span> <span class="va">actual</span><span class="op">)</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span><span class="op">/</span><span class="va">.denom</span></span>
+<span> <span class="op">}</span><span class="op">)</span>,</span>
 <span>  objective <span class="op">=</span> <span class="st">"min"</span>,</span>
 <span>  status <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  ncores <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  nowcast <span class="op">=</span> <span class="cn">FALSE</span></span>
+<span>  nowcast <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  validation <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"pipeline"</span>, <span class="st">"observed"</span><span class="op">)</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -72,7 +79,7 @@
 
 
 <dt id="arg-dim-red-method">dim.red.method<a class="anchor" aria-label="anchor" href="#arg-dim-red-method"></a></dt>
-<dd><p>options: ("cor", "NNS.dep", "NNS.caus", "all") method for reducing regressors via <a href="NNS.stack.html">NNS.stack</a>.  <code>(dim.red.method = "cor")</code> (default) uses standard linear correlation for dimension reduction in the lagged variable matrix.  <code>(dim.red.method = "NNS.dep")</code> uses <a href="NNS.dep.html">NNS.dep</a> for nonlinear dependence weights, while <code>(dim.red.method = "NNS.caus")</code> uses <a href="NNS.caus.html">NNS.caus</a> for causal weights.  <code>(dim.red.method = "all")</code> averages all methods for further feature engineering.</p></dd>
+<dd><p>options: ("cor", "NNS.dep", "NNS.caus", "all") method for screening lagged regressors with <a href="NNS.reg.html">NNS.reg</a> before the multivariate <a href="NNS.stack.html">NNS.stack</a> fit. <code>dim.red.method = "cor"</code> (default) uses signed Spearman rank-correlation coefficients, screened by magnitude. <code>"NNS.dep"</code> uses nonlinear dependence weights, and <code>"NNS.caus"</code> uses directional association weights. <code>"all"</code> averages the Spearman, dependence, directional-association, and unit-weight coefficients. The coefficient cutoff is selected by scoring <code>NNS.reg</code> validation forecasts.</p></dd>
 
 
 <dt id="arg-naive-weights">naive.weights<a class="anchor" aria-label="anchor" href="#arg-naive-weights"></a></dt>
@@ -99,13 +106,18 @@
 <dt id="arg-nowcast">nowcast<a class="anchor" aria-label="anchor" href="#arg-nowcast"></a></dt>
 <dd><p>logical; <code>FALSE</code> (default) internal call for frequency alignment in downstream nowcasting applications.</p></dd>
 
+
+<dt id="arg-validation">validation<a class="anchor" aria-label="anchor" href="#arg-validation"></a></dt>
+<dd><p><code>"pipeline"</code> (default) tunes with a chronological holdout whose predictors are built by completing and forecasting each series using only its prefix. Only observed holdout targets are scored. <code>"observed"</code> retains the former conditional-regression validation on realized covariates; it is not a deployment forecast score.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Returns the following matrices of forecasted variables:</p><ul><li><p><code>"interpolated_and_extrapolated"</code> Returns a <code>data.frame</code> of the linear interpolated and <a href="NNS.ARMA.html">NNS.ARMA</a> extrapolated values to replace <code>NA</code> values in the original <code>variables</code> argument.  This is required for working with variables containing different frequencies, e.g. where <code>NA</code> would be reported for intra-quarterly data when indexed with monthly periods.</p></li>
-<li><p><code>"relevant_variables"</code> Returns the relevant variables from the dimension reduction step.</p></li>
+    <p>Returns the following matrices of forecasted variables:</p><ul><li><p><code>"interpolated_and_extrapolated"</code> Returns a <code>data.frame</code> of the original <code>variables</code> with their <code>NA</code> values replaced.  When a variable's latest values are missing, every <code>NA</code> of that variable is estimated from its own observations by the <a href="NNS.stack.html">NNS.stack</a> fit on the time index used in NNS 13.0: <a href="NNS.reg.html">NNS.reg</a> with one nearest regression point, on the index duplicated into two predictors.  The latest observation keeps its own regression point, and values after it (or before the first observation) extend the gradient at that boundary.  When only earlier values are missing, they are interpolated linearly with <code>NNS.reg(order = "max")</code> on the index.  This is required for working with variables containing different frequencies, e.g. where <code>NA</code> would be reported for intra-quarterly data when indexed with monthly periods.</p></li>
+<li><p><code>"relevant_variables"</code> Returns the relevant variables from the dimension reduction step: the lagged regressors whose dimension reduction coefficient meets the cross-validated threshold.  These are the only regressors used in the <code>"multivariate"</code> estimate.</p></li>
 <li><p><code>"univariate"</code> Returns the univariate <a href="NNS.ARMA.html">NNS.ARMA</a> forecasts.</p></li>
-<li><p><code>"multivariate"</code> Returns the multi-variate <a href="NNS.reg.html">NNS.reg</a> forecasts.</p></li>
+<li><p><code>"multivariate"</code> Returns the multi-variate forecasts: <a href="NNS.stack.html">NNS.stack</a> <code>(method = 1, stack = FALSE)</code> on the relevant variables, evaluated on the lag-matrix rows of the forecast period (built from the univariate forecasts).</p></li>
+<li><p><code>"validation"</code> validation mode, origin and horizon used for tuning; pipeline mode excludes future covariates from prefix completion and prediction.</p></li>
 <li><p><code>"ensemble"</code> Returns the ensemble of both <code>"univariate"</code> and <code>"multivariate"</code> forecasts.</p></li>
 </ul></div>
     <div class="section level2">
@@ -157,7 +169,9 @@
 <span class="r-in"><span> <span class="va">replicates</span> <span class="op">&lt;-</span> <span class="fu"><a href="NNS.meboot.html">NNS.meboot</a></span><span class="op">(</span><span class="va">nns_estimate</span><span class="op">$</span><span class="va">ensemble</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span>, rho <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>,<span class="fl">1</span>,<span class="fl">.25</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="st">"replicates"</span>,<span class="op">]</span></span></span>
 <span class="r-in"><span> <span class="va">replicates</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call</a></span><span class="op">(</span><span class="va">cbind</span>, <span class="va">replicates</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span> <span class="co"># Apply UPM.VaR and LPM.VaR for desired prediction interval...95 percent illustrated</span></span></span>
+<span class="r-in"><span> <span class="co"># Apply UPM.VaR and LPM.VaR for a band around the forecast path (2.5 percent per tail).</span></span></span>
+<span class="r-in"><span> <span class="co"># The replicates resample the forecast path itself, so the band shows the path's</span></span></span>
+<span class="r-in"><span> <span class="co"># dispersion, not a calibrated 95 percent prediction interval (see NNS.ARMA's pred.int).</span></span></span>
 <span class="r-in"><span> <span class="co"># Tail percentage used in first argument per {LPM.VaR} and {UPM.VaR} functions</span></span></span>
 <span class="r-in"><span> <span class="va">lower_CIs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">replicates</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">z</span><span class="op">)</span> <span class="fu"><a href="LPM.VaR.html">LPM.VaR</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0</span>, <span class="va">z</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span> <span class="va">upper_CIs</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">replicates</span>, <span class="fl">1</span>, <span class="kw">function</span><span class="op">(</span><span class="va">z</span><span class="op">)</span> <span class="fu"><a href="UPM.VaR.html">UPM.VaR</a></span><span class="op">(</span><span class="fl">0.025</span>, <span class="fl">0</span>, <span class="va">z</span><span class="op">)</span><span class="op">)</span></span></span>
@@ -193,7 +207,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

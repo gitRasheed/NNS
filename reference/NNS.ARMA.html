@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">NNS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -17,6 +17,8 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/examples/">Examples</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/book/">Book</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/OVVO-Financial/NNS/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -76,20 +78,20 @@
 
 
 <dt id="arg-seasonal-factor">seasonal.factor<a class="anchor" aria-label="anchor" href="#arg-seasonal-factor"></a></dt>
-<dd><p>logical or integer(s); <code>TRUE</code> (default) Automatically selects the best seasonal lag from the seasonality test.  To use weighted average of all seasonal lags set to <code>(seasonal.factor = FALSE)</code>.  Otherwise, directly input known frequency integer lag to use, i.e. <code>(seasonal.factor = 12)</code> for monthly data.  Multiple frequency integers can also be used, i.e. <code>(seasonal.factor = c(12, 24, 36))</code></p></dd>
+<dd><p>logical or integer(s); <code>TRUE</code> (default) Automatically selects the best seasonal lag from the seasonality test, <a href="NNS.seas.html">NNS.seas</a>'s <code>best.period</code> without its permutation test.  For a significance-filtered lag, run <code>NNS.seas(variable, p.value = TRUE)</code> first and pass its <code>best.period</code> (or <code>periods</code>) here; <code>best.period</code> is 1 when no period is significant.  To use weighted average of all seasonal lags set to <code>(seasonal.factor = FALSE)</code>.  Otherwise, directly input known frequency integer lag to use, i.e. <code>(seasonal.factor = 12)</code> for monthly data.  Multiple frequency integers can also be used, i.e. <code>(seasonal.factor = c(12, 24, 36))</code></p></dd>
 
 
 <dt id="arg-weights">weights<a class="anchor" aria-label="anchor" href="#arg-weights"></a></dt>
-<dd><p>numeric or <code>"equal"</code>; <code>NULL</code> (default) sets the weights of the <code>seasonal.factor</code> vector when specified as integers.  If <code>(weights = NULL)</code> each <code>seasonal.factor</code> is weighted on its <a href="NNS.seas.html">NNS.seas</a> result and number of observations it contains, else an <code>"equal"</code> weight is used.</p></dd>
+<dd><p>numeric or <code>"equal"</code>; <code>NULL</code> (default) sets the weights of the <code>seasonal.factor</code> vector when specified as integers.  If <code>(weights = NULL)</code> each <code>seasonal.factor</code> is weighted on its <a href="NNS.seas.html">NNS.seas</a> result and number of observations it contains, else an <code>"equal"</code> weight is used.  Numeric weights must have one value per seasonal lag and are treated as relative weights (rescaled to sum to 1).  With <code>(dynamic = TRUE)</code> the lags are re-selected at every step, so only <code>NULL</code> or <code>"equal"</code> weights are accepted.</p></dd>
 
 
 <dt id="arg-best-periods">best.periods<a class="anchor" aria-label="anchor" href="#arg-best-periods"></a></dt>
-<dd><p>integer; [2] (default) used in conjunction with <code>(seasonal.factor = FALSE)</code>, uses the <code>best.periods</code> number of detected seasonal lags instead of <code>ALL</code> lags when
+<dd><p>integer; 1 (default) used in conjunction with <code>(seasonal.factor = FALSE)</code>, uses the <code>best.periods</code> number of detected seasonal lags instead of <code>ALL</code> lags when
 <code>(seasonal.factor = FALSE, best.periods = NULL)</code>.</p></dd>
 
 
 <dt id="arg-modulo">modulo<a class="anchor" aria-label="anchor" href="#arg-modulo"></a></dt>
-<dd><p>integer(s); NULL (default) Used to find the nearest multiple(s) in the reported seasonal period.</p></dd>
+<dd><p>integer(s); NULL (default) Adds the multiples of <code>modulo</code> on either side of each detected period (period 7 with <code>modulo = 5</code> gives 5 and 10).</p></dd>
 
 
 <dt id="arg-mod-only">mod.only<a class="anchor" aria-label="anchor" href="#arg-mod-only"></a></dt>
@@ -98,7 +100,7 @@
 
 <dt id="arg-negative-values">negative.values<a class="anchor" aria-label="anchor" href="#arg-negative-values"></a></dt>
 <dd><p>logical; <code>FALSE</code> (default) If the variable can be negative, set to
-<code>(negative.values = TRUE)</code>.  If there are negative values within the variable, <code>negative.values</code> will automatically be detected.</p></dd>
+<code>(negative.values = TRUE)</code>.  If there are negative values within the training data <code>variable[1 : training.set]</code>, <code>negative.values</code> will automatically be detected.</p></dd>
 
 
 <dt id="arg-method">method<a class="anchor" aria-label="anchor" href="#arg-method"></a></dt>
@@ -123,12 +125,12 @@
 
 
 <dt id="arg-pred-int">pred.int<a class="anchor" aria-label="anchor" href="#arg-pred-int"></a></dt>
-<dd><p>numeric [0, 1]; <code>NULL</code> (default) Plots and returns the associated prediction intervals for the final estimate.  Constructed using the maximum entropy bootstrap <a href="NNS.meboot.html">NNS.meboot</a> on the final estimates.</p></dd>
+<dd><p>numeric [0, 1]; <code>NULL</code> (default) Plots and returns lower and upper bands around the forecasts.  The forecast path itself is resampled with the maximum entropy bootstrap (<a href="NNS.MC.html">NNS.MC</a> over <code>rho</code> from -1 to 1), the bounds at each step are <a href="LPM.VaR.html">LPM.VaR</a> and <a href="UPM.VaR.html">UPM.VaR</a> of the replicates at probability <code>(1 - pred.int) / 2</code>, widened by the spread of the per-lag linear estimates; a one-point (<code>h = 1</code>) or constant path has no dispersion to resample, so its band is the path widened by that spread alone (zero width with a single seasonal lag); <a href="NNS.ARMA.optim.html">NNS.ARMA.optim</a> gives intervals from validation errors.  The band therefore describes the dispersion of the forecast path, not the uncertainty of the outcome at each horizon: it does not widen with the horizon, and it is not calibrated to contain future values with probability <code>pred.int</code>.  <a href="NNS.ARMA.optim.html">NNS.ARMA.optim</a> derives its interval from validation errors instead.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Returns a vector of forecasts of length <code>(h)</code> if no <code>pred.int</code> specified.  Else, returns a <code>data.table</code> with the forecasts as well as lower and upper prediction intervals per forecast point.</p>
+    <p>Returns a vector of forecasts of length <code>(h)</code> if no <code>pred.int</code> specified.  Else, returns a <code>data.table</code> with the forecasts as well as the lower and upper forecast-path bands per forecast point (see <code>pred.int</code>).</p>
     </div>
     <div class="section level2">
     <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>
@@ -170,7 +172,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

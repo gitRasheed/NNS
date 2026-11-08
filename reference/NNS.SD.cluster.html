@@ -9,7 +9,7 @@ subject to a minimum cluster size."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">NNS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -19,6 +19,8 @@ subject to a minimum cluster size."></head><body>
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/examples/">Examples</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/book/">Book</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/OVVO-Financial/NNS/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -64,11 +66,11 @@ subject to a minimum cluster size.</p>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
-<dd><p>Character, either  <code>"discrete"</code> (default) or <code>"continuous"</code>; specifies the type of CDF.</p></dd>
+<dd><p>At degree 1, <code>"discrete"</code> (default) uses empirical FSD and <code>"continuous"</code> uses the degree-one area-ratio (Omega/expectile) ordering. The latter does not imply ordinary FSD. SSD and TSD are unaffected by <code>type</code>.</p></dd>
 
 
 <dt id="arg-min-cluster">min_cluster<a class="anchor" aria-label="anchor" href="#arg-min-cluster"></a></dt>
-<dd><p>Integer. The minimum number of elements required for a valid cluster.</p></dd>
+<dd><p>Integer. Peeling stops once at most <code>min_cluster</code> variables remain; those form the final cluster, and a final cluster smaller than <code>min_cluster</code> is merged into the previous one.  SD-efficient sets peeled before that are kept whatever their size.</p></dd>
 
 
 <dt id="arg-dendrogram">dendrogram<a class="anchor" aria-label="anchor" href="#arg-dendrogram"></a></dt>
@@ -83,9 +85,9 @@ subject to a minimum cluster size.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The function applies <code><a href="NNS.SD.efficient.set.html">NNS.SD.efficient.set</a></code> iteratively, peeling off the SD-efficient set at each step
-if it meets or exceeds <code>min_cluster</code> in size, until no more subsets can be extracted or all variables are exhausted.
-Variables in each SD-efficient set form a cluster, with any remaining variables aggregated into the final cluster if it meets
-the <code>min_cluster</code> threshold.</p>
+(whatever its size) while more than <code>min_cluster</code> variables remain, or until no more subsets can be extracted.
+Variables in each SD-efficient set form a cluster. The remaining variables form the final cluster, which is merged
+into the previous cluster if it has fewer than <code>min_cluster</code> members.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -126,7 +128,7 @@ the <code>min_cluster</code> threshold.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

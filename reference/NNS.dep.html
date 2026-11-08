@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">NNS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -17,6 +17,8 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/examples/">Examples</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/book/">Book</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/OVVO-Financial/NNS/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -55,11 +57,11 @@
 
 
 <dt id="arg-asym">asym<a class="anchor" aria-label="anchor" href="#arg-asym"></a></dt>
-<dd><p>logical; <code>FALSE</code> (default) Allows for asymmetrical dependencies.</p></dd>
+<dd><p>logical; <code>FALSE</code> (default) returns the symmetric measures. If <code>TRUE</code>, returns the asymmetric (directional) measures: the partition is built on <code>x</code> only and the result measures the dependence of <code>y</code> on <code>x</code> (<code>y</code> as a function of <code>x</code>); swap the arguments for the other direction.</p></dd>
 
 
 <dt id="arg-p-value">p.value<a class="anchor" aria-label="anchor" href="#arg-p-value"></a></dt>
-<dd><p>logical; <code>FALSE</code> (default) Generates 100 independent random permutations to test results against and plots 95 percent confidence intervals along with all results.</p></dd>
+<dd><p>logical; <code>FALSE</code> (default) If <code>TRUE</code> (bivariate only), compares the results against 100 random permutations of <code>y</code>: the Dependence p-value is the upper-tail permutation p-value <code>(1 + #(null &gt;= observed)) / (1 + 100)</code>, the Correlation p-value is the two-sided permutation p-value <code>min(1, 2 * min(1 + #(null &lt;= observed), 1 + #(null &gt;= observed)) / (1 + 100))</code>, and the 95 percent intervals of the permutation null are returned (and plotted when <code>print.map = TRUE</code>).</p></dd>
 
 
 <dt id="arg-print-map">print.map<a class="anchor" aria-label="anchor" href="#arg-print-map"></a></dt>
@@ -71,8 +73,16 @@
     <p>Returns the bi-variate <code>"Correlation"</code> and <code>"Dependence"</code> or correlation / dependence matrix for matrix input.</p>
     </div>
     <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Dependence is a finite-resolution summary of the recursive partitions of <a href="NNS.part.html">NNS.part</a>, which split each cell at the gravity of its observations (<code>noise.reduction = "off"</code>), not at its mean. At each cell, degree-0 (frequency) and degree-1 (area) concordance around the cell means are measured relative to a within-cell permutation reference and rescaled. Their cell-size-weighted averages are evaluated across partition levels. The reported Dependence is the strongest level, floored at zero; Correlation is a signed summary at that selected level and is bounded by Dependence in absolute value. With <code>asym = FALSE</code>, partitions on x, on y, and on joint quadrants are considered. With <code>asym = TRUE</code>, only partitions on x are considered, so the direction describes the resolution supplied by the conditioning variable rather than a causal effect.</p>
+<p>The split depth, stopping rules, finite occupancy, and maximization across levels affect the score. A zero score does not prove independence, a noiseless nonlinear function need not score one, and finite independent samples can produce positive scores. The permutation calculation repeats the same selection rule, providing a reference for the selected statistic rather than removing every finite-sample effect from the score itself.</p>
+<p>The degree-0 cell reference uses the hypergeometric distribution, with a normal approximation for cell sizes above 400. The degree-1 reference enumerates distinct arrangements only when at most 720 are required (all arrangements for up to six distinct values); larger cells use an approximation. These are properties of the cell calibration, separate from the 100 whole-sample permutations used by <code>p.value = TRUE</code>.</p>
+<p>Power depends on the alternative. On noisy linear relationships in small samples, rank-based, distance-correlation or Hoeffding tests can reject more often than the <code>p.value</code> permutation test of <code>NNS.dep</code>; on non-monotone or heteroscedastic shapes such as a circle or <code>y = x * e</code>, the <code>NNS.dep</code> test can reject far more often.</p>
+<p>Whole-sample shuffling assumes exchangeability of observations under the null. It is not an automatic test for serially dependent or clustered observations. The returned fields named <code>95% CIs</code> are central intervals of the permutation null, not confidence intervals for a population dependence parameter. Inclusive-tail counts with the plus-one correction avoid zero Monte Carlo p-values; ties make the test conservative.</p>
+    </div>
+    <div class="section level2">
     <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>
-    <p>For asymmetrical <code>(asym = TRUE)</code> matrices, directional dependence is returned as ([column variable] —&gt; [row variable]).</p>
+    <p>For asymmetrical <code>(asym = TRUE)</code> matrices, entry <code>[i, j]</code> is the directional dependence ([row variable i] —&gt; [column variable j]), i.e. <code>NNS.dep(x[, i], x[, j], asym = TRUE)</code>, the dependence of column <code>j</code> on row variable <code>i</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -106,7 +116,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

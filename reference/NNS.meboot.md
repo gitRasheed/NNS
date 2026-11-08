@@ -27,7 +27,8 @@ NNS.meboot(
   colsubj,
   coldata,
   coltimes,
-  ...
+  ...,
+  expand.residual.sd = TRUE
 )
 ```
 
@@ -44,7 +45,10 @@ NNS.meboot(
 - rho:
 
   numeric \[-1,1\] (vectorized); A `rho` must be provided, otherwise a
-  blank list will be returned.
+  blank list will be returned. The dependence target is applied to each
+  individual `replicate` (every replicate is mixed to the requested
+  dependence with the original series); it is **not** applied to the
+  `ensemble`. See `Note`.
 
 - type:
 
@@ -54,12 +58,14 @@ NNS.meboot(
 - drift:
 
   logical; `drift = TRUE` (default) preserves the drift of the original
-  series.
+  series. `drift = FALSE` removes it: replicates are a flat baseline at
+  `mean(x)` plus the resampled residuals.
 
 - target_drift:
 
   numerical; `target_drift = NULL` (default) Specifies the desired drift
-  when `drift = TRUE`, i.e. a risk-free rate of return.
+  when `drift = TRUE`, i.e. a risk-free rate of return. A drift other
+  than the original is centred so the replicates keep `mean(x)`.
 
 - target_drift_scale:
 
@@ -88,18 +94,31 @@ NNS.meboot(
 - expand.sd:
 
   logical; If `TRUE` the standard deviation in the ensemble is expanded.
-  See `expand.sd` in `meboot::meboot`.
+  See `expand.sd` in `meboot::meboot`. The expansion toward `sd(x)` is
+  skipped when `drift = FALSE`, `target_drift` or `target_drift_scale`
+  replaces the original drift, since `sd(x)` includes that drift. A
+  target equal to the original drift up to rounding (relative tolerance
+  `sqrt(.Machine$double.eps)`, plus an allowance for rounding in the
+  slope fit that grows with `max(abs(x))`) keeps the original
+  reconstruction.
 
 - force.clt:
 
-  logical; If `TRUE` the ensemble is forced to satisfy the central limit
-  theorem. See `force.clt` in `meboot::meboot`.
+  logical; If `TRUE` the replicate means are assigned an iid
+  normal-reference scale: the replicate means are spread as a normal
+  sample centred on `mean(x)` with standard deviation `sd(x) / sqrt(n)`,
+  the standard error of the mean of the `n` observations, whatever the
+  number of `reps`. See `force.clt` in `meboot::meboot`, whose code
+  divides by the number of replicates instead (its comment says `n`).
+  When `drift = FALSE`, `target_drift` or `target_drift_scale` replaces
+  the original drift, the replicate means are centred and spread using
+  the new baseline plus the original residuals instead of `x`.
 
 - scl.adjustment:
 
   logical; If `TRUE` scale adjustment is performed to ensure that the
-  population variance of the transformed series equals the variance of
-  the data.
+  population variance of the resampled residuals equals the variance of
+  the detrended data.
 
 - sym:
 
@@ -135,6 +154,13 @@ NNS.meboot(
 
   possible argument `fiv` to be passed to `expand.sd`.
 
+- expand.residual.sd:
+
+  logical; `TRUE` (default) retains the residual-space SD expansion
+  before trend reconstruction. Set to `FALSE` to leave the generated
+  residual scales unexpanded; this is separate from the later
+  level-space `expand.sd` switch.
+
 ## Value
 
 Returns the following row names in a matrix:
@@ -143,7 +169,11 @@ Returns the following row names in a matrix:
 
 - replicates maximum entropy bootstrap replicates.
 
-- ensemble average observation over all replicates.
+- ensemble average observation over all replicates. Being a
+  per-observation mean it is a central summary, not a single series
+  carrying the target dependence; a rank or linear correlation taken
+  directly on the `ensemble` tends to read higher than `rho` (averaging
+  amplifies the shared order), so assess `rho` on the `replicates`.
 
 - xx sorted order stats (xx\[1\] is minimum value).
 
@@ -167,8 +197,39 @@ Returns the following row names in a matrix:
 
 ## Note
 
+These are dependence-targeted synthetic scenarios. Zero Spearman or
+Pearson correlation does not imply independence; interior-rho mixtures
+can retain nonlinear dependence and change the residual marginal
+distribution. Matching ranks or path moments does not by itself
+calibrate sampling confidence intervals. The `force.clt` scale
+`sd(x)/sqrt(n)` is an iid finite-variance reference, not a long-run
+standard error under serial dependence, and does not calibrate
+uncertainty of other statistics.
+
 Vectorized `rho` and `drift` parameters will not vectorize both
 simultaneously. Also, do not specify `target_drift = NULL`.
+
+The `rho` dependence alignment is calibrated on each individual
+`replicate`: every replicate's *detrended residuals* are mixed so that
+their dependence on the original series' detrended residuals matches
+`rho`, in the metric implied by `type`; the trend is added back
+afterwards. If the detrended residuals are all exactly zero (a constant
+or exactly linear series) there is nothing to align and `rho` has no
+effect. For a trending series the replicate levels therefore stay
+strongly correlated with the original even at `rho = -1` (e.g.
+AirPassengers: mean Spearman 0.81 at `rho = -1`). Assess a result in
+that **same** metric – a `"NNSdep"` target with
+[NNS.dep](https://OVVO-Financial.github.io/NNS/reference/NNS.dep.md)`$Dependence`
+(unsigned) and a `"spearman"`/`"pearson"` target with rank/linear
+correlation – because a signed correlation taken on an unsigned
+`"NNSdep"` target is not comparable to `rho` (it can even read negative
+while the dependence target is met). Separately, the `ensemble` is the
+per-observation mean of the replicates – a central summary, not a single
+series carrying the target dependence – so a rank or linear correlation
+computed directly on the `ensemble` tends to read higher than the
+per-replicate `rho` (averaging amplifies the shared order). Verify `rho`
+on the `replicates`, in the metric implied by `type`, rather than on the
+`ensemble`.
 
 ## References
 
@@ -192,11 +253,14 @@ simultaneously. Also, do not specify `target_drift = NULL`.
 
 ``` r
 if (FALSE) { # \dontrun{
-# To generate an orthogonal rank correlated time-series to AirPassengers
-boots <- NNS.meboot(AirPassengers, reps = 100, rho = 0, xmin = 0)
+# Target zero Spearman correlation of each replicate's detrended residuals
+boots <- NNS.meboot(AirPassengers, reps = 100, rho = 0, drift = FALSE,
+  expand.sd = FALSE, force.clt = FALSE)
 
-# Verify correlation of replicates ensemble to original
-cor(boots["ensemble",]$ensemble, AirPassengers, method = "spearman")
+# Inspect individual residual correlations, not the ensemble's level correlation
+detrend <- function(z) residuals(lm(as.numeric(z) ~ seq_along(z)))
+apply(boots["replicates",]$replicates, 2, function(z)
+  cor(z, detrend(AirPassengers), method = "spearman"))
 
 # Plot all replicates
 matplot(boots["replicates",]$replicates , type = 'l')

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">NNS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -17,6 +17,8 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/examples/">Examples</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/book/">Book</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/OVVO-Financial/NNS/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -60,7 +62,8 @@
 <span>  <span class="va">colsubj</span>,</span>
 <span>  <span class="va">coldata</span>,</span>
 <span>  <span class="va">coltimes</span>,</span>
-<span>  <span class="va">...</span></span>
+<span>  <span class="va">...</span>,</span>
+<span>  expand.residual.sd <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -77,7 +80,7 @@
 
 
 <dt id="arg-rho">rho<a class="anchor" aria-label="anchor" href="#arg-rho"></a></dt>
-<dd><p>numeric [-1,1] (vectorized); A <code>rho</code> must be provided, otherwise a blank list will be returned.</p></dd>
+<dd><p>numeric [-1,1] (vectorized); A <code>rho</code> must be provided, otherwise a blank list will be returned.  The dependence target is applied to each individual <code>replicate</code> (every replicate is mixed to the requested dependence with the original series); it is <strong>not</strong> applied to the <code>ensemble</code>.  See <code>Note</code>.</p></dd>
 
 
 <dt id="arg-type">type<a class="anchor" aria-label="anchor" href="#arg-type"></a></dt>
@@ -85,11 +88,11 @@
 
 
 <dt id="arg-drift">drift<a class="anchor" aria-label="anchor" href="#arg-drift"></a></dt>
-<dd><p>logical; <code>drift = TRUE</code> (default) preserves the drift of the original series.</p></dd>
+<dd><p>logical; <code>drift = TRUE</code> (default) preserves the drift of the original series.  <code>drift = FALSE</code> removes it: replicates are a flat baseline at <code>mean(x)</code> plus the resampled residuals.</p></dd>
 
 
 <dt id="arg-target-drift">target_drift<a class="anchor" aria-label="anchor" href="#arg-target-drift"></a></dt>
-<dd><p>numerical; <code>target_drift = NULL</code> (default) Specifies the desired drift when <code>drift = TRUE</code>, i.e. a risk-free rate of return.</p></dd>
+<dd><p>numerical; <code>target_drift = NULL</code> (default) Specifies the desired drift when <code>drift = TRUE</code>, i.e. a risk-free rate of return.  A drift other than the original is centred so the replicates keep <code>mean(x)</code>.</p></dd>
 
 
 <dt id="arg-target-drift-scale">target_drift_scale<a class="anchor" aria-label="anchor" href="#arg-target-drift-scale"></a></dt>
@@ -114,15 +117,15 @@ xmax = largest value + trimmed mean) are given when the random draw happens to b
 
 
 <dt id="arg-expand-sd">expand.sd<a class="anchor" aria-label="anchor" href="#arg-expand-sd"></a></dt>
-<dd><p>logical; If <code>TRUE</code> the standard deviation in the ensemble is expanded. See <code>expand.sd</code> in <code>meboot::meboot</code>.</p></dd>
+<dd><p>logical; If <code>TRUE</code> the standard deviation in the ensemble is expanded. See <code>expand.sd</code> in <code>meboot::meboot</code>.  The expansion toward <code>sd(x)</code> is skipped when <code>drift = FALSE</code>, <code>target_drift</code> or <code>target_drift_scale</code> replaces the original drift, since <code>sd(x)</code> includes that drift.  A target equal to the original drift up to rounding (relative tolerance <code>sqrt(.Machine$double.eps)</code>, plus an allowance for rounding in the slope fit that grows with <code>max(abs(x))</code>) keeps the original reconstruction.</p></dd>
 
 
 <dt id="arg-force-clt">force.clt<a class="anchor" aria-label="anchor" href="#arg-force-clt"></a></dt>
-<dd><p>logical; If <code>TRUE</code> the ensemble is forced to satisfy the central limit theorem. See <code>force.clt</code> in <code>meboot::meboot</code>.</p></dd>
+<dd><p>logical; If <code>TRUE</code> the replicate means are assigned an iid normal-reference scale: the replicate means are spread as a normal sample centred on <code>mean(x)</code> with standard deviation <code>sd(x) / sqrt(n)</code>, the standard error of the mean of the <code>n</code> observations, whatever the number of <code>reps</code>.  See <code>force.clt</code> in <code>meboot::meboot</code>, whose code divides by the number of replicates instead (its comment says <code>n</code>).  When <code>drift = FALSE</code>, <code>target_drift</code> or <code>target_drift_scale</code> replaces the original drift, the replicate means are centred and spread using the new baseline plus the original residuals instead of <code>x</code>.</p></dd>
 
 
 <dt id="arg-scl-adjustment">scl.adjustment<a class="anchor" aria-label="anchor" href="#arg-scl-adjustment"></a></dt>
-<dd><p>logical; If <code>TRUE</code> scale adjustment is performed to ensure that the population variance of the transformed series equals the variance of the data.</p></dd>
+<dd><p>logical; If <code>TRUE</code> scale adjustment is performed to ensure that the population variance of the resampled residuals equals the variance of the detrended data.</p></dd>
 
 
 <dt id="arg-sym">sym<a class="anchor" aria-label="anchor" href="#arg-sym"></a></dt>
@@ -153,12 +156,16 @@ is not a <code>pdata.frame</code> object.</p></dd>
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>possible argument <code>fiv</code> to be passed to <code>expand.sd</code>.</p></dd>
 
+
+<dt id="arg-expand-residual-sd">expand.residual.sd<a class="anchor" aria-label="anchor" href="#arg-expand-residual-sd"></a></dt>
+<dd><p>logical; <code>TRUE</code> (default) retains the residual-space SD expansion before trend reconstruction. Set to <code>FALSE</code> to leave the generated residual scales unexpanded; this is separate from the later level-space <code>expand.sd</code> switch.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Returns the following row names in a matrix:</p><ul><li><p>x original data provided as input.</p></li>
 <li><p>replicates maximum entropy bootstrap replicates.</p></li>
-<li><p>ensemble average observation over all replicates.</p></li>
+<li><p>ensemble average observation over all replicates.  Being a per-observation mean it is a central summary, not a single series carrying the target dependence; a rank or linear correlation taken directly on the <code>ensemble</code> tends to read higher than <code>rho</code> (averaging amplifies the shared order), so assess <code>rho</code> on the <code>replicates</code>.</p></li>
 <li><p>xx sorted order stats (xx[1] is minimum value).</p></li>
 <li><p>z class intervals limits.</p></li>
 <li><p>dv deviations of consecutive data values.</p></li>
@@ -172,7 +179,9 @@ is not a <code>pdata.frame</code> object.</p></dd>
 </ul></div>
     <div class="section level2">
     <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>
-    <p>Vectorized <code>rho</code> and <code>drift</code> parameters will not vectorize both simultaneously.  Also, do not specify <code>target_drift = NULL</code>.</p>
+    <p>These are dependence-targeted synthetic scenarios. Zero Spearman or Pearson correlation does not imply independence; interior-rho mixtures can retain nonlinear dependence and change the residual marginal distribution. Matching ranks or path moments does not by itself calibrate sampling confidence intervals. The <code>force.clt</code> scale <code>sd(x)/sqrt(n)</code> is an iid finite-variance reference, not a long-run standard error under serial dependence, and does not calibrate uncertainty of other statistics.</p>
+<p>Vectorized <code>rho</code> and <code>drift</code> parameters will not vectorize both simultaneously.  Also, do not specify <code>target_drift = NULL</code>.</p>
+<p>The <code>rho</code> dependence alignment is calibrated on each individual <code>replicate</code>: every replicate's <em>detrended residuals</em> are mixed so that their dependence on the original series' detrended residuals matches <code>rho</code>, in the metric implied by <code>type</code>; the trend is added back afterwards. If the detrended residuals are all exactly zero (a constant or exactly linear series) there is nothing to align and <code>rho</code> has no effect.  For a trending series the replicate levels therefore stay strongly correlated with the original even at <code>rho = -1</code> (e.g. AirPassengers: mean Spearman 0.81 at <code>rho = -1</code>).  Assess a result in that <strong>same</strong> metric – a <code>"NNSdep"</code> target with <a href="NNS.dep.html">NNS.dep</a><code>$Dependence</code> (unsigned) and a <code>"spearman"</code>/<code>"pearson"</code> target with rank/linear correlation – because a signed correlation taken on an unsigned <code>"NNSdep"</code> target is not comparable to <code>rho</code> (it can even read negative while the dependence target is met).  Separately, the <code>ensemble</code> is the per-observation mean of the replicates – a central summary, not a single series carrying the target dependence – so a rank or linear correlation computed directly on the <code>ensemble</code> tends to read higher than the per-replicate <code>rho</code> (averaging amplifies the shared order).  Verify <code>rho</code> on the <code>replicates</code>, in the metric implied by <code>type</code>, rather than on the <code>ensemble</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -187,11 +196,14 @@ is not a <code>pdata.frame</code> object.</p></dd>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
-<span class="r-in"><span><span class="co"># To generate an orthogonal rank correlated time-series to AirPassengers</span></span></span>
-<span class="r-in"><span><span class="va">boots</span> <span class="op">&lt;-</span> <span class="fu">NNS.meboot</span><span class="op">(</span><span class="va">AirPassengers</span>, reps <span class="op">=</span> <span class="fl">100</span>, rho <span class="op">=</span> <span class="fl">0</span>, xmin <span class="op">=</span> <span class="fl">0</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Target zero Spearman correlation of each replicate's detrended residuals</span></span></span>
+<span class="r-in"><span><span class="va">boots</span> <span class="op">&lt;-</span> <span class="fu">NNS.meboot</span><span class="op">(</span><span class="va">AirPassengers</span>, reps <span class="op">=</span> <span class="fl">100</span>, rho <span class="op">=</span> <span class="fl">0</span>, drift <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
+<span class="r-in"><span>  expand.sd <span class="op">=</span> <span class="cn">FALSE</span>, force.clt <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># Verify correlation of replicates ensemble to original</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">boots</span><span class="op">[</span><span class="st">"ensemble"</span>,<span class="op">]</span><span class="op">$</span><span class="va">ensemble</span>, <span class="va">AirPassengers</span>, method <span class="op">=</span> <span class="st">"spearman"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="co"># Inspect individual residual correlations, not the ensemble's level correlation</span></span></span>
+<span class="r-in"><span><span class="va">detrend</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">z</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/stats/residuals.html" class="external-link">residuals</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span> <span class="op">~</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_along</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/apply.html" class="external-link">apply</a></span><span class="op">(</span><span class="va">boots</span><span class="op">[</span><span class="st">"replicates"</span>,<span class="op">]</span><span class="op">$</span><span class="va">replicates</span>, <span class="fl">2</span>, <span class="kw">function</span><span class="op">(</span><span class="va">z</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">z</span>, <span class="fu">detrend</span><span class="op">(</span><span class="va">AirPassengers</span><span class="op">)</span>, method <span class="op">=</span> <span class="st">"spearman"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># Plot all replicates</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/matplot.html" class="external-link">matplot</a></span><span class="op">(</span><span class="va">boots</span><span class="op">[</span><span class="st">"replicates"</span>,<span class="op">]</span><span class="op">$</span><span class="va">replicates</span> , type <span class="op">=</span> <span class="st">'l'</span><span class="op">)</span></span></span>
@@ -228,7 +240,7 @@ is not a <code>pdata.frame</code> object.</p></dd>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

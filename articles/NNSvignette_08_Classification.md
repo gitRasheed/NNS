@@ -3,7 +3,6 @@
 ``` r
 
 library(NNS)
-library(data.table)
 require(knitr)
 require(rgl)
 ```
@@ -18,9 +17,10 @@ We have extended the **`NNS.reg`** applications per the use of an
 ensemble method of classification in **`NNS.boost`**. In short,
 **`NNS.reg`** is the base learner instead of trees.
 
-***One major advantage `NNS.boost` has over tree based methods is the
-ability to seamlessly extrapolate beyond the current range of
-observations.***
+For numeric regression, extrapolation follows the fitted NNS
+construction and needs boundary validation. Nominal classification
+predicts among the observed classes; numeric class codes do not define
+an extrapolation scale.
 
 ### Splits vs. Partitions
 
@@ -46,47 +46,33 @@ with the **`NNS.dep`** measure.
 NNS.reg(iris[,1:4], iris[,5], residual.plot = FALSE, ncores = 1)$rhs.partitions
 ```
 
-    ##           V1       V2       V3       V4
-    ##        <num>    <num>    <num>    <num>
-    ##  1: 4.300000 2.000000 1.000000 0.100000
-    ##  2: 4.381250 2.645276 1.050000 0.200000
-    ##  3: 4.577396 2.980556 1.200000 0.300000
-    ##  4: 4.700000 3.181155 1.300000 0.400000
-    ##  5: 4.800000 3.552439 1.400000 0.500000
-    ##  6: 4.900000 4.400000 1.500000 0.600000
-    ##  7: 5.000000       NA 1.600000 1.000000
-    ##  8: 5.100000       NA 1.700000 1.100000
-    ##  9: 5.205000       NA 1.900000 1.200000
-    ## 10: 5.400000       NA 3.416305 1.300000
-    ## 11: 5.500000       NA 3.834865 1.400000
-    ## 12: 5.600000       NA 4.000000 1.500000
-    ## 13: 5.700000       NA 4.184722 1.600000
-    ## 14: 5.800000       NA 4.400000 1.700000
-    ## 15: 5.900000       NA 4.500000 1.800000
-    ## 16: 6.000000       NA 4.670803 1.900000
-    ## 17: 6.100000       NA 4.863889 2.000000
-    ## 18: 6.200000       NA 5.000000 2.117708
-    ## 19: 6.300000       NA 5.100000 2.300000
-    ## 20: 6.400000       NA 5.200000 2.435206
-    ## 21: 6.500000       NA 5.337500 2.500000
-    ## 22: 6.600000       NA 5.500000       NA
-    ## 23: 6.700000       NA 5.617708       NA
-    ## 24: 6.800000       NA 5.849554       NA
-    ## 25: 6.900000       NA 6.336875       NA
-    ## 26: 7.050000       NA 6.900000       NA
-    ## 27: 7.224375       NA       NA       NA
-    ## 28: 7.687079       NA       NA       NA
-    ## 29: 7.900000       NA       NA       NA
-    ##           V1       V2       V3       V4
-    ##        <num>    <num>    <num>    <num>
+    ## [[1]]
+    ##  [1] 4.300000 4.612500 5.012000 5.388889 5.704762 6.057895 6.380952 6.766667
+    ##  [9] 7.475000 7.900000
+    ## 
+    ## [[2]]
+    ## [1] 2.000000 2.493939 2.924000 3.245238 3.752000 4.400000
+    ## 
+    ## [[3]]
+    ##  [1] 1.000000 1.236364 1.400000 1.500000 1.636364 1.900000 3.000000 3.300000
+    ##  [9] 3.575000 3.983333 4.300000 4.581250 4.900000 5.150000 5.536364 5.892308
+    ## [17] 6.600000 6.900000
+    ## 
+    ## [[4]]
+    ##  [1] 0.10 0.20 0.30 0.40 0.50 0.60 1.00 1.10 1.20 1.30 1.40 1.50 1.60 1.70 1.80
+    ## [16] 1.90 2.00 2.10 2.20 2.30 2.45 2.50
 
 ## `NNS.boost()`
 
-Through resampling of the training set and letting each iterated set of
-data speak for themselves (while paying extra attention to the residuals
-throughout), we can test various regressor combinations in these dynamic
-decision trees…only keeping those combinations that add predictive
-value. From there we simply aggregate the predictions.
+**`NNS.boost`** screens feature subsets. Each learner trial fits
+**`NNS.reg`** on a random subset of the regressors and scores it on a
+held-out split. Subsets that clear a learned objective threshold are
+re-tested on new holdouts in the epoch stage, and each feature is
+counted every time a subset containing it passes again. The features are
+then replicated in proportion to those counts and a single
+**`NNS.stack`** (method 1) is fitted on that design. It is not an
+ensemble of voting or averaged learners, and it does not reweight
+residuals.
 
 **`NNS.boost`** will automatically search for an accuracy `threshold`
 from the training set, reporting iterations remaining and level obtained
@@ -97,60 +83,57 @@ Once a `threshold` is obtained, **`NNS.boost`** will test various
 feature combinations against different splits of the training set and
 report back the frequency of each regressor used in the final estimate.
 
-Let’s have a look and see how it works. We use 140 random `iris`
-observations as our training set with the 10 holdout observations as our
-test set. For brevity, we set
+Let’s have a look and see how it works. We hold out four observations
+from each iris species, using 138 observations for training and 12 for
+testing. The split is stratified and reproducible; the last ten rows
+alone would contain only virginica. For brevity, we set
 `epochs = 10, learner.trials = 10, folds = 1`.
 
-**NOTE: Base category of response variable should be 1, not 0 for
-classification problems when using `NNS.boost(..., type = "CLASS")`**.
+**NOTE:** class labels can be factor levels or any distinct numbers.
+Numeric and logical responses are returned on their own values; factor
+and character responses are returned as codes, which `class.levels` maps
+back to the labels.
 
 ``` r
-test.set = 141:150
+
+set.seed(123)
+test.set <- sort(unlist(lapply(split(seq_len(nrow(iris)), iris$Species),
+                               function(rows) sample(rows, 4))))
  
 a = NNS.boost(IVs.train = iris[-test.set, 1:4], 
               DV.train = iris[-test.set, 5],
               IVs.test = iris[test.set, 1:4],
               epochs = 10, learner.trials = 10, 
               status = FALSE, balance = TRUE,
-              type = "CLASS", folds = 5)
+              type = "CLASS")
 
 a
-$results
- [1] 3 3 3 3 3 3 3 3 3 3
-
-$pred.int
-NULL
-
-$feature.weights
- Petal.Width Petal.Length Sepal.Length 
-   0.4285714    0.4285714    0.1428571 
-
-$feature.frequency
- Petal.Width Petal.Length Sepal.Length 
-           3            3            1 
-   
-mean( a$results == as.numeric(iris[test.set, 5]) )
-[1] 1
+mean(a$results == as.numeric(iris[test.set, 5]))
 ```
 
-A perfect classification, using the features weighted per the output
-above.
+The reported accuracy is for this held-out split. Repeated stratified
+splits are needed to assess variability; a small demonstration does not
+establish general superiority or robustness to increasing dimension.
 
 ## Cross-Validation Classification Using `NNS.stack()`
 
 The
 **[`NNS.stack()`](https://OVVO-Financial.github.io/NNS/reference/NNS.stack.md)**
-routine cross-validates for a given objective function the `n.best`
-parameter in the multivariate **`NNS.reg`** function as well as the
-`threshold` parameter in the dimension reduction **`NNS.reg`** version.
-**`NNS.stack`** can be used for classification via
-**`NNS.stack(..., type = "CLASS", ...)`**.
+routine cross-validates, for a given objective function, the neighbour
+count `n.best` of the multivariate **`NNS.reg`** fit and the number of
+predictors in the dimension reduction **`NNS.reg`** version, then blends
+the two. For classification (**`NNS.stack(..., type = "CLASS", ...)`**)
+it tunes and blends class-probability vectors. The `OBJfn` values it
+returns are the best scores of that search on the out-of-fold
+predictions, so they overstate held-out performance; the held-out test
+set below is the assessment.
 
 For brevity, we set `folds = 1`.
 
-**NOTE: Base category of response variable should be 1, not 0 for
-classification problems when using `NNS.stack(..., type = "CLASS")`**.
+**NOTE:** class labels can be factor levels or any distinct numbers.
+Numeric and logical responses are returned on their own values; factor
+and character responses are returned as codes, which `class.levels` maps
+back to the labels.
 
 ``` r
 
@@ -164,48 +147,13 @@ b
 ```
 
 ``` r
-$OBJfn.reg
-[1] 0.955787
 
-$NNS.reg.n.best
-[1] 1
-
-$probability.threshold
-[1] 0.6429167
-
-$OBJfn.dim.red
-[1] 0.955787
-
-$NNS.dim.red.threshold
-[1] 0.925
-
-$reg
- [1] 3 3 3 3 3 3 3 3 3 3
-
-$reg.pred.int
-NULL
-
-$dim.red
- [1] 3 3 3 3 3 3 3 3 3 3
-
-$dim.red.pred.int
-NULL
-
-$stack
- [1] 3 3 3 3 3 3 3 3 3 3
-
-$pred.int
-NULL
+mean(b$stack == as.numeric(iris[test.set, 5]))
 ```
 
-``` r
-
-mean( b$stack == as.numeric(iris[test.set, 5]) )
-```
-
-``` r
-[1] 1
-```
+The returned `class.levels` gives the label mapping for encoded class
+results. Compare original labels after decoding when a classifier’s API
+returns labels.
 
 ### Brief Notes on Other Parameters
 
@@ -214,9 +162,11 @@ mean( b$stack == as.numeric(iris[test.set, 5]) )
   is the basis for a `kNN` nearest neighbor type of classification.
 
 - `n.best = 1` will use the single nearest neighbor. When coupled with
-  `depth = "max"`, `NNS` will emulate a `kNN = 1` but as the dimensions
-  increase the results diverge demonstrating `NNS` is less sensitive to
-  the curse of dimensionality than `kNN`.
+  `depth = "max"`, `NNS` will emulate a `kNN = 1` for the chosen
+  partition and distance configuration. Performance as dimension
+  increases requires a matched comparison of sample size, features,
+  tuning, distance metric, and held-out loss; this example does not
+  establish a general dimensionality advantage.
 
 - `extreme` will use the maximum or minimum `threshold` obtained, and
   may result in errors if that threshold cannot be eclipsed by

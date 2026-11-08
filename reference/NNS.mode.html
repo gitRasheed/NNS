@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">NNS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -17,6 +17,8 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/examples/">Examples</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/book/">Book</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/OVVO-Financial/NNS/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -51,16 +53,20 @@
 
 
 <dt id="arg-discrete">discrete<a class="anchor" aria-label="anchor" href="#arg-discrete"></a></dt>
-<dd><p>logical; <code>FALSE</code> (default) for discrete distributions.</p></dd>
+<dd><p>logical; <code>FALSE</code> (default) for continuous distributions, <code>TRUE</code> for discrete distributions.</p></dd>
 
 
 <dt id="arg-multi">multi<a class="anchor" aria-label="anchor" href="#arg-multi"></a></dt>
-<dd><p>logical; <code>TRUE</code> (default) returns multiple mode values.</p></dd>
+<dd><p>logical; <code>TRUE</code> (default) returns multiple mode values.  <code>FALSE</code> returns the highest peak; among equally high peaks, the one nearest <a href="NNS.gravity.html">NNS.gravity</a> of the data (then the lower value), so the result is always one of the modes.</p></dd>
 
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
-    <p>Returns a numeric value representing the mode of the distribution.</p>
+    <p>Returns the mode of the distribution: a numeric vector of all modes when <code>multi = TRUE</code> (default), otherwise a single numeric value.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>The continuous mode finds the peaks of a smoothed histogram with bin width IQR / sqrt(n), peaks in the first and last bins included, and centres each peak on the mean of the observations within three bins of it, so a peak on a single value returns that value.  When every gap between consecutive distinct values is wider than a bin, the data are treated as discrete-valued: the modes are the values more frequent than their neighbouring values, a run of equally frequent values counting together.  <code>discrete = TRUE</code> instead rounds to integers and returns the most frequent integers.</p>
     </div>
     <div class="section level2">
     <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
@@ -85,7 +91,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

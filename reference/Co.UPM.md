@@ -26,11 +26,14 @@ Co.UPM(degree_upm, x, y, target_x, target_y, degree_y = NULL)
 
 - target_x:
 
-  numeric vector; thresholds for x (defaults to mean(x)).
+  numeric vector; thresholds for x. There is no default: pass `NULL` to
+  use `mean(x)`.
 
 - target_y:
 
-  numeric vector; thresholds for y (defaults to mean(y)).
+  numeric vector; thresholds for y. There is no default: pass `NULL` to
+  use `mean(y)`. `target_x` and `target_y` must be non-empty and the
+  same length, or one of them length 1.
 
 - degree_y:
 

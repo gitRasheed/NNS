@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">NNS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,8 @@
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/examples/">Examples</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/book/">Book</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -63,14 +65,8 @@
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Prereqs (uncomment if needed):</span></span>
 <span><span class="co"># install.packages("NNS")</span></span>
-<span><span class="co"># install.packages(c("data.table","xts","zoo","Rfast"))</span></span>
 <span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/OVVO-Financial/NNS" class="external-link">NNS</a></span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## Warning in rgl.init(initValue, onlyNULL): RGL: unable to open X11 display</span></span></code></pre>
-<pre><code><span><span class="co">## Warning: 'rgl.init' failed, will use the null device.</span></span>
-<span><span class="co">## See '?rgl.useNULL' for ways to avoid this warning.</span></span></code></pre>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-datatable.com" class="external-link">data.table</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
 <h2 id="orientation">Orientation<a class="anchor" aria-label="anchor" href="#orientation"></a>
 </h2>
@@ -151,7 +147,7 @@ contribution.</li>
 <div class="section level3">
 <h3 id="code-variance-decomposition-cdf">1.3 Code: variance decomposition &amp; CDF<a class="anchor" aria-label="anchor" href="#code-variance-decomposition-cdf"></a>
 </h3>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Normal sample</span></span>
@@ -160,7 +156,7 @@ contribution.</li>
 <span><span class="va">L2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LPM.html">LPM</a></span><span class="op">(</span><span class="fl">2</span>, <span class="va">mu</span>, <span class="va">y</span><span class="op">)</span>; <span class="va">U2</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/UPM.html">UPM</a></span><span class="op">(</span><span class="fl">2</span>, <span class="va">mu</span>, <span class="va">y</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"LPM2 + UPM2 = %.6f vs var(y)=%.6f\n"</span>, <span class="op">(</span><span class="va">L2</span><span class="op">+</span><span class="va">U2</span><span class="op">)</span><span class="op">*</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span> <span class="op">/</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">var</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## LPM2 + UPM2 = 1.011889 vs var(y)=1.011889</span></span></code></pre>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Empirical CDF via LPM.ratio(0, t, x)</span></span>
 <span><span class="kw">for</span> <span class="op">(</span><span class="va">t</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="op">-</span><span class="fl">1</span>,<span class="fl">0</span>,<span class="fl">1</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">cdf_lpm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LPM.ratio.html">LPM.ratio</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">t</span>, <span class="va">y</span><span class="op">)</span></span>
@@ -169,7 +165,7 @@ contribution.</li>
 <pre><code><span><span class="co">## CDF at t=-1.0 : LPM.ratio=0.1633 | empirical=0.1633</span></span>
 <span><span class="co">## CDF at t=+0.0 : LPM.ratio=0.5043 | empirical=0.5043</span></span>
 <span><span class="co">## CDF at t=+1.0 : LPM.ratio=0.8480 | empirical=0.8480</span></span></code></pre>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Asymmetry on a skewed distribution</span></span>
 <span><span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Exponential.html" class="external-link">rexp</a></span><span class="op">(</span><span class="fl">3000</span><span class="op">)</span><span class="op">-</span><span class="fl">1</span>; <span class="va">mu_z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">z</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"Skewed z: LPM2=%.4f, UPM2=%.4f (expect imbalance)\n"</span>, <span class="fu"><a href="../reference/LPM.html">LPM</a></span><span class="op">(</span><span class="fl">2</span>,<span class="va">mu_z</span>,<span class="va">z</span><span class="op">)</span>, <span class="fu"><a href="../reference/UPM.html">UPM</a></span><span class="op">(</span><span class="fl">2</span>,<span class="va">mu_z</span>,<span class="va">z</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
@@ -197,7 +193,7 @@ assumptions.</p>
 <ul>
 <li><code>NNS.moments(x)</code></li>
 </ul>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">M</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/NNS.moments.html">NNS.moments</a></span><span class="op">(</span><span class="va">y</span><span class="op">)</span></span>
 <span><span class="va">M</span></span></code></pre></div>
 <pre><code><span><span class="co">## $mean</span></span>
@@ -219,11 +215,11 @@ assumptions.</p>
 <ul>
 <li><code>NNS.mode(x)</code></li>
 </ul>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">23</span><span class="op">)</span></span>
 <span><span class="va">multimodal</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1500</span>,<span class="op">-</span><span class="fl">2</span>,<span class="fl">.5</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1500</span>,<span class="fl">2</span>,<span class="fl">.5</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/NNS.mode.html">NNS.mode</a></span><span class="op">(</span><span class="va">multimodal</span>,multi <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## [1] -2.049405  1.987674</span></span></code></pre>
+<pre><code><span><span class="co">## [1] -2.012070  2.024336</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="cdf-tables-via-lpm-ratios">2.3 CDF tables via LPM ratios<a class="anchor" aria-label="anchor" href="#cdf-tables-via-lpm-ratios"></a>
@@ -239,22 +235,21 @@ when <code>degree=0</code>)</li>
 partial‑moment CDFs)</li>
 <li><code>UPM.VaR(p, degree, variable)</code></li>
 </ul>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">qgrid</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/LPM.VaR.html">LPM.VaR</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.05</span>,<span class="fl">0.95</span>,<span class="fl">.1</span><span class="op">)</span>,<span class="fl">0</span>,<span class="va">z</span><span class="op">)</span> <span class="co"># equivalent to quantile(z,probs = seq(0.05,0.95,by=0.1))</span></span>
-<span><span class="va">CDF_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span>threshold <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">qgrid</span><span class="op">)</span>, CDF <span class="op">=</span> <span class="fu"><a href="../reference/LPM.ratio.html">LPM.ratio</a></span><span class="op">(</span><span class="fl">0</span>,<span class="va">qgrid</span>,<span class="va">z</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">CDF_tbl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>threshold <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">qgrid</span><span class="op">)</span>, CDF <span class="op">=</span> <span class="fu"><a href="../reference/LPM.ratio.html">LPM.ratio</a></span><span class="op">(</span><span class="fl">0</span>,<span class="va">qgrid</span>,<span class="va">z</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">CDF_tbl</span></span></code></pre></div>
-<pre><code><span><span class="co">##       threshold   CDF</span></span>
-<span><span class="co">##           &lt;num&gt; &lt;num&gt;</span></span>
-<span><span class="co">##  1: -0.94052127  0.05</span></span>
-<span><span class="co">##  2: -0.83748109  0.15</span></span>
-<span><span class="co">##  3: -0.71317882  0.25</span></span>
-<span><span class="co">##  4: -0.57443327  0.35</span></span>
-<span><span class="co">##  5: -0.41017671  0.45</span></span>
-<span><span class="co">##  6: -0.20424962  0.55</span></span>
-<span><span class="co">##  7:  0.06850182  0.65</span></span>
-<span><span class="co">##  8:  0.41462712  0.75</span></span>
-<span><span class="co">##  9:  0.94307172  0.85</span></span>
-<span><span class="co">## 10:  2.09633977  0.95</span></span></code></pre>
+<pre><code><span><span class="co">##      threshold  CDF</span></span>
+<span><span class="co">## 1  -0.94052127 0.05</span></span>
+<span><span class="co">## 2  -0.83748109 0.15</span></span>
+<span><span class="co">## 3  -0.71317882 0.25</span></span>
+<span><span class="co">## 4  -0.57443327 0.35</span></span>
+<span><span class="co">## 5  -0.41017671 0.45</span></span>
+<span><span class="co">## 6  -0.20424962 0.55</span></span>
+<span><span class="co">## 7   0.06850182 0.65</span></span>
+<span><span class="co">## 8   0.41462712 0.75</span></span>
+<span><span class="co">## 9   0.94307172 0.85</span></span>
+<span><span class="co">## 10  2.09633977 0.95</span></span></code></pre>
 <hr>
 </div>
 </div>
@@ -284,16 +279,16 @@ such structure.</p>
 <div class="section level3">
 <h3 id="code-nonlinear-dependence">3.2 Code: nonlinear dependence<a class="anchor" aria-label="anchor" href="#code-nonlinear-dependence"></a>
 </h3>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">2000</span>,<span class="op">-</span><span class="fl">1</span>,<span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">&lt;-</span> <span class="va">x</span><span class="op">^</span><span class="fl">2</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">2000</span>, sd<span class="op">=</span><span class="fl">.05</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"Pearson r = %.4f\n"</span>, <span class="fu"><a href="https://rdrr.io/r/stats/cor.html" class="external-link">cor</a></span><span class="op">(</span><span class="va">x</span>,<span class="va">y</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Pearson r = 0.0006</span></span></code></pre>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf</a></span><span class="op">(</span><span class="st">"NNS.dep  = %.4f\n"</span>, <span class="fu"><a href="../reference/NNS.dep.html">NNS.dep</a></span><span class="op">(</span><span class="va">x</span>,<span class="va">y</span><span class="op">)</span><span class="op">$</span><span class="va">Dependence</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">## NNS.dep  = 0.7097</span></span></code></pre>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<pre><code><span><span class="co">## NNS.dep  = 0.9073</span></span></code></pre>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">X</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>a<span class="op">=</span><span class="va">x</span>, b<span class="op">=</span><span class="va">y</span>, c<span class="op">=</span><span class="va">x</span><span class="op">*</span><span class="va">y</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">2000</span>, sd<span class="op">=</span><span class="fl">.05</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">pm</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/PM.matrix.html">PM.matrix</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, target <span class="op">=</span> <span class="st">"means"</span>, variable<span class="op">=</span><span class="va">X</span>, pop_adj<span class="op">=</span><span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">pm</span></span></code></pre></div>
@@ -326,15 +321,15 @@ such structure.</p>
 <span><span class="co">## a 0.3418800141  0.0001011068  0.206234664</span></span>
 <span><span class="co">## b 0.0001011068  0.0927842833 -0.000789973</span></span>
 <span><span class="co">## c 0.2062346637 -0.0007899730  0.150159552</span></span></code></pre>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">cop</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/NNS.copula.html">NNS.copula</a></span><span class="op">(</span><span class="va">X</span>, continuous<span class="op">=</span><span class="cn">TRUE</span>, plot<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">cop</span></span></code></pre></div>
-<pre><code><span><span class="co">## [1] 0.5692785</span></span></code></pre>
+<pre><code><span><span class="co">## [1] 0.5217301</span></span></code></pre>
 </div>
 <div class="section level3">
 <h3 id="code-copula">3.3 Code: copula<a class="anchor" aria-label="anchor" href="#code-copula"></a>
 </h3>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Data</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span>; <span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">100</span><span class="op">)</span>; <span class="va">y</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">100</span><span class="op">)</span>; <span class="va">z</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/expand.grid.html" class="external-link">expand.grid</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span></span>
 <span></span>
@@ -373,11 +368,12 @@ between variables influences the final normalized values.</p>
 <ul>
 <li><code>NNS.norm(x, linear=TRUE, chart.type = NULL)</code></li>
 </ul>
-<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">A</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">100</span>, mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">B</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">100</span>, mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># NNS.norm scales by ratios of column means, so the columns need positive means.</span></span>
+<span><span class="va">A</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">100</span>, mean <span class="op">=</span> <span class="fl">5</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span><span class="va">B</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">100</span>, mean <span class="op">=</span> <span class="fl">20</span>, sd <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
 <span><span class="va">C</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">100</span>, mean <span class="op">=</span> <span class="fl">10</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="va">D</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">100</span>, mean <span class="op">=</span> <span class="fl">10</span>, sd <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="va">D</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">100</span>, mean <span class="op">=</span> <span class="fl">50</span>, sd <span class="op">=</span> <span class="fl">10</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">X</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span><span class="va">A</span>, <span class="va">B</span>, <span class="va">C</span>, <span class="va">D</span><span class="op">)</span></span>
 <span></span>
@@ -398,7 +394,7 @@ transformations.</p>
 <ul>
 <li><code>NNS.rescale(x, a, b, method=c("minmax","riskneutral"), T=NULL, type=c("Terminal","Discounted"))</code></li>
 </ul>
-<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">px</span> <span class="op">&lt;-</span> <span class="fl">100</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/cumsum.html" class="external-link">cumsum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">260</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">rn</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/NNS.rescale.html">NNS.rescale</a></span><span class="op">(</span><span class="va">px</span>, a<span class="op">=</span><span class="fl">100</span>, b<span class="op">=</span><span class="fl">0.03</span>, method<span class="op">=</span><span class="st">"riskneutral"</span>, T<span class="op">=</span><span class="fl">1</span>, type<span class="op">=</span><span class="st">"Terminal"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span> target <span class="op">=</span> <span class="fl">100</span><span class="op">*</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fl">0.03</span><span class="op">*</span><span class="fl">1</span><span class="op">)</span>, mean_rn <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">rn</span><span class="op">)</span> <span class="op">)</span></span></code></pre></div>
@@ -431,7 +427,7 @@ certainty</em> (not a p‑value) for equality of populations or means.</p>
 <div class="section level3">
 <h3 id="code-twosample-multigroup">5.2 Code: two‑sample &amp; multi‑group<a class="anchor" aria-label="anchor" href="#code-twosample-multigroup"></a>
 </h3>
-<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">ctrl</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">200</span>, <span class="fl">0</span>, <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">trt</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">180</span>, <span class="fl">0.35</span>, <span class="fl">1.2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/NNS.ANOVA.html">NNS.ANOVA</a></span><span class="op">(</span>control<span class="op">=</span><span class="va">ctrl</span>, treatment<span class="op">=</span><span class="va">trt</span>, means.only<span class="op">=</span><span class="cn">FALSE</span>, plot<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
@@ -463,7 +459,7 @@ certainty</em> (not a p‑value) for equality of populations or means.</p>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Confidence_Level</span></span>
 <span><span class="co">## [1] 0.95</span></span></code></pre>
-<div class="sourceCode" id="cb31"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">A</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>g1<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">150</span>,<span class="fl">0.0</span>,<span class="fl">1.1</span><span class="op">)</span>, g2<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">150</span>,<span class="fl">0.2</span>,<span class="fl">1.0</span><span class="op">)</span>, g3<span class="op">=</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">150</span>,<span class="op">-</span><span class="fl">0.1</span>,<span class="fl">0.9</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/NNS.ANOVA.html">NNS.ANOVA</a></span><span class="op">(</span>control<span class="op">=</span><span class="va">A</span>, means.only<span class="op">=</span><span class="cn">TRUE</span>, plot<span class="op">=</span><span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Certainty </span></span>
@@ -513,7 +509,7 @@ distribution to be preferred to another over the entire shared
 support.</p>
 <p>Below is an example comparing two distributions with unequal
 means.</p>
-<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
 <span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1000</span>, mean <span class="op">=</span> <span class="fl">0</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">1000</span>, mean <span class="op">=</span> <span class="fl">1</span>, sd <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -542,29 +538,29 @@ is less likely to exceed a draw from
 <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>y</mi><annotation encoding="application/x-tex">y</annotation></semantics></math>.</p>
 <p>We can also obtain confidence intervals for the tie-adjusted
 superiority probability using maximum entropy bootstrap replicates.</p>
-<div class="sourceCode" id="cb35"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" tabindex="-1"></a><span class="fu">NNS.SS</span>(x, y, <span class="at">confidence.interval =</span> <span class="cn">TRUE</span>, <span class="at">reps =</span> <span class="dv">999</span>, <span class="at">ci =</span> <span class="fl">0.95</span>)[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span>
-<span id="cb35-2"><a href="#cb35-2" tabindex="-1"></a></span>
-<span id="cb35-3"><a href="#cb35-3" tabindex="-1"></a><span class="sc">$</span>p_gt</span>
-<span id="cb35-4"><a href="#cb35-4" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">0.233915</span></span>
-<span id="cb35-5"><a href="#cb35-5" tabindex="-1"></a></span>
-<span id="cb35-6"><a href="#cb35-6" tabindex="-1"></a><span class="sc">$</span>p_tie</span>
-<span id="cb35-7"><a href="#cb35-7" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">0</span></span>
-<span id="cb35-8"><a href="#cb35-8" tabindex="-1"></a></span>
-<span id="cb35-9"><a href="#cb35-9" tabindex="-1"></a><span class="sc">$</span>p_star</span>
-<span id="cb35-10"><a href="#cb35-10" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">0.233915</span></span>
-<span id="cb35-11"><a href="#cb35-11" tabindex="-1"></a></span>
-<span id="cb35-12"><a href="#cb35-12" tabindex="-1"></a><span class="sc">$</span>lower</span>
-<span id="cb35-13"><a href="#cb35-13" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">0.2105631</span></span>
-<span id="cb35-14"><a href="#cb35-14" tabindex="-1"></a></span>
-<span id="cb35-15"><a href="#cb35-15" tabindex="-1"></a><span class="sc">$</span>upper</span>
-<span id="cb35-16"><a href="#cb35-16" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">0.2537789</span></span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" tabindex="-1"></a><span class="fu">NNS.SS</span>(x, y, <span class="at">confidence.interval =</span> <span class="cn">TRUE</span>, <span class="at">reps =</span> <span class="dv">999</span>, <span class="at">ci =</span> <span class="fl">0.95</span>)[<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>]</span>
+<span id="cb32-2"><a href="#cb32-2" tabindex="-1"></a></span>
+<span id="cb32-3"><a href="#cb32-3" tabindex="-1"></a><span class="sc">$</span>p_gt</span>
+<span id="cb32-4"><a href="#cb32-4" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">0.233915</span></span>
+<span id="cb32-5"><a href="#cb32-5" tabindex="-1"></a></span>
+<span id="cb32-6"><a href="#cb32-6" tabindex="-1"></a><span class="sc">$</span>p_tie</span>
+<span id="cb32-7"><a href="#cb32-7" tabindex="-1"></a>[<span class="dv">1</span>] <span class="dv">0</span></span>
+<span id="cb32-8"><a href="#cb32-8" tabindex="-1"></a></span>
+<span id="cb32-9"><a href="#cb32-9" tabindex="-1"></a><span class="sc">$</span>p_star</span>
+<span id="cb32-10"><a href="#cb32-10" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">0.233915</span></span>
+<span id="cb32-11"><a href="#cb32-11" tabindex="-1"></a></span>
+<span id="cb32-12"><a href="#cb32-12" tabindex="-1"></a><span class="sc">$</span>lower</span>
+<span id="cb32-13"><a href="#cb32-13" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">0.2105631</span></span>
+<span id="cb32-14"><a href="#cb32-14" tabindex="-1"></a></span>
+<span id="cb32-15"><a href="#cb32-15" tabindex="-1"></a><span class="sc">$</span>upper</span>
+<span id="cb32-16"><a href="#cb32-16" tabindex="-1"></a>[<span class="dv">1</span>] <span class="fl">0.2537789</span></span></code></pre></div>
 <p>This provides an interpretable effect size for directional comparison
 between two distributions without requiring identical distributions or
 equal variances.</p>
 <p>For discrete variables, ties may occur with positive probability, and
 the reported <code>p_tie</code> and <code>p_star</code> values reflect
 that adjustment explicitly.</p>
-<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
 <span><span class="va">x</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">100</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">y</span> <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="fl">100</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -598,14 +594,15 @@ nonlinear where needed — avoiding fragile global parametric forms.</p>
 <li><code>NNS.boost(IVs.train, DV.train, IVs.test, epochs, learner.trials, status, balance, type, folds)</code></li>
 <li><code>NNS.stack(IVs.train, DV.train, IVs.test, type, balance, ncores, folds)</code></li>
 <li>
-<code>NNS.caus(x, y)</code> (directional causality score via
-conditional dependence)</li>
+<code>NNS.caus(x, y)</code> (directional causation index for each
+direction, in
+<math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0</mn><mo>,</mo><mn>1</mn></mrow><annotation encoding="application/x-tex">0, 1</annotation></semantics></math>)</li>
 </ul>
 </div>
 <div class="section level3">
 <h3 id="code-classification-via-regression-ensembles">6.2 Code: classification via regression + ensembles<a class="anchor" aria-label="anchor" href="#code-classification-via-regression-ensembles"></a>
 </h3>
-<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Example 1: Nonlinear regression</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span></span>
 <span><span class="va">x_train</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">1000</span>, <span class="op">-</span><span class="fl">2</span>, <span class="fl">2</span><span class="op">)</span></span>
@@ -616,10 +613,10 @@ conditional dependence)</li>
 <span><span class="fu"><a href="../reference/NNS.reg.html">NNS.reg</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">x_train</span>, y <span class="op">=</span> <span class="va">y_train</span>, order <span class="op">=</span> <span class="cn">NULL</span>, point.est <span class="op">=</span> <span class="va">x_test</span><span class="op">)</span></span></code></pre></div>
 <p><img src="NNSvignette_01_Overview_files/figure-html/unnamed-chunk-11-1.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
 <pre><code><span><span class="co">## $R2</span></span>
-<span><span class="co">## [1] 0.9276761</span></span>
+<span><span class="co">## [1] 0.9303023</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $SE</span></span>
-<span><span class="co">## [1] 0.2015258</span></span>
+<span><span class="co">## [1] 0.1971037</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Prediction.Accuracy</span></span>
 <span><span class="co">## NULL</span></span>
@@ -631,136 +628,86 @@ conditional dependence)</li>
 <span><span class="co">## NULL</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $derivative</span></span>
-<span><span class="co">##     Coefficient X.Lower.Range X.Upper.Range</span></span>
-<span><span class="co">##           &lt;num&gt;         &lt;num&gt;         &lt;num&gt;</span></span>
-<span><span class="co">##  1:   3.0485215  -1.998138604  -1.934370540</span></span>
-<span><span class="co">##  2:   3.5169373  -1.934370540  -1.804387149</span></span>
-<span><span class="co">##  3:   1.8605016  -1.804387149  -1.692769075</span></span>
-<span><span class="co">##  4:   0.6783073  -1.692769075  -1.590915710</span></span>
-<span><span class="co">##  5:   0.4272848  -1.590915710  -1.465816449</span></span>
-<span><span class="co">##  6:  -0.5144026  -1.465816449  -1.376464546</span></span>
-<span><span class="co">##  7:  -1.9381128  -1.376464546  -1.229726997</span></span>
-<span><span class="co">##  8:  -3.0106084  -1.229726997  -1.110428636</span></span>
-<span><span class="co">##  9:  -2.5210796  -1.110428636  -0.976623793</span></span>
-<span><span class="co">## 10:  -3.7347021  -0.976623793  -0.870193992</span></span>
-<span><span class="co">## 11:  -2.0861598  -0.870193992  -0.754706576</span></span>
-<span><span class="co">## 12:  -2.1796417  -0.754706576  -0.636846031</span></span>
-<span><span class="co">## 13:  -0.9300308  -0.636846031  -0.533099369</span></span>
-<span><span class="co">## 14:   1.0359249  -0.533099369  -0.417818767</span></span>
-<span><span class="co">## 15:   0.9115004  -0.417818767  -0.323764665</span></span>
-<span><span class="co">## 16:   2.3250859  -0.323764665  -0.184330858</span></span>
-<span><span class="co">## 17:   3.0769180  -0.184330858  -0.132632209</span></span>
-<span><span class="co">## 18:   3.3162510  -0.132632209  -0.080933560</span></span>
-<span><span class="co">## 19:   3.5323950  -0.080933560  -0.004108338</span></span>
-<span><span class="co">## 20:   2.1862481  -0.004108338   0.121863569</span></span>
-<span><span class="co">## 21:   3.4805229   0.121863569   0.216987038</span></span>
-<span><span class="co">## 22:   1.8001452   0.216987038   0.336388996</span></span>
-<span><span class="co">## 23:   0.2295375   0.336388996   0.516729182</span></span>
-<span><span class="co">## 24:  -0.5625172   0.516729182   0.668479078</span></span>
-<span><span class="co">## 25:  -2.5532272   0.668479078   0.830264570</span></span>
-<span><span class="co">## 26:  -2.4765129   0.830264570   0.988320504</span></span>
-<span><span class="co">## 27:  -3.1248612   0.988320504   1.083380900</span></span>
-<span><span class="co">## 28:  -2.9622550   1.083380900   1.218812429</span></span>
-<span><span class="co">## 29:  -1.5047059   1.218812429   1.279773569</span></span>
-<span><span class="co">## 30:  -1.5723118   1.279773569   1.445979675</span></span>
-<span><span class="co">## 31:   0.1804598   1.445979675   1.571628940</span></span>
-<span><span class="co">## 32:   0.8726461   1.571628940   1.689536565</span></span>
-<span><span class="co">## 33:   3.4198918   1.689536565   1.860999223</span></span>
-<span><span class="co">## 34:   1.5206901   1.860999223   1.997618112</span></span>
-<span><span class="co">##     Coefficient X.Lower.Range X.Upper.Range</span></span>
-<span><span class="co">##           &lt;num&gt;         &lt;num&gt;         &lt;num&gt;</span></span>
+<span><span class="co">##   Coefficient X.Lower.Range X.Upper.Range</span></span>
+<span><span class="co">## 1   2.5807500     -1.998139     -1.971809</span></span>
+<span><span class="co">## 2   3.9622780     -1.971809     -1.905718</span></span>
+<span><span class="co">## 3   3.8135391     -1.905718     -1.824605</span></span>
+<span><span class="co">## 4   0.6167479     -1.824605     -1.766196</span></span>
+<span><span class="co">## 5   2.1353953     -1.766196     -1.699572</span></span>
+<span><span class="co">## 6   0.8895008     -1.699572     -1.619703</span></span>
+<span><span class="co">## ---</span></span>
+<span><span class="co">## 60    2.001269      1.616540      1.669831</span></span>
+<span><span class="co">## 61    1.941175      1.669831      1.785845</span></span>
+<span><span class="co">## 62    2.868900      1.785845      1.846424</span></span>
+<span><span class="co">## 63    3.281862      1.846424      1.899405</span></span>
+<span><span class="co">## 64    2.491275      1.899405      1.963857</span></span>
+<span><span class="co">## 65    1.143921      1.963857      1.997618</span></span>
+<span><span class="co">## --- [ 65 rows x 3 cols ]; showing first and last 6. Use as.data.frame(x) for all. ---</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Point.est</span></span>
-<span><span class="co">##   [1]  0.01571202  0.10442684  0.23470933  0.37680781  0.51890629  0.65039140</span></span>
-<span><span class="co">##   [7]  0.72556318  0.80073496  0.85698998  0.88439634  0.91180269  0.93033285</span></span>
-<span><span class="co">##  [13]  0.94759688  0.96486091  0.95248720  0.93170326  0.87827479  0.79996720</span></span>
-<span><span class="co">##  [19]  0.72165961  0.64335202  0.52449573  0.40285499  0.28121424  0.17901835</span></span>
-<span><span class="co">##  [25]  0.07715655 -0.02470525 -0.15949123 -0.31038828 -0.45880078 -0.54309006</span></span>
-<span><span class="co">##  [31] -0.62737935 -0.71234468 -0.80041101 -0.88847734 -0.96331853 -1.00089554</span></span>
-<span><span class="co">##  [37] -1.03847254 -1.02090671 -0.97905116 -0.93719561 -0.89956805 -0.86273975</span></span>
-<span><span class="co">##  [43] -0.79660165 -0.70265879 -0.60871593 -0.51288396 -0.38856404 -0.25667590</span></span>
-<span><span class="co">##  [49] -0.11829230  0.02443074  0.13442845  0.22276171  0.31109496  0.42473203</span></span>
-<span><span class="co">##  [55]  0.56535922  0.69718932  0.76992246  0.84265560  0.90432326  0.91359751</span></span>
-<span><span class="co">##  [61]  0.92287175  0.93214599  0.94142023  0.92794242  0.90521445  0.88248648</span></span>
-<span><span class="co">##  [67]  0.85975852  0.76020581  0.65704511  0.55388442  0.45072372  0.35051056</span></span>
-<span><span class="co">##  [73]  0.25044944  0.15038831  0.04930377 -0.07695325 -0.20321027 -0.32495818</span></span>
-<span><span class="co">##  [79] -0.44464525 -0.56433232 -0.66432673 -0.72512293 -0.78817431 -0.85170206</span></span>
-<span><span class="co">##  [85] -0.91522981 -0.97875756 -0.99186193 -0.98457062 -0.97727932 -0.95314667</span></span>
-<span><span class="co">##  [91] -0.91788824 -0.88262981 -0.77697785 -0.63880041 -0.50062296 -0.36244551</span></span>
-<span><span class="co">##  [97] -0.25805231 -0.19661029 -0.13516826 -0.07526941</span></span>
+<span><span class="co">##   [1]  0.017018681  0.138163442  0.298255482  0.454341905  0.608424293</span></span>
+<span><span class="co">##   [6]  0.677391810  0.715401475  0.801680074  0.859546521  0.895485946</span></span>
+<span><span class="co">##  [11]  0.941696907  0.995115180  0.988182153  0.969416723  0.977297922</span></span>
+<span><span class="co">##  [16]  0.954922821  0.913217684  0.892635178  0.770713048  0.646015031</span></span>
+<span><span class="co">##  [21]  0.541633189  0.457878622  0.323449082  0.150791607  0.077047336</span></span>
+<span><span class="co">##  [26]  0.003303065 -0.119433168 -0.268456262 -0.531786681 -0.518318419</span></span>
+<span><span class="co">##  [31] -0.671710663 -0.687771741 -0.768570199 -0.875828428 -0.988267823</span></span>
+<span><span class="co">##  [36] -0.975685627 -1.019584380 -1.028329777 -0.930342309 -0.915902057</span></span>
+<span><span class="co">##  [41] -0.873524550 -0.868204406 -0.836485641 -0.738944553 -0.641403466</span></span>
+<span><span class="co">##  [46] -0.525528161 -0.407420178 -0.264103654 -0.107021974  0.068133988</span></span>
+<span><span class="co">##  [51]  0.187065526  0.252315480  0.317565434  0.436013361  0.605309144</span></span>
+<span><span class="co">##  [56]  0.719889572  0.748101263  0.793617096  0.906453801  0.957472631</span></span>
+<span><span class="co">##  [61]  0.977868082  0.998263532  1.010496658  1.005245980  0.999995302</span></span>
+<span><span class="co">##  [66]  0.926157445  0.861276999  0.856777312  0.678223624  0.572049622</span></span>
+<span><span class="co">##  [71]  0.517111026  0.394714412  0.231889082  0.124984707  0.054956469</span></span>
+<span><span class="co">##  [76] -0.018741586 -0.172500238 -0.287018344 -0.393118160 -0.488942880</span></span>
+<span><span class="co">##  [81] -0.639500452 -0.802935287 -0.808798298 -0.856488778 -0.951329071</span></span>
+<span><span class="co">##  [86] -1.068485641 -0.997254747 -0.946701782 -0.951745343 -1.052665001</span></span>
+<span><span class="co">##  [91] -0.920193073 -0.839750588 -0.761319271 -0.682887954 -0.593199102</span></span>
+<span><span class="co">##  [96] -0.477283958 -0.348003866 -0.231046717 -0.130389154 -0.078428675</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $pred.int</span></span>
 <span><span class="co">## NULL</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $regression.points</span></span>
-<span><span class="co">##                x           y</span></span>
-<span><span class="co">##            &lt;num&gt;       &lt;num&gt;</span></span>
-<span><span class="co">##  1: -1.998138604 -0.01307124</span></span>
-<span><span class="co">##  2: -1.934370540  0.18132707</span></span>
-<span><span class="co">##  3: -1.804387149  0.63847051</span></span>
-<span><span class="co">##  4: -1.692769075  0.84613612</span></span>
-<span><span class="co">##  5: -1.590915710  0.91522399</span></span>
-<span><span class="co">##  6: -1.465816449  0.96867700</span></span>
-<span><span class="co">##  7: -1.376464546  0.92271416</span></span>
-<span><span class="co">##  8: -1.229726997  0.63832023</span></span>
-<span><span class="co">##  9: -1.110428636  0.27915958</span></span>
-<span><span class="co">## 10: -0.976623793 -0.05817308</span></span>
-<span><span class="co">## 11: -0.870193992 -0.45565668</span></span>
-<span><span class="co">## 12: -0.754706576 -0.69658188</span></span>
-<span><span class="co">## 13: -0.636846031 -0.95347564</span></span>
-<span><span class="co">## 14: -0.533099369 -1.04996323</span></span>
-<span><span class="co">## 15: -0.417818767 -0.93054118</span></span>
-<span><span class="co">## 16: -0.323764665 -0.84481083</span></span>
-<span><span class="co">## 17: -0.184330858 -0.52061525</span></span>
-<span><span class="co">## 18: -0.132632209 -0.36154275</span></span>
-<span><span class="co">## 19: -0.080933560 -0.19009705</span></span>
-<span><span class="co">## 20: -0.004108338  0.08127998</span></span>
-<span><span class="co">## 21:  0.121863569  0.35668582</span></span>
-<span><span class="co">## 22:  0.216987038  0.68776523</span></span>
-<span><span class="co">## 23:  0.336388996  0.90270609</span></span>
-<span><span class="co">## 24:  0.516729182  0.94410093</span></span>
-<span><span class="co">## 25:  0.668479078  0.85873901</span></span>
-<span><span class="co">## 26:  0.830264570  0.44566388</span></span>
-<span><span class="co">## 27:  0.988320504  0.05423632</span></span>
-<span><span class="co">## 28:  1.083380900 -0.24281423</span></span>
-<span><span class="co">## 29:  1.218812429 -0.64399694</span></span>
-<span><span class="co">## 30:  1.279773569 -0.73572553</span></span>
-<span><span class="co">## 31:  1.445979675 -0.99705336</span></span>
-<span><span class="co">## 32:  1.571628940 -0.97437872</span></span>
-<span><span class="co">## 33:  1.689536565 -0.87148709</span></span>
-<span><span class="co">## 34:  1.860999223 -0.28510334</span></span>
-<span><span class="co">## 35:  1.997618112 -0.07734835</span></span>
-<span><span class="co">##                x           y</span></span>
-<span><span class="co">##            &lt;num&gt;       &lt;num&gt;</span></span>
+<span><span class="co">##           x          y</span></span>
+<span><span class="co">## 1 -1.998139 0.02182248</span></span>
+<span><span class="co">## 2 -1.971809 0.08977377</span></span>
+<span><span class="co">## 3 -1.905718 0.35164124</span></span>
+<span><span class="co">## 4 -1.824605 0.66097084</span></span>
+<span><span class="co">## 5 -1.766196 0.69699463</span></span>
+<span><span class="co">## 6 -1.699572 0.83926179</span></span>
+<span><span class="co">## ---</span></span>
+<span><span class="co">##           x           y</span></span>
+<span><span class="co">## 61 1.669831 -0.85321621</span></span>
+<span><span class="co">## 62 1.785845 -0.62801195</span></span>
+<span><span class="co">## 63 1.846424 -0.45421675</span></span>
+<span><span class="co">## 64 1.899405 -0.28034153</span></span>
+<span><span class="co">## 65 1.963857 -0.11977316</span></span>
+<span><span class="co">## 66 1.997618 -0.08115337</span></span>
+<span><span class="co">## --- [ 66 rows x 2 cols ]; showing first and last 6. Use as.data.frame(x) for all. ---</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Fitted.xy</span></span>
-<span><span class="co">##                x          y      y.hat  NNS.ID   gradient    residuals</span></span>
-<span><span class="co">##            &lt;num&gt;      &lt;num&gt;      &lt;num&gt;  &lt;char&gt;      &lt;num&gt;        &lt;num&gt;</span></span>
-<span><span class="co">##    1: -0.8496899 -0.5752368 -0.4984314 q121122 -2.0861598  0.076805376</span></span>
-<span><span class="co">##    2:  1.1532205 -0.6617217 -0.4496971 q221122 -2.9622550  0.212024652</span></span>
-<span><span class="co">##    3: -0.3640923 -0.7048691 -0.8815695 q122122  0.9115004 -0.176700402</span></span>
-<span><span class="co">##    4:  1.5320696 -0.8447168 -0.9815176 q222121  0.1804598 -0.136800802</span></span>
-<span><span class="co">##    5:  1.7618691 -0.9820881 -0.6241175 q222212  3.4198918  0.357970569</span></span>
-<span><span class="co">##   ---                                                                 </span></span>
-<span><span class="co">##  996:  1.3184955 -0.7988901 -0.7966085 q221222 -1.5723118  0.002281548</span></span>
-<span><span class="co">##  997:  0.5684553  1.1554781  0.9150041 q212122 -0.5625172 -0.240473993</span></span>
-<span><span class="co">##  998: -0.4340050 -0.7748325 -0.9473089 q122121  1.0359249 -0.172476359</span></span>
-<span><span class="co">##  999:  0.8383194  0.7041960  0.4257159 q212222 -2.4765129 -0.278480031</span></span>
-<span><span class="co">## 1000: -1.5647037  0.9467853  0.9264240 q111222  0.4272848 -0.020361366</span></span>
-<span><span class="co">##       standard.errors</span></span>
-<span><span class="co">##                 &lt;num&gt;</span></span>
-<span><span class="co">##    1:       0.1769692</span></span>
-<span><span class="co">##    2:       0.1783713</span></span>
-<span><span class="co">##    3:       0.1905081</span></span>
-<span><span class="co">##    4:       0.2044300</span></span>
-<span><span class="co">##    5:       0.2636784</span></span>
-<span><span class="co">##   ---                </span></span>
-<span><span class="co">##  996:       0.1971693</span></span>
-<span><span class="co">##  997:       0.2137362</span></span>
-<span><span class="co">##  998:       0.1831159</span></span>
-<span><span class="co">##  999:       0.2108312</span></span>
-<span><span class="co">## 1000:       0.2078031</span></span></code></pre>
-<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<span><span class="co">##            x          y      y.hat NNS.ID   gradient   residuals</span></span>
+<span><span class="co">## 1 -0.8496899 -0.5752368 -0.5475488     18 -0.7278556  0.02768805</span></span>
+<span><span class="co">## 2  1.1532205 -0.6617217 -0.3971628     50 -2.3716618  0.26455893</span></span>
+<span><span class="co">## 3 -0.3640923 -0.7048691 -0.8562335     30 -0.5794835 -0.15136436</span></span>
+<span><span class="co">## 4  1.5320696 -0.8447168 -0.9488136     57 -0.1248281 -0.10409685</span></span>
+<span><span class="co">## 5  1.7618691 -0.9820881 -0.6745538     61  1.9411751  0.30753433</span></span>
+<span><span class="co">## 6 -1.8177740  0.5226887  0.6651838      4  0.6167479  0.14249509</span></span>
+<span><span class="co">## ---</span></span>
+<span><span class="co">##               x          y      y.hat NNS.ID    gradient    residuals</span></span>
+<span><span class="co">## 995   0.2618615  0.5142993  0.7475673     37  0.69823937  0.233267974</span></span>
+<span><span class="co">## 996   1.3184955 -0.7988901 -0.8079711     53  0.15421526 -0.009081002</span></span>
+<span><span class="co">## 997   0.5684553  1.1554781  1.0022569     40 -0.12995428 -0.153221166</span></span>
+<span><span class="co">## 998  -0.4340050 -0.7748325 -0.9168735     28  0.09950728 -0.142040965</span></span>
+<span><span class="co">## 999   0.8383194  0.7041960  0.5034640     44 -1.35973026 -0.200732008</span></span>
+<span><span class="co">## 1000 -1.5647037  0.9467853  0.9830204      7  1.32210225  0.036235038</span></span>
+<span><span class="co">## --- [ 1000 rows x 6 cols ]; showing first and last 6. Use as.data.frame(x) for all. ---</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $class.levels</span></span>
+<span><span class="co">## NULL</span></span></code></pre>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Simple train/test for boosting &amp; stacking</span></span>
 <span><span class="va">test.set</span> <span class="op">=</span> <span class="fl">141</span><span class="op">:</span><span class="fl">150</span></span>
 <span> </span>
@@ -769,7 +716,7 @@ conditional dependence)</li>
 <span>              IVs.test <span class="op">=</span> <span class="va">iris</span><span class="op">[</span><span class="va">test.set</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>,</span>
 <span>              epochs <span class="op">=</span> <span class="fl">10</span>, learner.trials <span class="op">=</span> <span class="fl">10</span>, </span>
 <span>              status <span class="op">=</span> <span class="cn">FALSE</span>, balance <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>              type <span class="op">=</span> <span class="st">"CLASS"</span>, folds <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span>
+<span>              type <span class="op">=</span> <span class="st">"CLASS"</span><span class="op">)</span></span>
 <span></span>
 <span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">boost</span><span class="op">$</span><span class="va">results</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">iris</span><span class="op">[</span><span class="va">test.set</span>,<span class="fl">5</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
@@ -782,24 +729,27 @@ conditional dependence)</li>
 <span>                     DV.train <span class="op">=</span> <span class="va">iris</span><span class="op">[</span><span class="op">-</span><span class="va">test.set</span>, <span class="fl">5</span><span class="op">]</span>,</span>
 <span>                     IVs.test <span class="op">=</span> <span class="va">iris</span><span class="op">[</span><span class="va">test.set</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">4</span><span class="op">]</span>,</span>
 <span>                     type <span class="op">=</span> <span class="st">"CLASS"</span>, balance <span class="op">=</span> <span class="cn">TRUE</span>,</span>
-<span>                     ncores <span class="op">=</span> <span class="fl">1</span>, folds <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>                     ncores <span class="op">=</span> <span class="fl">1</span>, folds <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">stacked</span><span class="op">$</span><span class="va">stack</span> <span class="op">==</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">iris</span><span class="op">[</span><span class="va">test.set</span>,<span class="fl">5</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co"># [1] 1</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="code-directional-causality">6.3 Code: directional causality<a class="anchor" aria-label="anchor" href="#code-directional-causality"></a>
 </h3>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/NNS.caus.html">NNS.caus</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">$</span><span class="va">hp</span>,  <span class="va">mtcars</span><span class="op">$</span><span class="va">mpg</span><span class="op">)</span>  <span class="co"># hp -&gt; mpg</span></span></code></pre></div>
-<pre><code><span><span class="co">## Causation.x.given.y Causation.y.given.x           C(x---&gt;y) </span></span>
-<span><span class="co">##           0.2607148           0.3863580           0.3933374</span></span></code></pre>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<pre><code><span><span class="co">## C(x---&gt;y) C(y---&gt;x) </span></span>
+<span><span class="co">##   0.48695   0.51305</span></span></code></pre>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/NNS.caus.html">NNS.caus</a></span><span class="op">(</span><span class="va">mtcars</span><span class="op">$</span><span class="va">mpg</span>, <span class="va">mtcars</span><span class="op">$</span><span class="va">hp</span><span class="op">)</span>   <span class="co"># hp -&gt; mpg</span></span></code></pre></div>
-<pre><code><span><span class="co">## Causation.x.given.y Causation.y.given.x           C(y---&gt;x) </span></span>
-<span><span class="co">##           0.3863580           0.2607148           0.3933374</span></span></code></pre>
-<p><strong>Interpretation.</strong> Examine asymmetry in scores to infer
-direction. The method conditions partial‑moment dependence on candidate
-drivers.</p>
+<pre><code><span><span class="co">## C(x---&gt;y) C(y---&gt;x) </span></span>
+<span><span class="co">##   0.51305   0.48695</span></span></code></pre>
+<p><strong>Interpretation.</strong> Each call returns
+<code>C(x---&gt;y)</code> and <code>C(y---&gt;x)</code>, which sum to 1;
+a value above 0.5 favours that direction, and swapping the arguments
+swaps the two values. The method compares lagged pairs on the copula
+scale (set <code>tau</code> for time series), so it is unaffected by the
+units or scale of either variable.</p>
 <hr>
 </div>
 </div>
@@ -813,50 +763,63 @@ drivers.</p>
 <li><code>NNS.seas</code></li>
 <li><code>NNS.VAR</code></li>
 </ul>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Univariate nonlinear ARMA</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
 <span><span class="va">z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/scale.html" class="external-link">scale</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">480</span><span class="op">/</span><span class="fl">8</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">480</span>, sd<span class="op">=</span><span class="fl">.35</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Seasonality detection (prints a summary)</span></span>
 <span><span class="va">seasonal_period</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/NNS.seas.html">NNS.seas</a></span><span class="op">(</span><span class="va">z</span>, plot <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">seasonal_period</span><span class="op">$</span><span class="va">all.periods</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">##   Period Coefficient.of.Variation Variable.Coefficient.of.Variation</span></span>
-<span><span class="co">## 1    200                0.4267885                      8.540159e+16</span></span>
-<span><span class="co">## 2     96                0.4425880                      8.540159e+16</span></span>
-<span><span class="co">## 3     49                0.4615546                      8.540159e+16</span></span>
-<span><span class="co">## 4    198                0.4812956                      8.540159e+16</span></span>
-<span><span class="co">## 5    199                0.4885608                      8.540159e+16</span></span>
-<span><span class="co">## 6    146                0.4901054                      8.540159e+16</span></span></code></pre>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<span><span class="co">## 1     50                0.5090898                          1.150504</span></span>
+<span><span class="co">## 2     51                0.5532376                          1.150504</span></span>
+<span><span class="co">## 3     49                0.6885932                          1.150504</span></span>
+<span><span class="co">## 4     52                0.7495139                          1.150504</span></span>
+<span><span class="co">## 5     48                0.9370540                          1.150504</span></span>
+<span><span class="co">## 6     53                0.9374740                          1.150504</span></span></code></pre>
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Validate seasonal periods</span></span>
 <span><span class="fu"><a href="../reference/NNS.ARMA.optim.html">NNS.ARMA.optim</a></span><span class="op">(</span><span class="va">z</span>, h <span class="op">=</span> <span class="fl">48</span>, seasonal.factor <span class="op">=</span> <span class="va">seasonal_period</span><span class="op">$</span><span class="va">periods</span>, plot <span class="op">=</span> <span class="cn">TRUE</span>, ncores <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] "CURRNET METHOD: lin"</span></span>
 <span><span class="co">## [1] "COPY LATEST PARAMETERS DIRECTLY FOR NNS.ARMA() IF ERROR:"</span></span>
-<span><span class="co">## [1] "NNS.ARMA(... method =  'lin' , seasonal.factor =  c( 51 ) ...)"</span></span>
-<span><span class="co">## [1] "CURRENT lin OBJECTIVE FUNCTION = 0.398327414917885"</span></span>
-<span><span class="co">## [1] "BEST method = 'lin', seasonal.factor = c( 51 )"</span></span>
-<span><span class="co">## [1] "BEST lin OBJECTIVE FUNCTION = 0.398327414917885"</span></span>
+<span><span class="co">## [1] "NNS.ARMA(... method =  'lin' , seasonal.factor =  c( 49 ) ...)"</span></span>
+<span><span class="co">## [1] "CURRENT lin OBJECTIVE FUNCTION = 0.425337970282028"</span></span>
+<span><span class="co">## [1] "NNS.ARMA(... method =  'lin' , seasonal.factor =  c( 49, 51 ) ...)"</span></span>
+<span><span class="co">## [1] "CURRENT lin OBJECTIVE FUNCTION = 0.314272381262221"</span></span>
+<span><span class="co">## [1] "NNS.ARMA(... method =  'lin' , seasonal.factor =  c( 49, 51, 48 ) ...)"</span></span>
+<span><span class="co">## [1] "CURRENT lin OBJECTIVE FUNCTION = 0.288043942135049"</span></span>
+<span><span class="co">## [1] "NNS.ARMA(... method =  'lin' , seasonal.factor =  c( 49, 51, 48, 50 ) ...)"</span></span>
+<span><span class="co">## [1] "CURRENT lin OBJECTIVE FUNCTION = 0.272024984385753"</span></span>
+<span><span class="co">## [1] "NNS.ARMA(... method =  'lin' , seasonal.factor =  c( 49, 51, 48, 50, 47 ) ...)"</span></span>
+<span><span class="co">## [1] "CURRENT lin OBJECTIVE FUNCTION = 0.270145105918314"</span></span>
+<span><span class="co">## [1] "NNS.ARMA(... method =  'lin' , seasonal.factor =  c( 49, 51, 48, 50, 47, 53 ) ...)"</span></span>
+<span><span class="co">## [1] "CURRENT lin OBJECTIVE FUNCTION = 0.267559815481421"</span></span>
+<span><span class="co">## [1] "NNS.ARMA(... method =  'lin' , seasonal.factor =  c( 49, 51, 48, 50, 47, 53, 25 ) ...)"</span></span>
+<span><span class="co">## [1] "CURRENT lin OBJECTIVE FUNCTION = 0.266123583980802"</span></span>
+<span><span class="co">## [1] "BEST method = 'lin', seasonal.factor = c( 49, 51, 48, 50, 47, 53, 25 )"</span></span>
+<span><span class="co">## [1] "BEST lin OBJECTIVE FUNCTION = 0.266123583980802"</span></span>
 <span><span class="co">## [1] "CURRNET METHOD: nonlin"</span></span>
 <span><span class="co">## [1] "COPY LATEST PARAMETERS DIRECTLY FOR NNS.ARMA() IF ERROR:"</span></span>
-<span><span class="co">## [1] "NNS.ARMA(... method =  'nonlin' , seasonal.factor =  c( 51 ) ...)"</span></span>
-<span><span class="co">## [1] "CURRENT nonlin OBJECTIVE FUNCTION = 2.75408671013046"</span></span>
-<span><span class="co">## [1] "BEST method = 'nonlin' PATH MEMBER = c( 51 )"</span></span>
-<span><span class="co">## [1] "BEST nonlin OBJECTIVE FUNCTION = 2.75408671013046"</span></span>
+<span><span class="co">## [1] "NNS.ARMA(... method =  'nonlin' , seasonal.factor =  c( 49, 51, 48, 50, 47, 53, 25 ) ...)"</span></span>
+<span><span class="co">## [1] "CURRENT nonlin OBJECTIVE FUNCTION = 0.326722962745325"</span></span>
+<span><span class="co">## [1] "BEST method = 'nonlin' PATH MEMBER = c( 49, 51, 48, 50, 47, 53, 25 )"</span></span>
+<span><span class="co">## [1] "BEST nonlin OBJECTIVE FUNCTION = 0.326722962745325"</span></span>
 <span><span class="co">## [1] "CURRNET METHOD: both"</span></span>
 <span><span class="co">## [1] "COPY LATEST PARAMETERS DIRECTLY FOR NNS.ARMA() IF ERROR:"</span></span>
-<span><span class="co">## [1] "NNS.ARMA(... method =  'both' , seasonal.factor =  c( 51 ) ...)"</span></span>
-<span><span class="co">## [1] "CURRENT both OBJECTIVE FUNCTION = 0.778172239627562"</span></span>
-<span><span class="co">## [1] "BEST method = 'both' PATH MEMBER = c( 51 )"</span></span>
-<span><span class="co">## [1] "BEST both OBJECTIVE FUNCTION = 0.778172239627562"</span></span></code></pre>
+<span><span class="co">## [1] "NNS.ARMA(... method =  'both' , seasonal.factor =  c( 49, 51, 48, 50, 47, 53, 25 ) ...)"</span></span>
+<span><span class="co">## [1] "CURRENT both OBJECTIVE FUNCTION = 0.275058604442101"</span></span>
+<span><span class="co">## [1] "BEST method = 'both' PATH MEMBER = c( 49, 51, 48, 50, 47, 53, 25 )"</span></span>
+<span><span class="co">## [1] "BEST both OBJECTIVE FUNCTION = 0.275058604442101"</span></span></code></pre>
 <p><img src="NNSvignette_01_Overview_files/figure-html/unnamed-chunk-14-1.png" class="r-plt" alt="" width="672" style="display: block; margin: auto;"></p>
 <pre><code><span><span class="co">## $periods</span></span>
-<span><span class="co">## [1] 51</span></span>
+<span><span class="co">## [1] 49 51 48 50 47 53 25</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $weights</span></span>
 <span><span class="co">## NULL</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $obj.fn</span></span>
-<span><span class="co">## [1] 0.3983274</span></span>
+<span><span class="co">## [1] 0.2661236</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $method</span></span>
 <span><span class="co">## [1] "lin"</span></span>
@@ -868,61 +831,116 @@ drivers.</p>
 <span><span class="co">## [1] FALSE</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $bias.shift</span></span>
-<span><span class="co">## [1] 0.01738357</span></span>
+<span><span class="co">## [1] 0</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $bias.validation</span></span>
+<span><span class="co">## $bias.validation$policy</span></span>
+<span><span class="co">## [1] "none"</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $bias.validation$estimated.shift</span></span>
+<span><span class="co">## [1] 0</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $bias.validation$applied.shift</span></span>
+<span><span class="co">## [1] 0</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $bias.validation$estimate.rows</span></span>
+<span><span class="co">## integer(0)</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $bias.validation$acceptance.rows</span></span>
+<span><span class="co">## integer(0)</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $bias.validation$raw.score</span></span>
+<span><span class="co">## [1] NA</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $bias.validation$adjusted.score</span></span>
+<span><span class="co">## [1] NA</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $bias.validation$accepted</span></span>
+<span><span class="co">## [1] FALSE</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $bias.validation$status</span></span>
+<span><span class="co">## [1] "disabled"</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $raw.results</span></span>
+<span><span class="co">##  [1] -0.85581903 -0.96308748 -1.05600863 -1.24786301 -1.48681514 -1.30478168</span></span>
+<span><span class="co">##  [7] -1.35340984 -1.50006345 -1.41520981 -1.28993182 -1.22970244 -1.23421646</span></span>
+<span><span class="co">## [13] -1.17041069 -0.97209723 -0.88818032 -0.80061095 -0.65535580 -0.41468950</span></span>
+<span><span class="co">## [19] -0.40327882 -0.21161959 -0.31816376  0.01664552  0.43839280  0.30972663</span></span>
+<span><span class="co">## [25]  0.54213425  1.02400803  0.89891408  1.20583966  1.19311818  1.22864610</span></span>
+<span><span class="co">## [31]  1.27941996  1.35512214  1.08791716  1.34974950  1.33208959  1.30592055</span></span>
+<span><span class="co">## [37]  1.14524440  0.99653070  0.87842882  0.89786929  0.70893198  0.50263175</span></span>
+<span><span class="co">## [43]  0.26363731  0.21469814  0.06487646 -0.01096599 -0.16398874 -0.38813956</span></span>
+<span><span class="co">## </span></span>
+<span><span class="co">## $validation.forecast</span></span>
+<span><span class="co">##  [1] -1.22924456 -1.52633220 -1.58439314 -1.64281360 -1.67245706 -1.40210102</span></span>
+<span><span class="co">##  [7] -1.59901938 -1.18889701 -1.39930879 -1.04702588 -1.00833507 -0.70279084</span></span>
+<span><span class="co">## [13] -0.82632734 -0.75501899 -0.32326480 -0.26948061 -0.26263844  0.29209784</span></span>
+<span><span class="co">## [19]  0.08072486  0.39790523  0.58602896  0.79118310  0.74897065  1.03701832</span></span>
+<span><span class="co">## [25]  0.80100746  1.10567655  1.00379912  0.99212370  1.21675681  1.37274012</span></span>
+<span><span class="co">## [31]  1.37655032  1.30884422  1.08905609  1.39257997  0.95762346  1.21645460</span></span>
+<span><span class="co">## [37]  1.16912616  0.89707781  0.81863549  0.35806587  0.18424184  0.13116453</span></span>
+<span><span class="co">## [43] -0.10026677 -0.20158338 -0.24994234 -0.26800697 -0.46057159 -1.01119665</span></span>
+<span><span class="co">## [49] -1.15545281 -0.99970402 -1.52865708 -1.56002748 -1.54290235 -1.61980183</span></span>
+<span><span class="co">## [55] -1.62866972 -1.68989695 -1.56650570 -1.38016720 -1.26930860 -1.22063576</span></span>
+<span><span class="co">## [61] -0.93891683 -0.99452769 -0.57757598 -0.71606699 -0.32339222 -0.42968508</span></span>
+<span><span class="co">## [67]  0.02819257  0.09906550  0.20705355  0.56192701  0.69847624  0.59829469</span></span>
+<span><span class="co">## [73]  0.78863121  1.07734609  1.07256100  1.03670644  1.00739471  1.19759711</span></span>
+<span><span class="co">## [79]  1.46737309  1.25270063  1.38305218  1.18766938  1.55729234  1.24891923</span></span>
+<span><span class="co">## [85]  1.41340818  0.95535328  1.26485338  0.93030190  0.67978857  0.16507589</span></span>
+<span><span class="co">## [91]  0.36466568 -0.04346508  0.17445007 -0.22449025 -0.23301587 -0.41706525</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $errors</span></span>
-<span><span class="co">##  [1] -0.4754897523 -0.4609730867 -0.3018876142  0.0439513384 -0.1128600832</span></span>
-<span><span class="co">##  [6]  0.9193835234  0.0160010547 -0.7516578805 -0.8195384972 -0.1274709629</span></span>
-<span><span class="co">## [11] -0.0093477175  0.1480424491  0.0345888303  0.0009331215 -0.2819915138</span></span>
-<span><span class="co">## [16] -0.3474821395 -1.2543849202 -0.5442948705 -0.0049610072 -0.4702036102</span></span>
-<span><span class="co">## [21]  0.1846614137  1.6541950586 -0.2046795992  0.9691745476  1.1460606178</span></span>
-<span><span class="co">## [26] -0.5141738440 -1.3562787956  0.3853973272 -0.3364881552 -0.5604890777</span></span>
-<span><span class="co">## [31] -0.3175309175 -0.1677932189 -0.1511705981  0.4541183441 -0.1377055180</span></span>
-<span><span class="co">## [36]  0.4279932502  1.3576081283 -0.0645315976  1.1430476887  0.1399600873</span></span>
-<span><span class="co">## [41]  0.0874395694 -0.3703494531  0.3046994756  0.2057574931 -0.7602832912</span></span>
-<span><span class="co">## [46]  0.6902933417  0.2238850985 -0.2775974238 -0.8250763050  0.5817787408</span></span>
-<span><span class="co">## [51] -0.8733350647  0.2906911996  0.1863210948 -0.2484232855  0.1444232735</span></span>
-<span><span class="co">## [56]  1.1655644133  0.0821221969 -0.2813315730 -0.7959981329 -0.3601165470</span></span>
-<span><span class="co">## [61] -0.4617740020 -0.0593491905  0.0143389607  0.1016580238  0.0300275332</span></span>
-<span><span class="co">## [66] -1.7237406556 -0.0930802461 -0.9348574200 -0.7189682901  0.0700766333</span></span>
-<span><span class="co">## [71] -0.3547205444  0.2333233909  0.6840012123 -0.0779445509  0.8409902584</span></span>
-<span><span class="co">## [76]  0.0130711684  0.8074727217 -1.1462424589  0.0926963526 -0.4674150054</span></span>
-<span><span class="co">## [81]  0.1308248298 -0.6493713604  0.0713668583  0.4889233461  0.4293197750</span></span>
-<span><span class="co">## [86] -0.4397639878  0.4261287370  0.7556075116  0.6016698079 -0.1086690282</span></span>
-<span><span class="co">## [91]  0.6426872057 -0.4175612763  0.0250816728  0.9344147185  0.5444153587</span></span>
-<span><span class="co">## [96] -0.8746369897</span></span>
+<span><span class="co">##  [1] -0.01998592 -0.22845283 -0.18710865 -0.61282561 -0.98294926 -0.39029217</span></span>
+<span><span class="co">##  [7] -0.43995297  0.21278349 -0.41773642  0.33224733  0.15511793 -0.27099786</span></span>
+<span><span class="co">## [13] -0.22161157 -0.19461416  0.31663663 -0.31932342 -0.65337189  0.73762111</span></span>
+<span><span class="co">## [19] -0.05344162  0.10754886  0.42513154  0.67317003  0.04228204 -0.09371272</span></span>
+<span><span class="co">## [25] -0.81416736  0.92486742  0.19627017 -0.05501108  0.73752763  0.45667485</span></span>
+<span><span class="co">## [31]  0.46877913  0.39260494  0.87242097  0.14464405  0.16617241 -0.45747776</span></span>
+<span><span class="co">## [37] -0.06977411  0.79736201  0.15054503  0.14713314 -0.54523292 -0.06283345</span></span>
+<span><span class="co">## [43]  0.14251743 -0.24775643 -0.00728412  0.27334440 -0.75917428 -0.01713549</span></span>
+<span><span class="co">## [49] -0.05988593  0.69704361 -0.41331683 -0.78277562  0.63949861 -0.21519330</span></span>
+<span><span class="co">## [55]  0.22400013 -1.01770498 -0.86993989 -0.25418868 -0.69170088  0.32441878</span></span>
+<span><span class="co">## [61] -0.30548791  0.22847339  0.11587307  0.12580313  0.36627610 -0.26417854</span></span>
+<span><span class="co">## [67]  0.87367425  0.30769749  0.06333232  0.51819261  0.26895872  0.21097657</span></span>
+<span><span class="co">## [73] -0.61577514 -0.04762451 -1.18775805  0.37617612 -0.46665845 -0.92483070</span></span>
+<span><span class="co">## [79]  0.10919559  0.49149282  0.57792556 -0.04574932 -0.25346112 -0.25855530</span></span>
+<span><span class="co">## [85]  1.28212825  0.26034097  0.36024003  0.79914461 -0.29461140  0.75998628</span></span>
+<span><span class="co">## [91] -0.06874751 -0.07870108  0.34459264  0.01324222 -0.10576509 -0.17013463</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $results</span></span>
-<span><span class="co">##  [1] -0.495145166 -0.629911085 -0.423647703 -1.217211533 -1.313660334</span></span>
-<span><span class="co">##  [6] -1.507558621 -1.512809568 -1.244102492 -0.765300445 -2.402307464</span></span>
-<span><span class="co">## [11] -1.325990243 -0.928756118 -1.819067479 -0.855732188 -1.152690586</span></span>
-<span><span class="co">## [16] -1.039006594 -0.562011496 -1.103503510 -0.685097085 -0.727417601</span></span>
-<span><span class="co">## [21] -0.044018500 -0.030435409  0.002633325 -0.314902491  0.232587264</span></span>
-<span><span class="co">## [26]  1.030889038  0.556722546  0.680351082  1.101193382  0.941245213</span></span>
-<span><span class="co">## [31]  1.648626820  1.225992916  1.806473740  0.964372963  1.627354696</span></span>
-<span><span class="co">## [36]  0.460925955  1.318674310  1.692295367  0.854538440  0.768654797</span></span>
-<span><span class="co">## [41]  0.739228654  1.582319086  0.402156303  0.902802567  0.718513288</span></span>
-<span><span class="co">## [46]  0.086635865  0.193748286  0.283357285</span></span>
+<span><span class="co">##  [1] -0.85581903 -0.96308748 -1.05600863 -1.24786301 -1.48681514 -1.30478168</span></span>
+<span><span class="co">##  [7] -1.35340984 -1.50006345 -1.41520981 -1.28993182 -1.22970244 -1.23421646</span></span>
+<span><span class="co">## [13] -1.17041069 -0.97209723 -0.88818032 -0.80061095 -0.65535580 -0.41468950</span></span>
+<span><span class="co">## [19] -0.40327882 -0.21161959 -0.31816376  0.01664552  0.43839280  0.30972663</span></span>
+<span><span class="co">## [25]  0.54213425  1.02400803  0.89891408  1.20583966  1.19311818  1.22864610</span></span>
+<span><span class="co">## [31]  1.27941996  1.35512214  1.08791716  1.34974950  1.33208959  1.30592055</span></span>
+<span><span class="co">## [37]  1.14524440  0.99653070  0.87842882  0.89786929  0.70893198  0.50263175</span></span>
+<span><span class="co">## [43]  0.26363731  0.21469814  0.06487646 -0.01096599 -0.16398874 -0.38813956</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $lower.pred.int</span></span>
-<span><span class="co">##  [1] -1.67077922 -1.80554514 -1.59928176 -2.39284559 -2.48929439 -2.68319268</span></span>
-<span><span class="co">##  [7] -2.68844363 -2.41973655 -1.94093450 -3.57794152 -2.50162430 -2.10439018</span></span>
-<span><span class="co">## [13] -2.99470154 -2.03136624 -2.32832464 -2.21464065 -1.73764555 -2.27913757</span></span>
-<span><span class="co">## [19] -1.86073114 -1.90305166 -1.21965256 -1.20606947 -1.17300073 -1.49053655</span></span>
-<span><span class="co">## [25] -0.94304679 -0.14474502 -0.61891151 -0.49528298 -0.07444068 -0.23438884</span></span>
-<span><span class="co">## [31]  0.47299276  0.05035886  0.63083968 -0.21126109  0.45172064 -0.71470810</span></span>
-<span><span class="co">## [37]  0.14304025  0.51666131 -0.32109562 -0.40697926 -0.43640540  0.40668503</span></span>
-<span><span class="co">## [43] -0.77347775 -0.27283149 -0.45712077 -1.08899819 -0.98188577 -0.89227677</span></span>
+<span><span class="co">##  [1] -1.729023295 -1.836291749 -1.929212899 -2.121067283 -2.360019409</span></span>
+<span><span class="co">##  [6] -2.177985951 -2.226614114 -2.373267719 -2.288414075 -2.163136087</span></span>
+<span><span class="co">## [11] -2.102906706 -2.107420731 -2.043614959 -1.845301503 -1.761384585</span></span>
+<span><span class="co">## [16] -1.673815224 -1.528560074 -1.287893765 -1.276483091 -1.084823861</span></span>
+<span><span class="co">## [21] -1.191368026 -0.856558753 -0.434811472 -0.563477644 -0.331070018</span></span>
+<span><span class="co">## [26]  0.150803764  0.025709810  0.332635393  0.319913909  0.355441830</span></span>
+<span><span class="co">## [31]  0.406215689  0.481917874  0.214712887  0.476545234  0.458885322</span></span>
+<span><span class="co">## [36]  0.432716279  0.272040131  0.123326430  0.005224547  0.024665018</span></span>
+<span><span class="co">## [41] -0.164272292 -0.370572522 -0.609566963 -0.658506128 -0.808327813</span></span>
+<span><span class="co">## [46] -0.884170256 -1.037193011 -1.261343833</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $upper.pred.int</span></span>
-<span><span class="co">##  [1]  0.68048889  0.54572297  0.75198635 -0.04157748 -0.13802628 -0.33192456</span></span>
-<span><span class="co">##  [7] -0.33717551 -0.06846843  0.41033361 -1.22667341 -0.15035619  0.24687794</span></span>
-<span><span class="co">## [13] -0.64343342  0.31990187  0.02294347  0.13662746  0.61362256  0.07213055</span></span>
-<span><span class="co">## [19]  0.49053697  0.44821646  1.13161556  1.14519865  1.17826738  0.86073157</span></span>
-<span><span class="co">## [25]  1.40822132  2.20652310  1.73235660  1.85598514  2.27682744  2.11687927</span></span>
-<span><span class="co">## [31]  2.82426088  2.40162697  2.98210780  2.14000702  2.80298875  1.63656001</span></span>
-<span><span class="co">## [37]  2.49430837  2.86792942  2.03017250  1.94428885  1.91486271  2.75795314</span></span>
-<span><span class="co">## [43]  1.57779036  2.07843662  1.89414735  1.26226992  1.36938234  1.45899134</span></span></code></pre>
+<span><span class="co">##  [1]  0.105335772 -0.001932682 -0.094853832 -0.286708216 -0.525660342</span></span>
+<span><span class="co">##  [6] -0.343626884 -0.392255047 -0.538908652 -0.454055008 -0.328777020</span></span>
+<span><span class="co">## [11] -0.268547639 -0.273061664 -0.209255892 -0.010942436  0.072974482</span></span>
+<span><span class="co">## [16]  0.160543843  0.305798993  0.546465302  0.557875976  0.749535206</span></span>
+<span><span class="co">## [21]  0.642991040  0.977800314  1.399547595  1.270881423  1.503289049</span></span>
+<span><span class="co">## [26]  1.985162831  1.860068877  2.166994460  2.154272976  2.189800897</span></span>
+<span><span class="co">## [31]  2.240574756  2.316276941  2.049071954  2.310904301  2.293244389</span></span>
+<span><span class="co">## [36]  2.267075346  2.106399198  1.957685497  1.839583614  1.859024085</span></span>
+<span><span class="co">## [41]  1.670086775  1.463786545  1.224792104  1.175852939  1.026031254</span></span>
+<span><span class="co">## [46]  0.950188811  0.797166056  0.573015234</span></span></code></pre>
 <p><strong>Notes.</strong> NNS seasonality uses coefficient of variation
 instead of ACF/PACFs, and NNS ARMA blends multiple seasonal periods into
 the linear or nonlinear regression forecasts.</p>
@@ -938,7 +956,7 @@ the linear or nonlinear regression forecasts.</p>
 <ul>
 <li><code>NNS.meboot(x, reps=999, rho=NULL, type="spearman", drift=TRUE, ...)</code></li>
 </ul>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">x_ts</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cumsum.html" class="external-link">cumsum</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">350</span>, sd<span class="op">=</span><span class="fl">.7</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">mb</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/NNS.meboot.html">NNS.meboot</a></span><span class="op">(</span><span class="va">x_ts</span>, reps<span class="op">=</span><span class="fl">5</span>, rho <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">mb</span><span class="op">[</span><span class="st">"replicates"</span>, <span class="op">]</span><span class="op">$</span><span class="va">replicates</span><span class="op">)</span></span></code></pre></div>
@@ -951,20 +969,20 @@ the linear or nonlinear regression forecasts.</p>
 <ul>
 <li><code>NNS.MC(x, reps=30, lower_rho=-1, upper_rho=1, by=.01, exp=1, type="spearman", ...)</code></li>
 </ul>
-<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mc</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/NNS.MC.html">NNS.MC</a></span><span class="op">(</span><span class="va">x_ts</span>, reps<span class="op">=</span><span class="fl">5</span>, lower_rho<span class="op">=</span><span class="op">-</span><span class="fl">1</span>, upper_rho<span class="op">=</span><span class="fl">1</span>, by<span class="op">=</span><span class="fl">.5</span>, exp<span class="op">=</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">mc</span><span class="op">$</span><span class="va">ensemble</span><span class="op">)</span>; <span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">mc</span><span class="op">$</span><span class="va">replicates</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] 350</span></span></code></pre>
 <pre><code><span><span class="co">## [1] "rho = 1"    "rho = 0.5"  "rho = 0"    "rho = -0.5" "rho = -1"</span></span></code></pre>
-<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">mc</span><span class="op">$</span><span class="va">replicates</span><span class="op">$</span><span class="va">`rho = 0`</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">##      Replicate 1 Replicate 2 Replicate 3 Replicate 4 Replicate 5</span></span>
-<span><span class="co">## [1,]    8.561720   11.097841   12.140974    3.478574    16.25845</span></span>
-<span><span class="co">## [2,]    4.989649    9.142348    6.298598    2.573488    11.23749</span></span>
-<span><span class="co">## [3,]    5.489892   11.635826    9.151404    4.146175    13.61840</span></span>
-<span><span class="co">## [4,]    7.175210   13.194315   11.614209    5.906763    19.23707</span></span>
-<span><span class="co">## [5,]    8.443500   12.157572   13.263425    4.369562    13.40513</span></span>
-<span><span class="co">## [6,]    7.386515   10.979258   11.705842    2.410838    15.31133</span></span></code></pre>
+<span><span class="co">## [1,]    8.294844    6.022924    8.272604    5.594026    6.874941</span></span>
+<span><span class="co">## [2,]    4.725953   12.091955    9.629211    4.656695    4.514312</span></span>
+<span><span class="co">## [3,]   -3.662776    6.613393   11.215198    6.987755    3.488336</span></span>
+<span><span class="co">## [4,]   -2.017371    4.635251    5.903151    9.134349   12.628982</span></span>
+<span><span class="co">## [5,]   -7.888070    7.055852    9.099748    9.483581   13.727086</span></span>
+<span><span class="co">## [6,]   -3.961955    5.813247   10.437696    9.425552   13.587576</span></span></code></pre>
 <hr>
 </div>
 </div>
@@ -982,29 +1000,30 @@ estimators.</p>
 <li><code>NNS.SD.cluster(R)</code></li>
 <li><code>NNS.SD.efficient.set(R)</code></li>
 </ul>
-<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">RA</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">240</span>, <span class="fl">0.005</span>, <span class="fl">0.03</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">42</span><span class="op">)</span></span>
+<span><span class="va">RA</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">240</span>, <span class="fl">0.005</span>, <span class="fl">0.03</span><span class="op">)</span></span>
 <span><span class="va">RB</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">240</span>, <span class="fl">0.003</span>, <span class="fl">0.02</span><span class="op">)</span></span>
 <span><span class="va">RC</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">240</span>, <span class="fl">0.006</span>, <span class="fl">0.04</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu"><a href="../reference/NNS.FSD.uni.html">NNS.FSD.uni</a></span><span class="op">(</span><span class="va">RA</span>, <span class="va">RB</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] 0</span></span></code></pre>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/NNS.SSD.uni.html">NNS.SSD.uni</a></span><span class="op">(</span><span class="va">RA</span>, <span class="va">RB</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] 0</span></span></code></pre>
-<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="../reference/NNS.TSD.uni.html">NNS.TSD.uni</a></span><span class="op">(</span><span class="va">RA</span>, <span class="va">RB</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## [1] 0</span></span></code></pre>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">Rmat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span>A<span class="op">=</span><span class="va">RA</span>, B<span class="op">=</span><span class="va">RB</span>, C<span class="op">=</span><span class="va">RC</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/NNS.SD.cluster.html">NNS.SD.cluster</a></span><span class="op">(</span><span class="va">Rmat</span>, degree <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## $Clusters</span></span>
 <span><span class="co">## $Clusters$Cluster_1</span></span>
-<span><span class="co">## [1] "C" "A" "B"</span></span></code></pre>
-<div class="sourceCode" id="cb65"><pre class="downlit sourceCode r">
+<span><span class="co">## [1] "A" "C" "B"</span></span></code></pre>
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/try.html" class="external-link">try</a></span><span class="op">(</span><span class="fu"><a href="../reference/NNS.SD.efficient.set.html">NNS.SD.efficient.set</a></span><span class="op">(</span><span class="va">Rmat</span>, degree <span class="op">=</span> <span class="fl">1</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## Checking 1 of 2Checking 2 of 2</span></span></code></pre>
-<pre><code><span><span class="co">## [1] "C" "A" "B"</span></span></code></pre>
+<pre><code><span><span class="co">## [1] "A" "C" "B"</span></span></code></pre>
 <hr>
 </div>
 <div class="section level2">
@@ -1168,7 +1187,7 @@ regression/classification (<code>$Fitted.xy</code>,
 <code>NNS.stack(IVs, DV, ...)</code> — ensembles using
 <code>NNS.reg</code> base learners.</li>
 <li>
-<code>NNS.caus(x, y)</code> — directional causality score.</li>
+<code>NNS.caus(x, y)</code> — directional causation index.</li>
 </ul>
 <p>See NNS Vignette: <a href="NNSvignette_07_Clustering_and_Regression.html">Getting Started
 with NNS: Clustering and Regression</a></p>
@@ -1247,7 +1266,7 @@ their specific referenced materials.</p>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

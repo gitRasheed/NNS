@@ -20,7 +20,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">NNS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -31,6 +31,8 @@
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/examples/">Examples</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/book/">Book</a></li>
       </ul>
 <ul class="navbar-nav">
 <li class="nav-item"><form class="form-inline" role="search">
@@ -62,7 +64,6 @@
     
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/OVVO-Financial/NNS" class="external-link">NNS</a></span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://r-datatable.com" class="external-link">data.table</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="va"><a href="https://yihui.org/knitr/" class="external-link">knitr</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">require</a></span><span class="op">(</span><span class="va"><a href="https://github.com/dmurdoch/rgl" class="external-link">rgl</a></span><span class="op">)</span></span></code></pre></div>
 <div class="section level2">
@@ -72,26 +73,28 @@
 if distributions came from the same population, or if they share the
 same mean or median. The underlying function for these tests is
 <strong><code><a href="../reference/NNS.ANOVA.html">NNS.ANOVA()</a></code></strong>.</p>
-<p>The output from <strong><code><a href="../reference/NNS.ANOVA.html">NNS.ANOVA()</a></code></strong> is a
-<code>Certainty</code> statistic, which compares CDFs of distributions
-from several shared quantiles and normalizes the similarity of these
-points to be within the interval
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo stretchy="false" form="prefix">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false" form="postfix">]</mo></mrow><annotation encoding="application/x-tex">[0,1]</annotation></semantics></math>,
-with 1 representing identical distributions. For a complete analysis of
-<code>Certainty</code> to common p-values and the role of power, please
-see the <a href="#References">References</a>.</p>
+<p>The output from <strong><code><a href="../reference/NNS.ANOVA.html">NNS.ANOVA()</a></code></strong> includes a
+descriptive <code>Certainty</code> statistic.
+<code>means.only = TRUE</code> compares group means through their
+directional area balance, <code>means.only = FALSE</code> compares
+profiles over shared quantiles, and <code>medians = TRUE</code> compares
+median targets. Agreement in one mode does not establish equality for
+the other targets. The finite-sample adjustment can make the maximum
+less than one. Certainty is not a calibrated p-value or power;
+inferential calibration must match the target and sampling design.</p>
 <div class="section level3">
 <h3 id="test-if-same-population">Test if Same Population<a class="anchor" aria-label="anchor" href="#test-if-same-population"></a>
 </h3>
 <p>Below we run the analysis to whether automatic transmissions and
 manual transmissions have significantly different <code>mpg</code>
 distributions per the <code>mtcars</code> dataset.</p>
-<p>The plot on the left shows the robust <code>Certainty</code>
-estimate, reflecting the distribution of <code>Certainty</code>
-estimates over 100 random permutations of both variables. The plot on
-the right illustrates the control and treatment variables, along with
-the grand mean among variables, and the confidence interval associated
-with the control mean.</p>
+<p>The plot on the left shows the resampling distribution of
+<code>Certainty</code>. Its inferential interpretation requires the
+resampling scheme to match the target; pooled permutation calibrates
+equal distributions under exchangeability, not every equal-means null
+with unequal variances. The plot on the right illustrates the control
+and treatment variables, along with the grand mean among variables, and
+the confidence interval associated with the control mean.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">mpg_auto_trans</span> <span class="op">=</span> <span class="va">mtcars</span><span class="op">[</span><span class="va">mtcars</span><span class="op">$</span><span class="va">am</span><span class="op">==</span><span class="fl">1</span>, <span class="st">"mpg"</span><span class="op">]</span></span>
 <span><span class="va">mpg_man_trans</span> <span class="op">=</span> <span class="va">mtcars</span><span class="op">[</span><span class="va">mtcars</span><span class="op">$</span><span class="va">am</span><span class="op">==</span><span class="fl">0</span>, <span class="st">"mpg"</span><span class="op">]</span></span>
@@ -117,27 +120,26 @@ with the control mean.</p>
 <span><span class="co">## [1] 0.02345583</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Effect_Size_LB.2.5%`</span></span>
-<span><span class="co">## [1] 2.651417</span></span>
+<span><span class="co">## [1] 2.44919</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Effect_Size_UB.97.5%`</span></span>
-<span><span class="co">## [1] 12.29762</span></span>
+<span><span class="co">## [1] 12.20105</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Confidence_Level</span></span>
 <span><span class="co">## [1] 0.95</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Robust Certainty Estimate`</span></span>
-<span><span class="co">## [1] 0.01293583</span></span>
+<span><span class="co">## [1] 0.01485973</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Lower 95% CI`</span></span>
-<span><span class="co">## [1] 0</span></span>
+<span><span class="co">## [1] 0.000272993</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Upper 95% CI`</span></span>
-<span><span class="co">## [1] 0.08849699</span></span></code></pre>
-<p>The <code>Certainty</code> shows that these two distributions clearly
-do not come from the same population. This is verified with the
-Mann-Whitney-Wilcoxon test, which also does not assume a normality to
-the underlying data as a nonparametric test of identical
-distributions.</p>
+<span><span class="co">## [1] 0.06890714</span></span></code></pre>
+<p>The <code>Certainty</code> describes disagreement for the selected
+target. The Mann-Whitney-Wilcoxon result below addresses a rank-based
+hypothesis under its own assumptions; it is not a universal test of all
+distributional differences or a calibration of NNS certainty.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/wilcox.test.html" class="external-link">wilcox.test</a></span><span class="op">(</span><span class="va">mpg</span> <span class="op">~</span> <span class="va">am</span>, data<span class="op">=</span><span class="va">mtcars</span><span class="op">)</span> </span></code></pre></div>
 <pre><code><span><span class="co">## </span></span>
@@ -181,22 +183,22 @@ certain these two means are equal.</p>
 <span><span class="co">## [1] 0.912545</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Effect_Size_LB.2.5%`</span></span>
-<span><span class="co">## [1] -0.1215839</span></span>
+<span><span class="co">## [1] -0.1226692</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Effect_Size_UB.97.5%`</span></span>
-<span><span class="co">## [1] 0.2556542</span></span>
+<span><span class="co">## [1] 0.2558928</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Confidence_Level</span></span>
 <span><span class="co">## [1] 0.95</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Robust Certainty Estimate`</span></span>
-<span><span class="co">## [1] 0.9183685</span></span>
+<span><span class="co">## [1] 0.9001731</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Lower 95% CI`</span></span>
-<span><span class="co">## [1] 0.7311398</span></span>
+<span><span class="co">## [1] 0.7729845</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Upper 95% CI`</span></span>
-<span><span class="co">## [1] 0.9928339</span></span></code></pre>
+<span><span class="co">## [1] 0.9929432</span></span></code></pre>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/t.test.html" class="external-link">t.test</a></span><span class="op">(</span><span class="va">x</span>,<span class="va">y</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span>
@@ -244,22 +246,22 @@ firmly reject the null hypothesis of identical means.</p>
 <span><span class="co">## [1] 0.1824463</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Effect_Size_LB.2.5%`</span></span>
-<span><span class="co">## [1] 0.900412</span></span>
+<span><span class="co">## [1] 0.8993267</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Effect_Size_UB.97.5%`</span></span>
-<span><span class="co">## [1] 1.148409</span></span>
+<span><span class="co">## [1] 1.14823</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Confidence_Level</span></span>
 <span><span class="co">## [1] 0.95</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Robust Certainty Estimate`</span></span>
-<span><span class="co">## [1] 0.1788691</span></span>
+<span><span class="co">## [1] 0.1818801</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Lower 95% CI`</span></span>
-<span><span class="co">## [1] 0.1484567</span></span>
+<span><span class="co">## [1] 0.1463972</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Upper 95% CI`</span></span>
-<span><span class="co">## [1] 0.2114944</span></span></code></pre>
+<span><span class="co">## [1] 0.2166297</span></span></code></pre>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/stats/t.test.html" class="external-link">t.test</a></span><span class="op">(</span><span class="va">x</span>,<span class="va">y</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">## </span></span>
@@ -295,34 +297,34 @@ upper effect boundaries.</p>
 <span><span class="co">## [1] 1.054852</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Grand_Statistic</span></span>
-<span><span class="co">## [1] 0.532031</span></span>
+<span><span class="co">## [1] 0.5162715</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Control_CDF</span></span>
-<span><span class="co">## [1] 0.704</span></span>
+<span><span class="co">## [1] 0.7</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Treatment_CDF</span></span>
-<span><span class="co">## [1] 0.305</span></span>
+<span><span class="co">## [1] 0.3</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Certainty</span></span>
-<span><span class="co">## [1] 0.3497634</span></span>
+<span><span class="co">## [1] 0.3592804</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Effect_Size_LB.2.5%`</span></span>
-<span><span class="co">## [1] 0.8659585</span></span>
+<span><span class="co">## [1] 0.8684753</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Effect_Size_UB.97.5%`</span></span>
-<span><span class="co">## [1] 1.222394</span></span>
+<span><span class="co">## [1] 1.222264</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $Confidence_Level</span></span>
 <span><span class="co">## [1] 0.95</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Robust Certainty Estimate`</span></span>
-<span><span class="co">## [1] 0.3448958</span></span>
+<span><span class="co">## [1] 0.3605887</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Lower 95% CI`</span></span>
-<span><span class="co">## [1] 0.2856004</span></span>
+<span><span class="co">## [1] 0.3161758</span></span>
 <span><span class="co">## </span></span>
 <span><span class="co">## $`Upper 95% CI`</span></span>
-<span><span class="co">## [1] 0.4308527</span></span></code></pre>
+<span><span class="co">## [1] 0.4024833</span></span></code></pre>
 </div>
 </div>
 <div class="section level2">
@@ -527,7 +529,7 @@ Functions for the Computation of the SD Efficient Set</a></p></li>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

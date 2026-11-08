@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">NNS</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">13.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">14.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -17,6 +17,8 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/examples/">Examples</a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://ovvo-financial.github.io/NNS/book/">Book</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/OVVO-Financial/NNS/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -59,9 +61,9 @@
 
 
 <dt id="arg-eval-points">eval.points<a class="anchor" aria-label="anchor" href="#arg-eval-points"></a></dt>
-<dd><p>numeric or options: ("obs", "apd", "mean", "median", "last"); Regressor points to be evaluated.</p><ul><li><p>Numeric values must be in matrix or data.frame form to be evaluated for each regressor, otherwise, a vector of points will evaluate only at the <code>wrt</code> regressor.  See examples for use cases.</p></li>
+<dd><p>numeric or options: ("obs", "apd", "mean", "median", "last"); Regressor points to be evaluated.</p><ul><li><p>Numeric values must be in matrix or data.frame form to be evaluated for each regressor, otherwise, a vector of points will evaluate only at the <code>wrt</code> regressor, averaging over the observed rows of the other regressors (at most <code>max(21, 10000 / k)</code> of them for <code>k</code> points, taken evenly through the data).  See examples for use cases.</p></li>
 <li><p>Set to <code>(eval.points = "obs")</code> (default) to find the average partial derivative at every observation of the variable with respect to <em>for specific tuples of given observations.</em></p></li>
-<li><p>Set to <code>(eval.points = "apd")</code> to find the average partial derivative at every observation of the variable with respect to <em>over the entire distribution of other regressors.</em></p></li>
+<li><p>Set to <code>(eval.points = "apd")</code> to find the average partial derivative at every observation of the variable with respect to <em>over the entire distribution of other regressors</em>, represented by their observed rows.</p></li>
 <li><p>Set to <code>(eval.points = "mean")</code> to find the partial derivative at the mean of value of every variable.</p></li>
 <li><p>Set to <code>(eval.points = "median")</code> to find the partial derivative at the median value of every variable.</p></li>
 <li><p>Set to <code>(eval.points = "last")</code> to find the partial derivative at the last observation of every value (relevant for time-series data).</p></li>
@@ -83,8 +85,13 @@
 <li><p><code>dy.d_(...)[, wrt]$Mixed</code> the mixed derivative (for two independent variables only).</p></li>
 </ul></div>
     <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>Derivatives are finite-difference summaries of the fitted <a href="NNS.reg.html">NNS.reg</a> surface, averaged over four local probability windows derived from degree-1 partial-moment quantiles. Window sizes depend on the number of observations; they are capped before constructing a local coordinate half-width. All evaluation points and perturbed coordinates must stay inside the observed coordinate ranges. Interior unequal spacings use polynomial finite-difference weights; support endpoints use one-sided three-point formulas. This avoids averaging artificial full-support extrapolation bands into a local derivative.</p>
+<p>The coordinate-range check does not establish that every perturbed tuple lies in a densely observed part of the joint support. Sparse cells, neighbour changes, fitted-surface bias, and correlated predictors can affect the result, including at the boundary. These are numerical derivatives of an estimated surface, with no universal recovery or coverage guarantee. A two-valued coordinate returns its finite contrast divided by the coordinate difference and an undefined (NA) second derivative. Constant coordinates return NA. Mixed derivatives require two predictors and explicit matrix evaluation points.</p>
+    </div>
+    <div class="section level2">
     <h2 id="note">Note<a class="anchor" aria-label="anchor" href="#note"></a></h2>
-    <p>For binary regressors, it is suggested to use <code>eval.points = seq(0, 1, .05)</code> for a better resolution around the midpoint.</p>
+    <p>Binary regressors provide a finite contrast, not an identified continuous derivative between the two levels.</p>
     </div>
     <div class="section level2">
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
@@ -98,7 +105,33 @@
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">123</span><span class="op">)</span> ; <span class="va">x_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">1000</span><span class="op">)</span> ; <span class="va">x_2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Uniform.html" class="external-link">runif</a></span><span class="op">(</span><span class="fl">1000</span><span class="op">)</span> ; <span class="va">y</span> <span class="op">&lt;-</span> <span class="va">x_1</span> <span class="op">^</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">x_2</span> <span class="op">^</span> <span class="fl">2</span></span></span>
+<span class="r-in"><span><span class="va">B</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">cbind</a></span><span class="op">(</span><span class="va">x_1</span>, <span class="va">x_2</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## To find derivatives of y wrt 1st regressor for specific points of both regressors</span></span></span>
+<span class="r-in"><span><span class="fu">dy.d_</span><span class="op">(</span><span class="va">B</span>, <span class="va">y</span>, wrt <span class="op">=</span> <span class="fl">1</span>, eval.points <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/t.html" class="external-link">t</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">.5</span>, <span class="fu"><a href="https://rdrr.io/r/stats/median.html" class="external-link">median</a></span><span class="op">(</span><span class="va">x_2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## To find average partial derivative of y wrt 1st regressor,</span></span></span>
+<span class="r-in"><span><span class="co">## only supply 1 value in [eval.points], or a vector of [eval.points]:</span></span></span>
+<span class="r-in"><span><span class="fu">dy.d_</span><span class="op">(</span><span class="va">B</span>, <span class="va">y</span>, wrt <span class="op">=</span> <span class="fl">1</span>, eval.points <span class="op">=</span> <span class="fl">.5</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="fu">dy.d_</span><span class="op">(</span><span class="va">B</span>, <span class="va">y</span>, wrt <span class="op">=</span> <span class="fl">1</span>, eval.points <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/fivenum.html" class="external-link">fivenum</a></span><span class="op">(</span><span class="va">B</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## To find average partial derivative of y wrt 1st regressor,</span></span></span>
+<span class="r-in"><span><span class="co">## for every observation of 1st regressor:</span></span></span>
+<span class="r-in"><span><span class="va">apd</span> <span class="op">&lt;-</span> <span class="fu">dy.d_</span><span class="op">(</span><span class="va">B</span>, <span class="va">y</span>, wrt <span class="op">=</span> <span class="fl">1</span>, eval.points <span class="op">=</span> <span class="st">"apd"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">B</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span>, <span class="va">apd</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span><span class="op">$</span><span class="va">First</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">## Central 95% range across estimated partial derivatives (descriptive)</span></span></span>
+<span class="r-in"><span><span class="co">### Lower CI</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="LPM.VaR.html">LPM.VaR</a></span><span class="op">(</span><span class="fl">.025</span>, <span class="fl">0</span>, <span class="va">apd</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span><span class="op">$</span><span class="va">First</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co">### Upper CI</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="UPM.VaR.html">UPM.VaR</a></span><span class="op">(</span><span class="fl">.025</span>, <span class="fl">0</span>, <span class="va">apd</span><span class="op">[</span>,<span class="fl">1</span><span class="op">]</span><span class="op">$</span><span class="va">First</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+</code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
@@ -109,7 +142,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer></div>

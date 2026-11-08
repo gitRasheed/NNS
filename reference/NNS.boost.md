@@ -25,7 +25,10 @@ NNS.boost(
   features.only = FALSE,
   feature.importance = TRUE,
   pred.int = NULL,
-  status = TRUE
+  status = TRUE,
+  seed = 123L,
+  dist = NULL,
+  folds = 5
 )
 ```
 
@@ -44,7 +47,13 @@ NNS.boost(
 
   a matrix or data frame of variables of numeric or factor data types
   with compatible dimensions to `(IVs.train)`. If NULL, will use
-  `(IVs.train)` as default.
+  `(IVs.train)` as default. Columns are matched to `(IVs.train)` by name
+  when the two share the same predictor names, and positionally when
+  they share no names at all (as in `cbind(test.x_1, test.x_2)` against
+  `cbind(x_1, x_2)`). A CSV UTF-8 byte-order mark in the first header
+  (for example, `Male` becoming `X...Male`) is repaired before matching
+  names. Other partial overlaps, including misspelled predictors, are
+  ambiguous and return an error.
 
 - type:
 
@@ -70,8 +79,9 @@ NNS.boost(
 
 - epochs:
 
-  integer; `2*length(DV.train)` (default) Total number of feature
-  combinations to run.
+  integer; `2*length(DV.train)` (default) Number of repeated holdout
+  re-evaluations of the learner-trial feature subsets that pass the
+  accuracy threshold.
 
 - CV.size:
 
@@ -93,8 +103,12 @@ NNS.boost(
 
 - threshold:
 
-  numeric; `NULL` (default) Sets the `obj.fn` threshold to keep feature
-  combinations.
+  numeric \[0, 1\]; `NULL` (default) Probability supplied to
+  [LPM.VaR](https://OVVO-Financial.github.io/NNS/reference/LPM.VaR.md)
+  over the learner-trial objective distribution to determine the
+  objective cutoff for keeping feature combinations. Defaults to 0.80
+  when `objective = "max"` and 0.20 when `objective = "min"`. It is not
+  a literal objective-score cutoff.
 
 - obj.fn:
 
@@ -106,14 +120,16 @@ NNS.boost(
 
 - objective:
 
-  options: ("min", "max") `"max"` (default) Select whether to minimize
+  options: ("min", "max") `"min"` (default) Select whether to minimize
   or maximize the objective function `obj.fn`.
 
 - extreme:
 
-  logical; `FALSE` (default) Uses the maximum (minimum) `threshold`
-  obtained from the `learner.trials`, rather than the upper (lower)
-  quintile level for maximization (minimization) `objective`.
+  logical; `FALSE` (default) Sets the
+  [LPM.VaR](https://OVVO-Financial.github.io/NNS/reference/LPM.VaR.md)
+  probability to 1 (0) for maximization (minimization) `objective`, i.e.
+  the most extreme learner-trial objective value becomes the cutoff.
+  Overrides `threshold`.
 
 - features.only:
 
@@ -122,8 +138,10 @@ NNS.boost(
 
 - feature.importance:
 
-  logical; `TRUE` (default) Plots the frequency of features used in the
-  final estimate.
+  logical; `TRUE` (default) Draws a two-panel diagnostic: the
+  learner-trial objective distribution with its
+  [LPM.VaR](https://OVVO-Financial.github.io/NNS/reference/LPM.VaR.md)
+  cutoff, and the frequency of features used in the final estimate.
 
 - pred.int:
 
@@ -134,12 +152,39 @@ NNS.boost(
 
   logical; `TRUE` (default) Prints status update message in console.
 
+- seed:
+
+  Optional integer random seed used for reproducible resampling, fold
+  construction, and stochastic fitting steps. If \`NULL\`, the current
+  random-number-generator state is used.
+
+- dist:
+
+  options:(NULL, "NNS", "L1", "L2", "FACTOR") the method of distance
+  calculation passed to delegated
+  [NNS.reg](https://OVVO-Financial.github.io/NNS/reference/NNS.reg.md)
+  and
+  [NNS.stack](https://OVVO-Financial.github.io/NNS/reference/NNS.stack.md)
+  calls. `dist = NULL` is the default and selects the native blended NNS
+  distance; `dist = "NNS"` is an explicit alias for the default.
+
+- folds:
+
+  integer; 5 (default) Number of cross-validation `folds` passed to the
+  final
+  [NNS.stack](https://OVVO-Financial.github.io/NNS/reference/NNS.stack.md)
+  call.
+
 ## Value
 
 Returns a vector of fitted values for the dependent variable test set
-`$results`, prediction intervals `$pred.int`, and the final feature
-loadings `$feature.weights`, along with final feature frequencies
-`$feature.frequency`.
+`$results`, prediction intervals `$pred.int`, the final feature loadings
+`$feature.weights`, final feature frequencies `$feature.frequency`, and
+(for classification) the class labels `$class.levels`. Classification
+results are numeric: a factor or character `DV.train` yields integer
+class codes with a base category of 1 (label recoverable as
+`class.levels[results]`), and a numeric `DV.train` yields its original
+numeric class values.
 
 ## Note
 
@@ -164,14 +209,19 @@ Fred Viole, OVVO Financial Systems
 ## Examples
 
 ``` r
- ## Using 'iris' dataset where test set [IVs.test] is 'iris' rows 141:150.
+ ## Using 'iris' dataset with a stratified test set of ten rows per species
+ ## (rows 141:150 alone are all virginica).
  if (FALSE) { # \dontrun{
- a <- NNS.boost(iris[1:140, 1:4], iris[1:140, 5],
- IVs.test = iris[141:150, 1:4],
+ test.set <- c(41:50, 91:100, 141:150)
+ a <- NNS.boost(iris[-test.set, 1:4], iris[-test.set, 5],
+ IVs.test = iris[test.set, 1:4],
  epochs = 100, learner.trials = 100,
  type = "CLASS", depth = NULL, balance = TRUE)
 
  ## Test accuracy
- mean(a$results == as.numeric(iris[141:150, 5]))
+ mean(a$results == as.numeric(iris[test.set, 5]))
+
+ ## Recover the labels
+ a$class.levels[a$results]
  } # }
 ```

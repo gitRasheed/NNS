@@ -1,10 +1,9 @@
 # NNS ANOVA: Nonparametric Analysis of Variance
 
-Performs a distribution-free ANOVA using partial-moment statistics to
-assess differences between control and treatment groups. Depending on
-the setting of `means.only`, the procedure tests either differences in
-central tendency (means or medians) or differences across the full
-empirical distributions.
+Compares control and treatment groups through benchmark-relative partial
+moments. The chosen mode compares means, medians, or a distribution
+profile with central and tail benchmarks, without selecting a parametric
+family.
 
 ## Usage
 
@@ -35,7 +34,8 @@ NNS.ANOVA(
 - means.only:
 
   Logical; `FALSE` (default) uses full distribution analysis. Set `TRUE`
-  for mean-only comparison
+  for the central comparison only (means, or medians when
+  `medians = TRUE`)
 
 - medians:
 
@@ -61,27 +61,32 @@ NNS.ANOVA(
 
 - robust:
 
-  logical; `FALSE` (default) Generates 100 independent random
-  permutations to test results, and returns / plots 95 percent
-  confidence intervals along with robust central tendency of all results
-  for pairwise analysis only.
+  logical; `FALSE` (default) Two-sample (`control`, `treatment`) path
+  only: draws 100 independent bootstrap resamples of each group (with
+  replacement, from its own full sample), and returns / plots the robust
+  central tendency
+  ([NNS.gravity](https://OVVO-Financial.github.io/NNS/reference/NNS.gravity.md))
+  and the `confidence.interval` bounds of the resampled `Certainty`
+  values. It is ignored when `control` is a matrix or list (multi-group,
+  including `pairwise = TRUE`).
 
 ## Value
 
 Returns a list containing:
 
-- `Control_Statistic`: Mean/median of control group
+- `Control`: Mean/median of control group
 
-- `Treatment_Statistic`: Mean/median of treatment group
+- `Treatment`: Mean/median of treatment group
 
-- `Grand_Statistic`: Grand mean/median
+- `Grand_Statistic`: Mean/median of all observations pooled
 
 - `Control_CDF`: CDF value at grand statistic (control)
 
 - `Treatment_CDF`: CDF value at grand statistic (treatment)
 
-- `Certainty`: Probability that the groups are the *same* (means-only or
-  full distribution depending on `means.only`).
+- `Certainty`: Agreement index for the chosen central or
+  distribution-profile comparison, with the finite-sample adjustment;
+  not a calibrated probability.
 
 - `Effect_Size_LB`: Lower bound of treatment effect (if
   confidence.interval requested)
@@ -94,20 +99,48 @@ Returns a list containing:
 
 ## Details
 
-The key output is the `Certainty` metric, a calibrated probability in
-\\\[0, 1\]\\ representing the likelihood that the groups being compared
-are the \*same\* with respect to the chosen comparison mode:
+The key output, `Certainty`, is a descriptive agreement index in \\\[0,
+1\]\\ for the chosen target:
 
-- If `means.only = TRUE`: `Certainty` is the probability that the group
-  *means* (or medians, if `medians = TRUE`) are the same.
+- `means.only = TRUE, medians = FALSE`: compares group means using
+  degree-one deviation-area ratios at the pooled mean.
 
-- If `means.only = FALSE`: `Certainty` is the probability that the two
-  *entire distributions* are the same.
+- `means.only = TRUE, medians = TRUE`: compares medians using the
+  distance of 0.5 from each interval \\\[F(t-), F(t)\]\\ at the pooled
+  median \\t\\. This interval contains 0.5 exactly when \\t\\ is a
+  median, including tied and discrete data.
 
-This makes `Certainty` the conceptual inverse of a classical p-value. A
-\*low\* Certainty (e.g., \< 0.10) indicates strong evidence of
-difference, while a \*high\* Certainty (e.g., \> 0.90) indicates strong
-evidence of similarity.
+- `means.only = FALSE`: adds the 12.5% and 25% lower and upper
+  deviation-area benchmarks to the chosen central comparison. This
+  examines distributional shape through a finite profile; agreement at
+  these benchmarks does not prove equality of laws.
+
+At a constant group's only value both deviation areas vanish. For
+agreement comparisons this satisfies the expectile balance at every
+level, so its area discrepancy is zero there. Returned CDF values retain
+the public partial-moment step convention; other benchmarks and
+nonconstant samples use the ordinary ratio discrepancy.
+
+The raw score is 1 at maximal benchmark agreement. The returned score is
+multiplied by \\((n_1 + n_2 - 2)/(n_1 + n_2))^2\\, so the finite-sample
+maximum is below 1. `Certainty` is not a calibrated probability, a
+p-value, or statistical power, and has no universal significance cutoff.
+Equal population means need not produce the same score distribution when
+sample sizes or spreads differ. `robust = TRUE` describes sampling
+variability of the score; it does not generate a null reference
+distribution.
+
+Random relabelings of the pooled observations provide a reference under
+identical distributions only when observations are exchangeable. They
+are not a general unequal-variance equal-means test. Any inferential
+calibration must match the chosen target and the sampling design;
+dependent observations require a suitable resampling design.
+
+Effect-size bounds retain the conservative difference of the groups'
+separate bootstrap endpoints. They are not quantiles of the bootstrap
+difference and need not have exactly the requested nominal coverage. The
+independent-group bootstrap assumes independent observations within and
+between groups.
 
 ## References
 

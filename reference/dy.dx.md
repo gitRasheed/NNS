@@ -27,8 +27,29 @@ dy.dx(x, y, eval.point = NULL)
 
 ## Value
 
-Returns a `data.table` of eval.point along with both 1st and 2nd
+Returns a `data.frame` of eval.point along with both 1st and 2nd
 derivative.
+
+## Details
+
+`eval.point = "overall"` returns the mean of the `gradient` column of
+`NNS.reg(x, y)$Fitted.xy`. Each observation receives the slope of the
+unsmoothed regression segment that contains it, so the result is an
+observation-weighted average of segment slopes, not an average of
+smoothed derivatives. Very short segments between nearly coincident
+regression points can have extreme slopes;
+`mean(dy.dx(x, y, eval.point = x)$first.derivative)` averages the
+smoothed pointwise estimates instead.
+
+Numeric evaluation points use central differences of smoothed
+[NNS.reg](https://OVVO-Financial.github.io/NNS/reference/NNS.reg.md)
+estimates over five steps from 2 to `floor(sqrt(n))` typical spacings of
+`x`, clipped to the observed range. `second.derivative` is a second
+difference of those estimates, and second differences amplify noise: for
+`y = x^2` plus noise with an R-squared near 0.99 and n = 400, estimates
+of the true value 2 at three interior points had a root mean squared
+error of about 5, and about one in five had the wrong sign. Treat it as
+a descriptive diagnostic on noisy data.
 
 ## References
 
@@ -51,10 +72,10 @@ x <- seq(0, 2 * pi, pi / 100) ; y <- sin(x)
 dy.dx(x, y, eval.point = 1.75)
 
 # First derivative
-dy.dx(x, y, eval.point = 1.75)[ , first.derivative]
+dy.dx(x, y, eval.point = 1.75)$first.derivative
 
 # Second derivative
-dy.dx(x, y, eval.point = 1.75)[ , second.derivative]
+dy.dx(x, y, eval.point = 1.75)$second.derivative
 
 # Vector of derivatives
 dy.dx(x, y, eval.point = c(1.75, 2.5))
