@@ -145,14 +145,17 @@
 * The `NNS.TSD()` plot draws the LPM2 curves against the threshold values, like
   `NNS.SSD()` and `NNS.FSD()`, instead of against their index.
 * `PM.matrix(norm = TRUE)` with `LPM_degree > 0` no longer sets all four
-  quadrants of a cell to 0 when its total is 0, i.e. when every row ties the
-  target in column i or j (a column constant at its target, or `target =
-  NULL` with a constant column). The cell takes the `LPM_degree = UPM_degree =
-  0` values, ties counting as lower, as `LPM.ratio()` does for a constant
-  variable and `Co.LPM_nD()`/`Co.UPM_nD()`/`DPM_nD()` do for a zero total, so
-  the four quadrants still sum to 1: such a column has `$cov.matrix` diagonal 1
-  (was 0), and its off-diagonal entries are `2 * F_j(t_j) - 1` (was 0), with
-  `F_j(t_j)` the share of the other column at or below its target. A cell
+  quadrants of a cell to 0 when its total is 0, i.e. when every row ties its
+  target exactly (`x - t == 0`) in column i or j (a column constant at a
+  supplied target equal to its value, or any constant column with `target =
+  NULL`, see below). The cell takes the `LPM_degree = UPM_degree = 0` values,
+  ties counting as lower, as `LPM.ratio()` does for a constant variable and
+  `Co.LPM_nD()`/`Co.UPM_nD()`/`DPM_nD()` do for a zero total, so the four
+  quadrants still sum to 1: such a column has `$cov.matrix` diagonal 1 (was
+  0), and its off-diagonal entries are `2 * F_j(t_j) - 1` (was 0), with
+  `F_j(t_j)` the share of the other column at or below its target. This is a
+  convention, not a limit: at degree 1 with the mean target the off-diagonal
+  entries of nearly constant data are near 0, as the old value was. A cell
   total that underflowed or overflowed (deviations of scale 1e-200, or high
   degree) is recomputed on per-column rescaled deviations, in the log domain
   if needed, instead of returning 0 for every quadrant, with a relative error of
@@ -161,6 +164,18 @@
   Cells with a safe total are unchanged bit for bit. `NNS.copula()` drops
   constant columns before calling `PM.matrix()`, so it changes only for a pair
   of columns in which every row ties a user-supplied target in one of the two.
+* `PM.matrix(target = NULL)` uses a constant column's value as its target.
+  The compiled column mean (a sequential double sum divided by the row count,
+  which can differ from `colMeans()` in the last bit) of a constant column
+  need not equal its value: for a column of 0.1 it is 0.1 plus one ulp, so
+  every deviation was about -1.4e-17 instead of a tie. Such a column's
+  `norm = FALSE` moments are now exactly 0 (were about 1e-34 at degree 1), its
+  rows count as ties (lower) at degree 0 whichever way the mean rounded, and
+  with `norm = TRUE` it takes the zero-total convention above like any other
+  constant column (`PM.matrix(1, 1, NULL, cbind(a = 1:3, b = 0.1), FALSE,
+  TRUE)$cov.matrix[1, 2]` is 1/3, was 0, as for `b = 5`). Non-constant columns
+  are unchanged bit for bit. The documentation no longer says the `NULL`
+  target is `colMeans(variable)`.
 * `NNS.SD.efficient.set()` and `NNS.SD.cluster()` reject a `degree` other than
   1, 2 or 3 with "`degree` must be 1, 2 or 3." before doing any work. A
   fractional degree used to be truncated (1.5 ran FSD, 2.9 SSD), a character

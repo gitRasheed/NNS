@@ -191,6 +191,25 @@ test_that("PM.matrix(norm = TRUE) gives a column constant at its target the degr
   expect_equal(pm_cell_sum(P), matrix(1, 2, 2, dimnames = dimnames(P$cupm)))
 })
 
+test_that("PM.matrix(target = NULL) ties a constant column to its value, not to its rounded mean", {
+  # The compiled mean of three 0.1 values is 0.1 plus one ulp, so the
+  # deviations used to be about -1.4e-17 instead of ties, and the zero-total
+  # convention depended on how the mean rounded (b = 5 took it, b = 0.1 not).
+  for (v in c(0.1, 5, -1 / 3, 1e300)) {
+    M <- cbind(a = c(1, 2, 3), b = v)
+    expect_identical(PM.matrix(1, 1, NULL, M, FALSE, TRUE), PM.matrix(1, 1, c(2, v), M, FALSE, TRUE))
+    expect_identical(PM.matrix(1, 1, NULL, M, FALSE, TRUE)$cov.matrix[1, 2], 1 / 3)
+    P <- PM.matrix(1, 1, NULL, M, FALSE, FALSE)
+    expect_identical(c(P$clpm["b", "b"], P$cupm["b", "b"], P$clpm["a", "b"]), c(0, 0, 0))
+    # Degree 0: every row of b is a tie, counted as lower.
+    expect_identical(PM.matrix(0, 0, NULL, M, FALSE, FALSE)$clpm["b", "b"], 1)
+  }
+  # A non-constant column keeps the compiled mean.
+  M <- cbind(a = c(0.1, 0.2, 0.4), b = 0.1)
+  expect_identical(PM.matrix(1, 1, NULL, M, FALSE, FALSE),
+                   PM.matrix(1, 1, c((0.1 + 0.2 + 0.4) / 3, 0.1), M, FALSE, FALSE))
+})
+
 test_that("PM.matrix(norm = TRUE) uses the degree-0 cells when every row ties in one of the two columns", {
   # Neither column is constant, but each row ties the target in a or b.
   M <- cbind(a = c(0, 0, 1, -2), b = c(3, -1, 0, 0))

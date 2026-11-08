@@ -489,6 +489,18 @@ NumericVector CoUPM_RCPP(
      tgt=as<NumericVector>(target);
    }else{
      tgt=colMeans(variable_matrix);
+     // The compiled mean (sequential sum / n) of a constant column need not
+     // equal its value (0.1 * 3 / 3 does not), which would leave deviations
+     // of about 1e-17 instead of ties. A constant column's target is its
+     // value, so every deviation is exactly 0; other columns are unchanged.
+     const R_xlen_t nr = variable_matrix.nrow();
+     for (size_t c = 0; c < variable_cols; ++c) {
+       const double v0 = variable_matrix(0, c);
+       bool constant = true;
+       for (R_xlen_t k = 1; k < nr && constant; ++k)
+         constant = variable_matrix(k, c) == v0;
+       if (constant) tgt[c] = v0;
+     }
    }
    
    size_t target_length=tgt.size();

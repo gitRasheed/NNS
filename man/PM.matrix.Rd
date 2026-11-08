@@ -11,13 +11,13 @@ PM.matrix(LPM_degree, UPM_degree, target, variable, pop_adj, norm = FALSE)
 
 \item{UPM_degree}{numeric; upper partial moment degree (0 = freq, 1 = area).}
 
-\item{target}{numeric vector; thresholds for each column. There is no default: pass \code{NULL} to use \code{colMeans(variable)}. The strings \code{"mean"} and \code{"means"} are accepted as legacy aliases for \code{NULL}; any other non-numeric target is an error.}
+\item{target}{numeric vector; thresholds for each column. There is no default: pass \code{NULL} to use the column means, computed in compiled code as a sequential double-precision sum divided by \code{nrow(variable)}, which can differ from \code{colMeans(variable)} in the last bit; a constant column uses its value, so every row ties its target exactly. The strings \code{"mean"} and \code{"means"} are accepted as legacy aliases for \code{NULL}; any other non-numeric target is an error.}
 
 \item{variable}{numeric matrix or data.frame with at least one row.}
 
 \item{pop_adj}{logical; \code{TRUE} applies the sample adjustment \code{n / (n - 1)} to the co-/divergent moments (with both degrees 1, \code{target = NULL} and \code{norm = FALSE}, the covariance matrix then equals \code{cov()}). It is ignored when either degree is 0.}
 
-\item{norm}{logical; default FALSE. If TRUE, each quadrant matrix is cell-wise normalized so their sum is 1 at each (i,j). A cell whose total is 0 because every row ties the target in column i or j (only possible with \code{LPM_degree > 0}, for example a column constant at its target) takes the \code{LPM_degree = UPM_degree = 0} cell values (ties count as lower), as \link{LPM.ratio} does for a constant variable and \link{Co.LPM_nD} does for a zero total; a column constant at its target then has diagonal 1 in \code{$cov.matrix}. A cell total that underflows or overflows at high degree or extreme scale is recomputed on per-column rescaled deviations (in the log domain if needed) instead of returning 0.}
+\item{norm}{logical; default FALSE. If TRUE, each quadrant matrix is cell-wise normalized so their sum is 1 at each (i,j). A cell whose total is 0 because every row ties its target exactly (\code{x - t == 0}) in column i or j, which is only possible with \code{LPM_degree > 0} (for example a constant column with \code{target = NULL}), takes the \code{LPM_degree = UPM_degree = 0} cell values (ties count as lower), so such a column has diagonal 1 in \code{$cov.matrix}. This is a convention, shared with \link{LPM.ratio} for a constant variable and \link{Co.LPM_nD} for a zero total, not a limit: it need not match the values for nearly constant data (at degree 1 with the mean target their off-diagonal entries are near 0). A cell total that underflows or overflows at high degree or extreme scale is recomputed on per-column rescaled deviations (in the log domain if needed) instead of returning 0.}
 }
 \value{
 A list: $cupm, $dupm, $dlpm, $clpm, $cov.matrix.
