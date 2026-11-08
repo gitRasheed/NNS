@@ -205,9 +205,7 @@ UPM_RCPP <- function(degree, target, variable, excess_ret) {
 #' @param degree numeric; degree = 0 gives frequency (CDF), degree = 1 gives area. Must be a finite number \code{>= 0}.
 #' @param target numeric vector; threshold(s). There is no default: pass \code{NULL} to use \code{mean(variable)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error.
 #' @param variable numeric vector or data‑frame column to evaluate. A factor is an error.
-#' @return Numeric vector of standardized lower partial moments.
-#'   The ratio is scale-free: where the raw sums underflow or overflow (high \code{degree}, or deviations of extreme magnitude) it is recomputed on deviations divided by \code{max(abs(variable - target))}, so it is not \code{NaN}.
-#'   For
+#' @return Numeric vector of standardized lower partial moments. The ratio is scale-free: where the raw sums underflow or overflow (high \code{degree}, or deviations of extreme magnitude) it is recomputed on deviations divided by \code{max(abs(variable - target))}, so it is not \code{NaN}. For
 #'   \code{degree > 0}, a target at which every observation equals the target
 #'   (0/0) returns the \code{degree = 0} ratio.
 #' @author Fred Viole, OVVO Financial Systems
@@ -236,9 +234,7 @@ LPM.ratio <- function(degree, target, variable) {
 #' @param degree numeric; degree = 0 gives frequency, degree = 1 gives area. Must be a finite number \code{>= 0}.
 #' @param target numeric vector; threshold(s). There is no default: pass \code{NULL} to use \code{mean(variable)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error.
 #' @param variable numeric vector or data‑frame column to evaluate. A factor is an error.
-#' @return Numeric vector of standardized upper partial moments.
-#'   The ratio is scale-free: where the raw sums underflow or overflow (high \code{degree}, or deviations of extreme magnitude) it is recomputed on deviations divided by \code{max(abs(variable - target))}, so it is not \code{NaN}.
-#'   For
+#' @return Numeric vector of standardized upper partial moments. The ratio is scale-free: where the raw sums underflow or overflow (high \code{degree}, or deviations of extreme magnitude) it is recomputed on deviations divided by \code{max(abs(variable - target))}, so it is not \code{NaN}. For
 #'   \code{degree > 0}, a target at which every observation equals the target
 #'   (0/0) returns the \code{degree = 0} ratio.
 #' @author Fred Viole, OVVO Financial Systems
