@@ -112,3 +112,37 @@ test_that("integer-degree VaR ratio residual at tiny percentiles is the rounding
     expect_true(all(abs(UPM.ratio(d, w, x) / p - 1) <= 8 * d * eps * abs(w) / (max(x) - w)), info = d)
   }
 })
+
+test_that("integer-degree VaR at the smallest normal percentile converges in few steps", {
+  # The gap [min x, next order statistic] is hundreds of binades wider than the
+  # root offset here; bracketing it by the whole half gap took zeroin about
+  # 1000 iterations at d = 2. With min(x) = 0 exactly, the offset is
+  # representable: on the first gap LPM = s^d / n and UPM = mean((x - s)^d),
+  # which is mean(x^d) to relative 1e-60, so s^d = p * n * mean(x^d) / (1 - p).
+  # Its d-th root is refined by one Newton step (pow() with the inexact
+  # exponent 1/3 is off by |log(y)| * eps / 3, about 60 eps here).
+  set.seed(5)
+  x <- rnorm(1e5)
+  x <- x - min(x)
+  p <- .Machine$double.xmin
+  e <- new.env()
+  e$iter <- integer(0)
+  suppressMessages(trace(
+    "uniroot",
+    exit = bquote(assign("iter", c(get("iter", envir = .(e)), iter), envir = .(e))),
+    where = asNamespace("stats"), print = FALSE
+  ))
+  on.exit(suppressMessages(untrace("uniroot", where = asNamespace("stats"))), add = TRUE)
+  for (d in 1:4) {
+    y <- p * length(x) * mean(x^d) / (1 - p)
+    root <- y^(1 / d)
+    root <- root - (root^d - y) / (d * root^(d - 1))
+    expect_no_warning(v <- LPM.VaR(p, d, x))
+    expect_no_warning(w <- UPM.VaR(p, d, -x))
+    expect_lt(abs(v / root - 1), 8 * .Machine$double.eps)
+    expect_lt(abs(w / -root - 1), 8 * .Machine$double.eps)
+  }
+  expect_length(e$iter, 8L)
+  # Bisection through the whole half gap takes about 1000 iterations at d = 2.
+  expect_lt(max(e$iter), 100L)
+})

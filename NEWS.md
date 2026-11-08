@@ -108,7 +108,10 @@
   now located by the sign of `(1 - p) LPM - p UPM` at the order statistics,
   using sums anchored at the adjacent order statistics (no cancellation,
   accumulated in long double), and solved there from the nearer end with
-  `uniroot()`. `UPM.VaR()` keeps its percentile exact instead of solving at
+  `uniroot()`. A root more than 30 binades closer to that end than half the
+  gap (a tail percentile) is bracketed by a bound on its offset, so a
+  percentile of 1e-300 takes tens of `uniroot()` iterations, not about a
+  thousand. `UPM.VaR()` keeps its percentile exact instead of solving at
   `1 - percentile`. On ordinary data the results change only by rounding
   (less than 2e-14 times the largest threshold in the audit's samples), and
   the help no longer states a ratio tolerance. Degree 0 and the

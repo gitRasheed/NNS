@@ -136,7 +136,9 @@ UPM.VaR <- function(percentile, degree, x) {
 #   1. locates the gap by the sign of h at the breaks (binary search);
 #   2. solves h = 0 on that gap with uniroot() from the nearer anchor (in s on
 #      the lower half, in r on the upper half), so the root is resolved to a
-#      few ulps of t, also where the ratio is flat near min x and max x;
+#      few ulps of t, also where the ratio is flat near min x and max x; a
+#      root very close to the anchor is bracketed by a bound on its offset, so
+#      tail percentiles do not cost hundreds of bisection steps;
 #   3. returns a break only where the sign of h puts the root there. A tolerance
 #      on the ratio is not a tolerance on t: the former snap to a break within
 #      2^-39 of its ratio gave LPM.VaR(1e-12, 4, c(0, 1)) = 0, root about 1e-3.
@@ -222,6 +224,47 @@ UPM.VaR <- function(percentile, degree, x) {
   lpm_break <- lower[, d1]
   upm_break <- combine(upper, gap)
   
+  # Offset o in [0, half] from the anchor with f(o) = 0, given f(0) = f0 and
+  # f(half) = f_half of opposite signs. In o the near moment is
+  # sum_j C(d,j) o^(d-j) coef_j; its j < d terms are >= 0 and at the root they
+  # sum to at most excess = |f0| / w (the far moment only shrinks as o grows),
+  # so each term bounds o (the j = 0 term always does: coef_0 is the fraction
+  # of the sample at or beyond the anchor). The tightest bound is within about
+  # a factor d of the root when the root is close to the anchor, where
+  # [0, half] can be hundreds of binades wide and zeroin would bisect through
+  # them (about 1000 iterations at d = 2 for a percentile of 1e-307). The
+  # narrow bracket is used only where it saves more than 30 binades, so other
+  # roots keep the [0, half] bracket. The bracket starts at twice the bound,
+  # where h is well away from 0 (at d = 1 in the tails the bound is the root
+  # itself, up to rounding), and is doubled while rounding leaves it short of the root.
+  solve_offset <- function(f, coef, excess, f0, half, f_half) {
+    j <- 0:(degree - 1L)
+    term <- bin[j + 1L] * coef[1L, j + 1L]
+    pos <- term > 0
+    hi <- 2 * min(exp((log(excess) - log(term[pos])) / (degree - j[pos])))
+    f_hi <- f_half
+    if (is.finite(hi) && hi > 0 && hi < 2^-30 * half) {
+      repeat {
+        f_hi <- f(hi)
+        if (f_hi == 0) return(hi)
+        if (sign(f_hi) != sign(f0)) break
+        hi <- 2 * hi
+        if (hi >= half) {
+          hi <- half
+          f_hi <- f_half
+          break
+        }
+      }
+    } else {
+      hi <- half
+    }
+    o <- stats::uniroot(
+      f, c(0, hi), f.lower = f0, f.upper = f_hi,
+      tol = .Machine$double.xmin, maxiter = 2000L
+    )$root
+    min(max(o, 0), hi)
+  }
+  
   solve_one <- function(wl, wu) {
     # h(u_1) = -wu * UPM(u_1) < 0 and h(u_m) = wl * LPM(u_m) > 0: find k with
     # h(u_k) <= 0 < h(u_{k+1}) (h(u_m) is taken as positive).
@@ -246,22 +289,16 @@ UPM.VaR <- function(percentile, degree, x) {
     
     half <- g / 2
     h_half <- h_s(half)
+    if (h_half == 0) return(u_orig[k] + half / scale)
     
     # Solve from the nearer anchor; zeroin stops at about 4 * eps * |s| (or |r|),
     # so the offset from the anchor is resolved to relative precision.
-    if (h_half >= 0) {
-      if (h_half == 0) return(u_orig[k] + half / scale)
-      s <- stats::uniroot(
-        h_s, c(0, half), f.lower = h_left, f.upper = h_half,
-        tol = .Machine$double.xmin, maxiter = 2000L
-      )$root
-      t <- u_orig[k] + min(max(s, 0), half) / scale
+    if (h_half > 0) {
+      s <- solve_offset(h_s, lo_coef, -h_left / wl, h_left, half, h_half)
+      t <- u_orig[k] + s / scale
     } else {
-      r <- stats::uniroot(
-        h_r, c(0, half), f.lower = h_right, f.upper = h_half,
-        tol = .Machine$double.xmin, maxiter = 2000L
-      )$root
-      t <- u_orig[k + 1L] - min(max(r, 0), half) / scale
+      r <- solve_offset(h_r, up_coef, h_right / wu, h_right, half, h_half)
+      t <- u_orig[k + 1L] - r / scale
     }
     min(max(t, u_orig[k]), u_orig[k + 1L])
   }
