@@ -1055,6 +1055,111 @@ struct FusedMatrixMultiplicationWorker : public Worker {
   }
 };
 
+// Normalised PM.matrix cell (i, j) for a pair whose plain quadrant total is
+// unsafe (zero, under- or overflowed). out = {cupm, dupm, dlpm, clpm}.
+//
+// With LPM_degree > 0 a tie (x == t) contributes 0 to every quadrant, so a row
+// contributes nothing iff it ties the target in column i or j. If every row
+// does, the total is exactly 0 (0/0): return the degree-0 cells (lower side
+// inclusive, upper strict), as LPM.ratio does for a constant variable and the
+// nD functions do for a zero total; they partition the sample, so the cell
+// still sums to 1. With LPM_degree = 0 a tie counts as lower and the total is
+// never exactly 0.
+//
+// Otherwise the total under- or overflowed. Column c's deviations are divided by
+// s_c = max_k |x_kc - t_c|, and quadrant q, which raises column i to a_q and
+// column j to b_q, is multiplied back by 2^(a_q log2 s_i + b_q log2 s_j)
+// relative to the largest such factor. With equal degrees the four factors are
+// the same expression, so they cancel exactly and the cell is the plain
+// per-column rescaled ratio. If the rescaled sums still under- or overflow
+// (very high degree), the terms are summed in the log domain.
+static void PMMatrix_normalized_rescue(const NumericMatrix &variable,
+                                       const NumericVector &target,
+                                       const std::size_t i, const std::size_t j,
+                                       const double degree_lpm, const double degree_upm,
+                                       const std::vector<double> &scale,
+                                       double out[4]) {
+  const std::size_t n = variable.nrow();
+  const bool lpm_is_int = nns_is_integer_degree(degree_lpm);
+  const bool upm_is_int = nns_is_integer_degree(degree_upm);
+  const double ti = target[i], tj = target[j];
+  const double si = scale[i], sj = scale[j];
+  // log2 of a zero scale is never used with a nonzero exponent: an all-tied
+  // column has z = 0, which only contributes through a degree-0 indicator.
+  const double lsi = si > 0.0 ? std::log2(si) : 0.0;
+  const double lsj = sj > 0.0 ? std::log2(sj) : 0.0;
+  // Quadrant exponents (column i, column j): cupm (U, U), dupm (L, U),
+  // dlpm (U, L), clpm (L, L).
+  const double a[4] = {degree_upm, degree_lpm, degree_upm, degree_lpm};
+  const double b[4] = {degree_upm, degree_upm, degree_lpm, degree_lpm};
+  double offset[4];
+  for (int q = 0; q < 4; ++q)
+    offset[q] = (a[q] == 0.0 ? 0.0 : a[q] * lsi) + (b[q] == 0.0 ? 0.0 : b[q] * lsj);
+
+  double c0[4] = {0.0, 0.0, 0.0, 0.0};
+  double S[4] = {0.0, 0.0, 0.0, 0.0};
+  bool any_term = false;
+  for (std::size_t k = 0; k < n; ++k) {
+    const double di = variable(k, i) - ti, dj = variable(k, j) - tj;
+    const bool up_i = di > 0.0, up_j = dj > 0.0;
+    c0[up_i ? (up_j ? 0 : 2) : (up_j ? 1 : 3)] += 1.0;
+    const double zi = di == 0.0 ? 0.0 : std::fabs(di) / si;
+    const double zj = dj == 0.0 ? 0.0 : std::fabs(dj) / sj;
+    const double li = lower_component(up_i ? -zi : zi, degree_lpm, lpm_is_int);
+    const double ui = upper_component(up_i ? zi : -zi, degree_upm, upm_is_int);
+    const double lj = lower_component(up_j ? -zj : zj, degree_lpm, lpm_is_int);
+    const double uj = upper_component(up_j ? zj : -zj, degree_upm, upm_is_int);
+    const double term[4] = {ui * uj, li * uj, ui * lj, li * lj};
+    for (int q = 0; q < 4; ++q) S[q] += term[q];
+    if ((up_i || degree_lpm == 0.0 || di != 0.0) && (up_j || degree_lpm == 0.0 || dj != 0.0))
+      any_term = true;
+  }
+
+  if (!any_term) {
+    for (int q = 0; q < 4; ++q) out[q] = c0[q] / double(n);
+    return;
+  }
+
+  double omax = -std::numeric_limits<double>::infinity();
+  for (int q = 0; q < 4; ++q) if (S[q] > 0.0) omax = std::max(omax, offset[q]);
+  double w[4], total = 0.0;
+  for (int q = 0; q < 4; ++q) {
+    w[q] = S[q] > 0.0 ? S[q] * std::exp2(offset[q] - omax) : 0.0;
+    total += w[q];
+  }
+
+  if (nns_unsafe_total(total)) {
+    // Log domain: log2 of each nonzero term, shifted by the largest.
+    std::vector<double> lg(4 * n, -std::numeric_limits<double>::infinity());
+    double lmax = -std::numeric_limits<double>::infinity();
+    for (std::size_t k = 0; k < n; ++k) {
+      const double di = variable(k, i) - ti, dj = variable(k, j) - tj;
+      const bool up_i = di > 0.0, up_j = dj > 0.0;
+      // Side of each column for quadrant q: true = upper.
+      const bool side_i[4] = {true, false, true, false};
+      const bool side_j[4] = {true, true, false, false};
+      for (int q = 0; q < 4; ++q) {
+        if (side_i[q] != up_i || side_j[q] != up_j) continue;
+        double l = offset[q];
+        bool zero = false;
+        if (a[q] != 0.0) { if (di == 0.0) zero = true; else l += a[q] * std::log2(std::fabs(di) / si); }
+        if (b[q] != 0.0) { if (dj == 0.0) zero = true; else l += b[q] * std::log2(std::fabs(dj) / sj); }
+        if (zero) continue;
+        lg[4 * k + q] = l;
+        lmax = std::max(lmax, l);
+      }
+    }
+    total = 0.0;
+    for (int q = 0; q < 4; ++q) w[q] = 0.0;
+    for (std::size_t k = 0; k < n; ++k)
+      for (int q = 0; q < 4; ++q)
+        if (lg[4 * k + q] > -std::numeric_limits<double>::infinity())
+          w[q] += std::exp2(lg[4 * k + q] - lmax);
+    for (int q = 0; q < 4; ++q) total += w[q];
+  }
+  for (int q = 0; q < 4; ++q) out[q] = w[q] / total;
+}
+
 // [[Rcpp::export]]
 List PMMatrix_CPv(
     const double &LPM_degree,
@@ -1105,7 +1210,10 @@ List PMMatrix_CPv(
   
   // 6. Apply cellular normalization adjustments if requested.
   // Preserve the same cross-transpose relationship for DUPM and DLPM.
+  // A cell with an unsafe total (zero, under- or overflowed) is recomputed by
+  // PMMatrix_normalized_rescue; s_c = max_k |x_kc - t_c| is computed on demand.
   if (norm) {
+    std::vector<double> scale;
     for (size_t i = 0; i < variable_cols; ++i) {
       for (size_t j = i; j < variable_cols; ++j) {
         double cupm_ij = coUpm(i, j);
@@ -1114,16 +1222,24 @@ List PMMatrix_CPv(
         double clpm_ij = coLpm(i, j);
         double total = cupm_ij + dupm_ij + dlpm_ij + clpm_ij;
         
-        if (total > 0.0) {
+        if (!nns_unsafe_total(total)) {
           cupm_ij /= total;
           dupm_ij /= total;
           dlpm_ij /= total;
           clpm_ij /= total;
         } else {
-          cupm_ij = 0.0;
-          dupm_ij = 0.0;
-          dlpm_ij = 0.0;
-          clpm_ij = 0.0;
+          if (scale.empty()) {
+            scale.assign(variable_cols, 0.0);
+            for (size_t c = 0; c < variable_cols; ++c)
+              for (size_t k = 0; k < rows; ++k)
+                scale[c] = std::max(scale[c], std::fabs(variable(k, c) - target[c]));
+          }
+          double cell[4];
+          PMMatrix_normalized_rescue(variable, target, i, j, LPM_degree, UPM_degree, scale, cell);
+          cupm_ij = cell[0];
+          dupm_ij = cell[1];
+          dlpm_ij = cell[2];
+          clpm_ij = cell[3];
         }
         
         double cov_ij = cupm_ij + clpm_ij - dupm_ij - dlpm_ij;

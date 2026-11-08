@@ -555,7 +555,7 @@ NNS.moments <- function(x, population = TRUE) {
 #' @param target numeric vector; thresholds for each column. There is no default: pass \code{NULL} to use \code{colMeans(variable)}. The strings \code{"mean"} and \code{"means"} are accepted as legacy aliases for \code{NULL}; any other non-numeric target is an error.
 #' @param variable numeric matrix or data.frame with at least one row.
 #' @param pop_adj logical; \code{TRUE} applies the sample adjustment \code{n / (n - 1)} to the co-/divergent moments (with both degrees 1, \code{target = NULL} and \code{norm = FALSE}, the covariance matrix then equals \code{cov()}). It is ignored when either degree is 0.
-#' @param norm logical; default FALSE. If TRUE, each quadrant matrix is cell-wise normalized so their sum is 1 at each (i,j).  
+#' @param norm logical; default FALSE. If TRUE, each quadrant matrix is cell-wise normalized so their sum is 1 at each (i,j). A cell whose total is 0 because every row ties the target in column i or j (only possible with \code{LPM_degree > 0}, for example a column constant at its target) takes the \code{LPM_degree = UPM_degree = 0} cell values (ties count as lower), as \link{LPM.ratio} does for a constant variable and \link{Co.LPM_nD} does for a zero total; a column constant at its target then has diagonal 1 in \code{$cov.matrix}. A cell total that underflows or overflows at high degree or extreme scale is recomputed on per-column rescaled deviations (in the log domain if needed) instead of returning 0.
 #' @return A list: $cupm, $dupm, $dlpm, $clpm, $cov.matrix.
 #' @note When \code{norm = TRUE}, each cell (i,j) of the four quadrant matrices
 #' is normalized so that their sum equals 1.  In this case, 

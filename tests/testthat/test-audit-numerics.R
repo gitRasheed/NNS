@@ -167,3 +167,105 @@ test_that("an underflowed nD total with one tied row uses the untied rows, not t
   expect_equal(c(Co.LPM_nD(Z, c(0, 0), 2), Co.UPM_nD(Z, c(0, 0), 2), DPM_nD(Z, c(0, 0), 2)),
                c(0.2, 0.8, 0))
 })
+
+# --- PM.matrix(norm = TRUE): zero and unsafe cell totals ----------------------
+
+pm_quadrants <- c("cupm", "dupm", "dlpm", "clpm")
+pm_cell_sum <- function(P) P$cupm + P$dupm + P$dlpm + P$clpm
+pm_expect_close <- function(actual, expected, tol) {
+  expect_lte(max(abs(unname(unlist(actual)) - unname(unlist(expected)))), tol)
+}
+
+test_that("PM.matrix(norm = TRUE) gives a column constant at its target the degree-0 cells", {
+  M <- cbind(a = c(1, 2, 3), b = c(5, 5, 5))
+  P <- PM.matrix(1, 1, NULL, M, FALSE, TRUE)
+  # LPM.ratio convention: a constant variable is all lower.
+  expect_identical(P$clpm["b", "b"], 1)
+  expect_identical(c(P$cupm["b", "b"], P$dupm["b", "b"], P$dlpm["b", "b"]), c(0, 0, 0))
+  expect_equal(unname(P$cov.matrix), matrix(c(1, 1 / 3, 1 / 3, 1), 2))
+  P0 <- PM.matrix(0, 0, NULL, M, FALSE, TRUE)
+  for (q in c(pm_quadrants, "cov.matrix")) {
+    expect_equal(P[[q]]["b", ], P0[[q]]["b", ])
+    expect_equal(P[[q]][, "b"], P0[[q]][, "b"])
+  }
+  expect_equal(pm_cell_sum(P), matrix(1, 2, 2, dimnames = dimnames(P$cupm)))
+})
+
+test_that("PM.matrix(norm = TRUE) uses the degree-0 cells when every row ties in one of the two columns", {
+  # Neither column is constant, but each row ties the target in a or b.
+  M <- cbind(a = c(0, 0, 1, -2), b = c(3, -1, 0, 0))
+  P <- PM.matrix(2, 1, c(0, 0), M, TRUE, TRUE)
+  P0 <- PM.matrix(0, 0, c(0, 0), M, FALSE, FALSE)
+  expect_equal(c(P$cupm["a", "b"], P$dupm["a", "b"], P$dlpm["a", "b"], P$clpm["a", "b"]),
+               c(0, 0.25, 0.25, 0.5))
+  for (q in c(pm_quadrants, "cov.matrix")) expect_equal(P[[q]]["a", "b"], P0[[q]]["a", "b"])
+  # The crossed mirror holds for the fallback cell too.
+  expect_identical(P$dupm["b", "a"], P$dlpm["a", "b"])
+  expect_identical(P$dlpm["b", "a"], P$dupm["a", "b"])
+  expect_equal(pm_cell_sum(P), matrix(1, 2, 2, dimnames = dimnames(P$cupm)))
+})
+
+test_that("PM.matrix(norm = TRUE) at LPM_degree = 0 counts a tie as lower, unchanged", {
+  M <- cbind(a = c(1, 2, 3), b = c(5, 5, 5))
+  P <- PM.matrix(0, 1, NULL, M, FALSE, TRUE)
+  expect_equal(unname(P$cov.matrix), matrix(c(1, 1 / 3, 1 / 3, 1), 2))
+})
+
+test_that("PM.matrix(norm = TRUE) is scale-free at equal degrees when the products underflow or overflow", {
+  set.seed(2)
+  X <- cbind(rnorm(30), rexp(30), runif(30))
+  for (d in 1:2) {
+    ref <- unlist(PM.matrix(d, d, NULL, X, FALSE, TRUE))
+    for (s in c(1e-200, 2^-700, 1e200)) {
+      P <- PM.matrix(d, d, NULL, X * s, FALSE, TRUE)
+      pm_expect_close(unlist(P), ref, 16 * .Machine$double.eps)
+    }
+  }
+  # Old behaviour: every product underflowed, all cells 0.
+  P <- PM.matrix(1, 1, NULL, X * 1e-200, FALSE, TRUE)
+  pm_expect_close(diag(P$cov.matrix), rep(1, 3), 4 * .Machine$double.eps)
+})
+
+test_that("PM.matrix(norm = TRUE) at degree 200 does not return 0 when the products overflow", {
+  set.seed(2)
+  X <- cbind(rnorm(30), rexp(30), runif(30))
+  P <- PM.matrix(200, 200, NULL, X * 1e3, FALSE, TRUE)
+  expect_true(all(is.finite(unlist(P))))
+  pm_expect_close(pm_cell_sum(P), 1, 8 * .Machine$double.eps)
+  pm_expect_close(unlist(P), unlist(PM.matrix(200, 200, NULL, X, FALSE, TRUE)), 1e-14)
+})
+
+test_that("PM.matrix(norm = TRUE) with unequal degrees matches the exact ratio when the total overflows", {
+  # Exact values from rational arithmetic (nns-proofs oracle pm_matrix), in
+  # unlist() order: cupm, dupm, dlpm, clpm, each column-major. The plain sums
+  # overflow (2^2002), so every cell goes through the rescue.
+  X <- cbind(a = c(-1.75, -0.5, 0.25, 1.5, 2, -1.25, 0.75, 1.25),
+             b = c(1.5, -2, 0.5, -0.75, 1.25, 0.25, -1.5, 1.75))
+  exact <- list(
+    "1000 1001" = c(1, 1.0778285412673956e-21, 1.0778285412673956e-21, 3.1782067229759299e-116,
+                    0, 0, 1, 0, 0, 1, 0, 0, 2.5944544677354528e-117, 0, 0, 1),
+    "700 650" = c(1, 1.1886477434465246e-26, 1.1886477434465246e-26, 3.2171355712192349e-106,
+                  0, 2.9359596119441445e-243, 1, 0, 0, 1, 2.9359596119441445e-243, 0,
+                  8.2086889175245743e-52, 2.594463309812418e-285, 2.594463309812418e-285, 1))
+  for (key in names(exact)) {
+    d <- as.numeric(strsplit(key, " ")[[1]])
+    got <- unname(unlist(PM.matrix(d[1], d[2], c(0, 0), X, TRUE, TRUE)[pm_quadrants]))
+    e <- exact[[key]]
+    expect_identical(got == 0, e == 0)
+    expect_lte(max(abs(got - e)[e != 0] / e[e != 0]), 1e-14)
+  }
+})
+
+test_that("PM.matrix(norm = TRUE) results with a safe total are unchanged", {
+  # Bit pattern of the plain division path (no rescue involved).
+  set.seed(123)
+  A <- cbind(rnorm(100), rnorm(100), rnorm(100))
+  for (d in list(c(1, 1), c(2, 1), c(0, 2))) {
+    raw <- PM.matrix(d[1], d[2], NULL, A, TRUE, FALSE)
+    tot <- raw$cupm + raw$dupm + raw$dlpm + raw$clpm
+    P <- PM.matrix(d[1], d[2], NULL, A, TRUE, TRUE)
+    # Upper triangle: the lower one is the (crossed) mirror of it.
+    ut <- upper.tri(tot, diag = TRUE)
+    for (q in pm_quadrants) expect_identical(P[[q]][ut], (raw[[q]] / tot)[ut])
+  }
+})

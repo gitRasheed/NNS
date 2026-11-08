@@ -144,6 +144,22 @@
   `plot = TRUE`; the verdict never used them.
 * The `NNS.TSD()` plot draws the LPM2 curves against the threshold values, like
   `NNS.SSD()` and `NNS.FSD()`, instead of against their index.
+* `PM.matrix(norm = TRUE)` with `LPM_degree > 0` no longer sets all four
+  quadrants of a cell to 0 when its total is 0, i.e. when every row ties the
+  target in column i or j (a column constant at its target, or `target =
+  NULL` with a constant column). The cell takes the `LPM_degree = UPM_degree =
+  0` values, ties counting as lower, as `LPM.ratio()` does for a constant
+  variable and `Co.LPM_nD()`/`Co.UPM_nD()`/`DPM_nD()` do for a zero total, so
+  the four quadrants still sum to 1: such a column has `$cov.matrix` diagonal 1
+  (was 0), and its off-diagonal entries are `2 * F_j(t_j) - 1` (was 0), with
+  `F_j(t_j)` the share of the other column at or below its target. A cell
+  total that underflowed or overflowed (deviations of scale 1e-200, or high
+  degree) is recomputed on per-column rescaled deviations, in the log domain
+  if needed, instead of returning 0 for every quadrant; with equal degrees the
+  result does not depend on the units of the data. Cells with a safe total
+  are unchanged bit for bit. `NNS.copula()` drops constant columns before
+  calling `PM.matrix()`, so it changes only for a pair of columns in which
+  every row ties a user-supplied target in one of the two.
 
 # NNS 13.3 (development changes)
 

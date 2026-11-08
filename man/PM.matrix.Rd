@@ -17,7 +17,7 @@ PM.matrix(LPM_degree, UPM_degree, target, variable, pop_adj, norm = FALSE)
 
 \item{pop_adj}{logical; \code{TRUE} applies the sample adjustment \code{n / (n - 1)} to the co-/divergent moments (with both degrees 1, \code{target = NULL} and \code{norm = FALSE}, the covariance matrix then equals \code{cov()}). It is ignored when either degree is 0.}
 
-\item{norm}{logical; default FALSE. If TRUE, each quadrant matrix is cell-wise normalized so their sum is 1 at each (i,j).}
+\item{norm}{logical; default FALSE. If TRUE, each quadrant matrix is cell-wise normalized so their sum is 1 at each (i,j). A cell whose total is 0 because every row ties the target in column i or j (only possible with \code{LPM_degree > 0}, for example a column constant at its target) takes the \code{LPM_degree = UPM_degree = 0} cell values (ties count as lower), as \link{LPM.ratio} does for a constant variable and \link{Co.LPM_nD} does for a zero total; a column constant at its target then has diagonal 1 in \code{$cov.matrix}. A cell total that underflows or overflows at high degree or extreme scale is recomputed on per-column rescaled deviations (in the log domain if needed) instead of returning 0.}
 }
 \value{
 A list: $cupm, $dupm, $dlpm, $clpm, $cov.matrix.

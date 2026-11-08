@@ -676,24 +676,34 @@ test_that("PMmatrix_zero_zero_norm: at degree 0 norm = TRUE changes nothing", {
 X_tied <- cbind(a = c(1, 2, 3, 4), b = c(5, 5, 5, 5), c = c(0, 2, -1, 3))
 t_tied <- c(2.5, 5, 1)
 
-test_that("PMmatrix_norm_of_total_eq_zero / PMmatrix_norm_sum_of_tied: a tied column zeroes its row and column (dL > 0)", {
+# A zero cell total (dL > 0 and every row ties the target in column i or j)
+# takes the degree-0 cells, as LPM.ratio and the normalised nD functions do.
+# CoMomentsMatrix.lean's PMmatrix_norm_of_total_eq_zero, PMmatrix_norm_sum_of_tied
+# and PMmatrix_norm_sum_eq_zero_example model the earlier all-zero convention.
+
+test_that("PMmatrix_norm_of_total_eq_zero (degree-0 convention): a tied column takes the degree-0 cells (dL > 0)", {
+  P0 <- PM.matrix(0, 0, t_tied, X_tied, FALSE, FALSE)
   for (d in list(c(1, 1), c(2, 1), c(1, 0))) {
     P <- PM.matrix(d[1], d[2], t_tied, X_tied, FALSE, TRUE)
-    expect_true(all(vapply(P, function(M) all(M["b", ] == 0 & M[, "b"] == 0), logical(1))))
-    expect_within(norm_sum(P)[c("a", "c"), c("a", "c")], 1, 8 * eps)
+    for (q in names(P)) {
+      expect_within(P[[q]]["b", ], P0[[q]]["b", ], 4 * eps)
+      expect_within(P[[q]][, "b"], P0[[q]][, "b"], 4 * eps)
+    }
+    expect_within(norm_sum(P), 1, 8 * eps)
   }
 })
 
-test_that("PMmatrix_norm_cov_diag: dL > 0 gives diagonal 1 off target and 0 for a tied column", {
+test_that("PMmatrix_norm_cov_diag: dL > 0 gives diagonal 1, also for a tied column", {
   P <- PM.matrix(1, 1, NULL, cbind(a = c(1, 2, 3), b = c(5, 5, 5)), FALSE, TRUE)
-  expect_within(unname(P$cov.matrix), matrix(c(1, 0, 0, 0), 2), 4 * eps)
+  expect_within(unname(P$cov.matrix), matrix(c(1, 1 / 3, 1 / 3, 1), 2), 4 * eps)
   P <- PM.matrix(2, 1, t_tied, X_tied, TRUE, TRUE)
-  expect_within(unname(diag(P$cov.matrix)), c(1, 0, 1), 4 * eps)
+  expect_within(unname(diag(P$cov.matrix)), c(1, 1, 1), 4 * eps)
 })
 
-test_that("PMmatrix_norm_sum_eq_zero_example: PM.matrix(1, 1, 0, matrix(0), TRUE, TRUE) is all zero", {
+test_that("PMmatrix_norm_sum_eq_zero_example (degree-0 convention): PM.matrix(1, 1, 0, matrix(0), TRUE, TRUE) is all lower", {
   P <- PM.matrix(1, 1, 0, matrix(0), TRUE, TRUE)
-  expect_identical(unname(unlist(P)), numeric(5))
+  expect_identical(vapply(P, function(M) M[1, 1], numeric(1)),
+                   c(cupm = 0, dupm = 0, dlpm = 0, clpm = 1, cov.matrix = 1))
 })
 
 test_that("PMmatrix_norm_cov_diag_zero_left: at dL = 0 the normalised cov diagonal is 1, even for a tied column", {
@@ -719,7 +729,10 @@ test_that("pmTotal_of_tied_zero_left: a tied column has diagonal total exactly 1
 test_that("PMmatrix_norm_cov_not_posSemidef: the normalised cov.matrix is not PSD (target 0)", {
   X <- rbind(c(1, 0, 3), c(3, 0, 1), c(2, 0, 0), c(0, 3, 3))
   M <- PM.matrix(1, 1, rep(0, 3), X, FALSE, TRUE)$cov.matrix
-  expect_within(M, matrix(c(1, 0, 1, 0, 1, 1, 1, 1, 1), 3), 4 * eps)
+  # Cell (1, 2) has total 0 (every row ties in column 1 or 2) and takes the
+  # degree-0 value -1; the Lean counterexample uses the earlier 0. Not PSD
+  # either way.
+  expect_within(M, matrix(c(1, -1, 1, -1, 1, 1, 1, 1, 1), 3), 4 * eps)
   v <- c(1, 1, -1)
   expect_lt(drop(v %*% M %*% v), 0)
 })
