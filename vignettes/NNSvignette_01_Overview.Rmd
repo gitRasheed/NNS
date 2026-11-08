@@ -111,7 +111,7 @@ Define asymmetric analogues of skewness/kurtosis using \(\operatorname{UPM}_3\),
 
 **Header.**
 
--   `NNS.moments(x, population = TRUE)` — classical mean, variance, skewness and excess kurtosis; these equal the partial-moment decompositions about the mean, e.g. skewness = (UPM_3 − LPM_3)/(UPM_2 + LPM_2)^{3/2}.
+-   `NNS.moments(x, population = TRUE)` — classical mean, variance, skewness and excess kurtosis; these equal the partial-moment decompositions about the mean, e.g. \(\text{skewness} = (\operatorname{UPM}_3 - \operatorname{LPM}_3)/(\operatorname{UPM}_2 + \operatorname{LPM}_2)^{3/2}\).
 
 ```{r}
 M <- NNS.moments(y)
@@ -136,7 +136,7 @@ NNS.mode(multimodal,multi = TRUE)
 
 -   `LPM.ratio(degree, target, variable)` (empirical CDF when `degree=0`)
 -   `UPM.ratio(degree, target, variable)` (empirical survival function, 1 − CDF, when `degree=0`)
--   `LPM.VaR(percentile, degree, x)` (`degree=0`: empirical type-7 quantile; `degree>0`: threshold with `percentile` of the lower deviation area below it — an expectile-type point, not a quantile of `x`)
+-   `LPM.VaR(percentile, degree, x)` (`degree=0`: empirical type-7 quantile; `degree>0`: the threshold at which the lower deviation area is `percentile` of the total (lower + upper) deviation area, an expectile-type point (the expectile itself at degree 1), not a quantile of `x`)
 -   `UPM.VaR(percentile, degree, x)`
 
 ```{r}
@@ -302,6 +302,7 @@ Since \(y\) was generated with a higher mean, the stochastic superiority probabi
 We can also obtain confidence intervals for the tie-adjusted superiority probability using maximum entropy bootstrap replicates.
 
 ```{r stochsuperiorityci, echo=TRUE, eval=FALSE}
+set.seed(123)
 NNS.SS(x, y, confidence.interval = TRUE, reps = 999, ci = 0.95)[1:5]
 
 $p_gt
@@ -314,10 +315,10 @@ $p_star
 [1] 0.233915
 
 $lower
-[1] 0.2189796
+[1] 0.2191905
 
 $upper
-[1] 0.2593558
+[1] 0.2587136
 ```
 
 This provides an interpretable effect size for directional comparison between two distributions without requiring identical distributions or equal variances.
@@ -513,7 +514,7 @@ Centering at \(t=\mu_X\) yields the variance decomposition identity in Section 1
 - `LPM(degree, target, variable)` — lower partial moment of order `degree` at `target`.
 - `UPM(degree, target, variable)` — upper partial moment of order `degree` at `target`.
 - `LPM.ratio(degree, target, variable)`; `UPM.ratio(...)` — normalized shares LPM/(LPM+UPM) and UPM/(LPM+UPM); `degree=0` gives the empirical CDF (`LPM.ratio`) and survival function (`UPM.ratio`).
-- `LPM.VaR(percentile, degree, x)` — `degree = 0`: empirical quantile at `percentile`; `degree > 0`: threshold with `percentile` of the degree-weighted lower deviation area below it (degree 1 = expectile).
+- `LPM.VaR(percentile, degree, x)` — `degree = 0`: empirical quantile at `percentile`; `degree > 0`: threshold at which the degree-weighted lower deviation area is `percentile` of the total deviation area (degree 1 = expectile).
 - `Co.LPM(degree_lpm, x, y, target_x, target_y, degree_y)` — co-lower partial moment between two variables.
 - `Co.UPM(degree_upm, x, y, target_x, target_y, degree_y)` — co-upper partial moment between two variables.
 - `D.LPM(degree_lpm, degree_upm, x, y, target_x, target_y)` — divergent lower partial moment: `x` above `target_x` while `y` at or below `target_y`.
@@ -522,7 +523,7 @@ Centering at \(t=\mu_X\) yields the variance decomposition identity in Section 1
 - `NNS.moments(x, population = TRUE)` — mean/variance/skewness/excess kurtosis (equal to their partial-moment decompositions about the mean).
 
 ## 2. Descriptive Statistics & Distributions
-- `NNS.mode(x, multi = FALSE)` — nonparametric mode(s).
+- `NNS.mode(x, discrete = FALSE, multi = TRUE)` — nonparametric mode(s); `discrete = TRUE` rounds to integers and returns the most frequent, `multi = FALSE` returns a single mode.
 - `PM.matrix(LPM_degree, UPM_degree, target, variable, pop_adj, norm = FALSE)` — co-/divergent partial-moment matrices.
 - `NNS.gravity(x, discrete = FALSE)` — partial-moment weighted location (gravity center).
 

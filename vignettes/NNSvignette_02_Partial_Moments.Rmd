@@ -153,7 +153,7 @@ NNS.CDF(x, 1, type = "survival")
 
 
 ## Numerical Integration
-Partial moments also yield asymptotic area approximations of $f(x)$ in the manner of a Riemann sum (a rectangle rule, so less accurate than the familiar Trapezoidal and Simpson's rules for the same number of points).  More observations, more accuracy...
+Partial moments also yield asymptotic approximations of $\int_a^b f(x)\,dx$ in the manner of a Riemann sum (a rectangle rule, so less accurate than the familiar Trapezoidal and Simpson's rules for the same number of points).  More observations, more accuracy...
 
 For $x$ an equally spaced grid of $n$ points on $[a,b]$ and $F$ an antiderivative of $f$, as $n \to \infty$:
 $$[UPM(1,0,f(x))-LPM(1,0,f(x))]\approx\frac{[F(b)-F(a)]}{[b-a]}$$

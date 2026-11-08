@@ -262,7 +262,7 @@ The **cumulative hazard function** is
 H(t) = -\log S(t) = \int_{-\infty}^t h(s)\,ds,
 \]
 
-The integral formula assumes an absolutely continuous distribution with positive survival on the interval in question. It reduces to \(\int_0^t h(s)\,ds\) for an absolutely continuous non-negative lifetime. For distributions with atoms the two expressions part ways: the measure-based cumulative hazard is \(H(t)=\int_{(-\infty,t]} \frac{dF_X(s)}{S_X(s^-)}\), which accumulates the jump hazards \(P(X=s\mid X\ge s)\) and satisfies \(S_X(t)=\prod_{s\le t}\bigl(1-dH(s)\bigr)\); it coincides with \(-\log S_X(t)\) only when \(F_X\) is continuous.
+The integral formula assumes an absolutely continuous distribution with positive survival on the interval in question. It reduces to \(\int_0^t h(s)\,ds\) for an absolutely continuous non-negative lifetime. For distributions with atoms the two expressions part ways: the measure-based cumulative hazard is \(H(t)=\int_{(-\infty,t]} \frac{dF_X(s)}{S_X(s^-)}\), which accumulates the jump hazards \(P(X=s\mid X\ge s)\) and satisfies \(S_X(t)=\prod_{s\le t}\bigl(1-dH(s)\bigr)\); it coincides with \(-\log S_X(t)\) only when \(F_X\) is continuous. `NNS.CDF(..., type = "cumulative hazard")` reports \(-\log S\) for the empirical distribution.
 
 Although hazard rates are typically introduced within survival analysis, they arise naturally within the directional framework once the survival function is recognized as an upper partial moment.
 

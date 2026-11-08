@@ -353,7 +353,7 @@ y = rng.normal(size=100)
 cov_mtx = pm_matrix(
     lpm_degree=1,
     upm_degree=1,
-    target="mean",
+    target=None,
     variable=np.column_stack((x, y)),
     pop_adj=True,
 )
@@ -409,7 +409,7 @@ Then the co-upper partial moment matrix is
 \left(U^{(r)}\right)^\top U^{(r)}.
 \]
 
-The factor \(1/T\) is the population normalization used by `PM.matrix(..., pop_adj = FALSE)`; with `pop_adj = TRUE`, as in the example above, each matrix is rescaled by \(T/(T-1)\), which leaves the Gram structure unchanged.
+The factor \(1/T\) is the population normalization used by `PM.matrix(..., pop_adj = FALSE)`; with `pop_adj = TRUE`, as in the example above, each matrix is rescaled by \(T/(T-1)\) (for positive degrees; `PM.matrix` ignores `pop_adj` when either degree is 0), which leaves the Gram structure unchanged.
 
 Thus each concordant co-partial moment matrix is a **Gram matrix**: its entries are pairwise inner products of directional-deviation vectors.
 
