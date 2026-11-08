@@ -316,10 +316,10 @@ UPM.VaR <- function(percentile, degree, x) {
   # snap_t: decimal data far from 0 relative to their spread (scores near 17
   # spaced 0.001 apart) are off their decimal values by u |x|, a large part of
   # each deviation, so h at a decimal tie is outside snap_h. The root is then
-  # within about one ulp of the order statistic (at most 0.92 eps |x| on the
-  # same check, off 0, 1, -3 and 17); an allowance of 8 eps |x_k| returns the
-  # order statistic. The root of LPM.VaR(0.5 + 1e-13, d, c(0, 1, 2)), about
-  # 600 eps from 1, is resolved.
+  # within about one ulp of the order statistic (at most 0.92 eps |x_k| on the
+  # same check for data offset by 1, -3 and 17); an allowance of 8 eps |x_k|
+  # returns the order statistic. The root of LPM.VaR(0.5 + 1e-13, d,
+  # c(0, 1, 2)), about 600 eps from 1, is resolved.
   snap_h <- 16 * .Machine$double.eps
   snap_t <- 8 * .Machine$double.eps
   
