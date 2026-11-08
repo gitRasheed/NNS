@@ -191,13 +191,13 @@ test_that("NNS.SD.cluster rejects an invalid degree even when no efficient set i
 test_that("the compiled efficient set checks the degree before its LPM ordering pass", {
   m <- cbind(x = x_om, y = y_om)
   # Before the fix, the ordering pass ran 2147483647 multiplications per
-  # element before the degree was checked.
-  elapsed <- system.time(
-    expect_error(.Call(NNS:::`_NNS_NNS_SD_efficient_set_parallel_cpp`, m, .Machine$integer.max,
-                       "discrete", FALSE),
-                 "degree must be 1, 2, or 3", fixed = TRUE)
-  )[["elapsed"]]
-  expect_lt(elapsed, 2)
+  # element before the degree was checked (minutes before the error).
+  expect_error(.Call(NNS:::`_NNS_NNS_SD_efficient_set_parallel_cpp`, m, .Machine$integer.max,
+                     "discrete", FALSE),
+               "degree must be 1, 2, or 3", fixed = TRUE)
+  # No wall-clock bound: the zero-column case below fails on the old order by
+  # itself (the zero-column early return, which precedes the ordering pass,
+  # came before the check and gave character(0)).
   expect_error(.Call(NNS:::`_NNS_NNS_SD_efficient_set_parallel_cpp`, m[, 0, drop = FALSE], 4L,
                      "discrete", FALSE),
                "degree must be 1, 2, or 3", fixed = TRUE)
