@@ -157,7 +157,7 @@ The classical one-sided bound using only the mean and variance is Cantelli's ine
 P(X \le g)\le \frac{\sigma^2}{\sigma^2+(\mu-g)^2}.
 \]
 
-(Half of Chebyshev's two-sided bound, \(\tfrac12\left(\sigma/(\mu-g)\right)^2\), holds only for symmetric distributions; Chapter 4 gives a counterexample.)
+(Half of Chebyshev's two-sided bound, \(\tfrac12\left(\sigma/(\mu-g)\right)^2\), is not distribution-free: it holds whenever the downside semivariance \(\sigma_-^2\) below is at most \(\sigma^2/2\), as for symmetric distributions, but not in general; Chapter 4 gives a counterexample.)
 
 A directional refinement replaces symmetric standard deviation with semideviation:
 

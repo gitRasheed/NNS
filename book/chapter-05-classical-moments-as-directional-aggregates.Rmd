@@ -66,6 +66,8 @@ U_r(t;X) = E[(X-t)_+^r]
 L_r(t;X) = E[(t-X)_+^r].
 \]
 
+At \(r = 0\) the powers are read as indicators, as in Chapter 2: \(L_0(t;X) = P(X \le t)\) and \(U_0(t;X) = P(X > t)\), with ties assigned to the lower side, so that \(L_0 + U_0 = 1\).
+
 Using the directional decomposition
 
 \[
