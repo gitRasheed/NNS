@@ -7,7 +7,7 @@
 UPM.ratio(degree, target, variable)
 }
 \arguments{
-\item{degree}{numeric; degree = 0 gives frequency, degree = 1 gives area.}
+\item{degree}{numeric; degree = 0 gives frequency, degree = 1 gives area. Must be a finite number \code{>= 0}.}
 
 \item{target}{numeric vector; threshold(s). There is no default: pass \code{NULL} to use \code{mean(variable)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error.}
 
@@ -20,7 +20,7 @@ Numeric vector of standardized upper partial moments. The ratio is scale-free: w
 }
 \description{
 This function generates a standardized univariate upper partial moment
-  of any non‑negative degree for a given target.
+  of any finite non‑negative degree for a given target.
 }
 \examples{
   set.seed(123)

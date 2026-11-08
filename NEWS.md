@@ -185,6 +185,18 @@
   compiled efficient-set routine checks the degree before its LPM ordering
   pass, which ran `degree` multiplications per element (a degree of
   2147483647 took minutes before the error).
+* Help pages corrected: `Co.LPM()` is quadrant 3 (lower-left) and `D.LPM()`
+  quadrant 4 (lower-right); the `D.LPM()`/`D.UPM()` degree arguments name the
+  deviation they apply to (`degree_upm` is the upper deviation of `x` in
+  `D.LPM()` and of `y` in `D.UPM()`); the `DPM_nD()` degree applies to the
+  absolute deviations of every coordinate; `NNS.CDF()` `target.value` is the
+  selected function at `target` (`numeric(0)` for `target = NULL`) and the
+  univariate hazard estimator, its clamp and its survival floor are described;
+  the `LPM.VaR()`/`UPM.VaR()` degree need not be an integer; `NNS.moments(
+  population = FALSE)` returns G1/G2; every partial-moment degree argument is
+  documented as a finite number `>= 0`; and the stochastic dominance tolerance
+  note describes the centring on the pooled midrange and the allowance for the
+  inputs' own rounding.
 
 # NNS 13.3 (development changes)
 
@@ -198,10 +210,20 @@
   Median comparisons now handle CDF jumps, and degenerate area-balance cases
   use explicit agreement semantics. Certainty remains a descriptive score;
   inferential calibration must match the target and sampling design.
-* `NNS.FSD(type = "continuous")` keeps the same numerical degree-one criterion
-  but labels it Omega/expectile order. Its result strings now use `OMEGA`, not
-  `FSD`; callers comparing strings should update. Discrete FSD strings and
-  numeric dominance indicators/set/cluster structures are unchanged.
+* `NNS.FSD(type = "continuous")` keeps the degree-one ratio criterion
+  `L_1/(L_1+U_1)` but labels it Omega/expectile order. Its result strings now
+  use `OMEGA`, not `FSD`; callers comparing strings should update. Discrete FSD
+  strings and the shape of the numeric dominance indicators/set/cluster
+  structures are unchanged.
+* `NNS.TSD()` and `NNS.FSD(type = "continuous")` (and their `.uni` versions)
+  now also compare the curves at their closed-form extrema between sample
+  points, so verdicts can change where the curves cross only between knots.
+  These tests and `NNS.SSD()`/`NNS.SSD.uni()` treat differences at rounding
+  level (about 64 eps of the pooled half-range, after centring the pair on
+  its midrange) as ties, and the bidirectional `NNS.SSD()` and discrete
+  `NNS.FSD()` take their verdict from the pairwise test, so they agree with
+  their `.uni` versions. Discrete FSD still compares exact empirical CDF
+  values.
 
 ## Regression, classification, and derivatives
 

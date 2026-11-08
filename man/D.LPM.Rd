@@ -7,9 +7,9 @@
 D.LPM(degree_lpm, degree_upm, x, y, target_x, target_y)
 }
 \arguments{
-\item{degree_lpm}{numeric; LPM degree = 0 gives frequency, = 1 gives area.}
+\item{degree_lpm}{numeric; degree applied to the lower deviation of \code{y}, \code{(target_y - y)^+}; 0 gives frequency, 1 gives area. Must be a finite number \code{>= 0}.}
 
-\item{degree_upm}{numeric; UPM degree = 0 gives frequency, = 1 gives area.}
+\item{degree_upm}{numeric; degree applied to the upper deviation of \code{x}, \code{(x - target_x)^+}; 0 gives frequency, 1 gives area. Must be a finite number \code{>= 0}.}
 
 \item{x}{numeric vector of observations.}
 
@@ -23,7 +23,7 @@ D.LPM(degree_lpm, degree_upm, x, y, target_x, target_y)
 Numeric vector of divergent LPM values.
 }
 \description{
-Computes the divergent lower partial moment (lower‑right quadrant 3)
+Computes the divergent lower partial moment (lower‑right quadrant 4)
   between two equal‑length numeric vectors.
 }
 \examples{

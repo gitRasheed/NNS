@@ -22,7 +22,7 @@ Returns set of stochastic dominant variable names.
 Determines the set of stochastic dominant variables for various degrees.
 }
 \note{
-The curves are compared on the merged sample points and, for TSD and continuous area order, also at their closed-form extrema between those points. Differences smaller than \code{64 * .Machine$double.eps * S^d} (\code{S} = largest absolute value in \code{x} and \code{y}, \code{d} = 1 for SSD and the mean condition, 2 for TSD; a ratio analogue for continuous area order) are treated as ties, so that rounding noise does not decide dominance. Discrete FSD compares exact empirical CDF values.
+The curves are compared on the merged sample points and, for TSD and continuous area order, also at their closed-form extrema between those points. Both samples are first centred on \code{c}, the midpoint of their pooled range. Differences smaller than \code{64 * .Machine$double.eps * S^d}, plus an allowance of order \code{4 * .Machine$double.eps * |c| * S^(d - 1)} for the rounding of the inputs themselves (\code{S} = half the pooled range of \code{x} and \code{y}, \code{d} = 1 for SSD and the mean condition, 2 for TSD; a ratio analogue for continuous area order) are treated as ties, so that rounding noise does not decide dominance. Discrete FSD compares exact empirical CDF values.
 }
 \examples{
 \dontrun{

@@ -7,7 +7,7 @@
 Co.UPM(degree_upm, x, y, target_x, target_y, degree_y = NULL)
 }
 \arguments{
-\item{degree_upm}{numeric; degree for x ("degree_x"). degree = 0 gives frequency, degree = 1 gives area.}
+\item{degree_upm}{numeric; degree for x ("degree_x"). degree = 0 gives frequency, degree = 1 gives area. Must be a finite number \code{>= 0}.}
 
 \item{x}{numeric vector of observations.}
 
@@ -18,7 +18,7 @@ Co.UPM(degree_upm, x, y, target_x, target_y, degree_y = NULL)
 \item{target_y}{numeric vector; thresholds for y. There is no default: pass \code{NULL} to use \code{mean(y)}. \code{target_x} and \code{target_y} must be non-empty and the same length, or one of them length 1.}
 
 \item{degree_y}{numeric; optional degree for y. If omitted, `degree_upm` is
-used for both x and y.}
+used for both x and y. Must be a finite number \code{>= 0} when given.}
 }
 \value{
 Numeric vector of co‑UPM values.

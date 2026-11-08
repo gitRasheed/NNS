@@ -201,8 +201,8 @@ UPM_RCPP <- function(degree, target, variable, excess_ret) {
 #' @title Lower Partial Moment Ratio
 #' @description
 #'   This function generates a standardized univariate lower partial moment
-#'   of any non‑negative degree for a given target.
-#' @param degree numeric; degree = 0 gives frequency (CDF), degree = 1 gives area.
+#'   of any finite non‑negative degree for a given target.
+#' @param degree numeric; degree = 0 gives frequency (CDF), degree = 1 gives area. Must be a finite number \code{>= 0}.
 #' @param target numeric vector; threshold(s). There is no default: pass \code{NULL} to use \code{mean(variable)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error.
 #' @param variable numeric vector or data‑frame column to evaluate. A factor is an error.
 #' @return Numeric vector of standardized lower partial moments.
@@ -232,8 +232,8 @@ LPM.ratio <- function(degree, target, variable) {
 #' @title Upper Partial Moment Ratio
 #' @description
 #'   This function generates a standardized univariate upper partial moment
-#'   of any non‑negative degree for a given target.
-#' @param degree numeric; degree = 0 gives frequency, degree = 1 gives area.
+#'   of any finite non‑negative degree for a given target.
+#' @param degree numeric; degree = 0 gives frequency, degree = 1 gives area. Must be a finite number \code{>= 0}.
 #' @param target numeric vector; threshold(s). There is no default: pass \code{NULL} to use \code{mean(variable)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error.
 #' @param variable numeric vector or data‑frame column to evaluate. A factor is an error.
 #' @return Numeric vector of standardized upper partial moments.
@@ -267,10 +267,10 @@ CoUPM_RCPP <- function(degree_upm, x, y, target_x, target_y, degree_y) {
 #' @name D.LPM
 #' @title Divergent‑Lower Partial Moment
 #' @description
-#'   Computes the divergent lower partial moment (lower‑right quadrant 3)
+#'   Computes the divergent lower partial moment (lower‑right quadrant 4)
 #'   between two equal‑length numeric vectors.
-#' @param degree_lpm numeric; LPM degree = 0 gives frequency, = 1 gives area.
-#' @param degree_upm numeric; UPM degree = 0 gives frequency, = 1 gives area.
+#' @param degree_lpm numeric; degree applied to the lower deviation of \code{y}, \code{(target_y - y)^+}; 0 gives frequency, 1 gives area. Must be a finite number \code{>= 0}.
+#' @param degree_upm numeric; degree applied to the upper deviation of \code{x}, \code{(x - target_x)^+}; 0 gives frequency, 1 gives area. Must be a finite number \code{>= 0}.
 #' @param x numeric vector of observations.
 #' @param y numeric vector of the same length as x.
 #' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error, as are factor \code{x} or \code{y}.
@@ -293,8 +293,8 @@ D.LPM <- function(degree_lpm, degree_upm, x, y, target_x, target_y) {
 #' @description
 #'   Computes the divergent upper partial moment (upper‑left quadrant 2)
 #'   between two equal‑length numeric vectors.
-#' @param degree_lpm numeric; LPM degree = 0 gives frequency, = 1 gives area.
-#' @param degree_upm numeric; UPM degree = 0 gives frequency, = 1 gives area.
+#' @param degree_lpm numeric; degree applied to the lower deviation of \code{x}, \code{(target_x - x)^+}; 0 gives frequency, 1 gives area. Must be a finite number \code{>= 0}.
+#' @param degree_upm numeric; degree applied to the upper deviation of \code{y}, \code{(y - target_y)^+}; 0 gives frequency, 1 gives area. Must be a finite number \code{>= 0}.
 #' @param x numeric vector of observations.
 #' @param y numeric vector of the same length as x.
 #' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error, as are factor \code{x} or \code{y}.

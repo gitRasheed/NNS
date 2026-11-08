@@ -86,7 +86,7 @@ UPM <- function(degree, target, variable, excess_ret = FALSE) {
 #'
 #' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row. A factor column is an error.
 #' @param target A numeric vector, length equal to ncol(data).
-#' @param degree numeric; degree for lower deviations (0 = frequency, 1 = area).
+#' @param degree numeric; degree for lower deviations (0 = frequency, 1 = area). Must be a finite number \code{>= 0}.
 #' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}. At \code{degree > 0} the total is 0 (0/0) when every observation ties the target in at least one coordinate (for example a constant column equal to its target); the result is then the \code{degree = 0} value, as \code{LPM.ratio} does for a constant variable, so the three normalised values still sum to 1. The ratio is scale-free: a total that underflows or overflows at high degree or extreme scale is recomputed on per-column rescaled deviations instead of returning 0 or \code{NaN}.
 #' @return Numeric; the n‑dimensional co‑lower partial moment.
 #' @examples
@@ -140,7 +140,7 @@ Co.LPM_nD.batch <- function(data, targets, degree = 0.0, norm = TRUE, upper = FA
 #'
 #' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row. A factor column is an error.
 #' @param target A numeric vector, length equal to ncol(data).
-#' @param degree numeric; degree for upper deviations (0 = frequency, 1 = area).
+#' @param degree numeric; degree for upper deviations (0 = frequency, 1 = area). Must be a finite number \code{>= 0}.
 #' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}. At \code{degree > 0} the total is 0 (0/0) when every observation ties the target in at least one coordinate (for example a constant column equal to its target); the result is then the \code{degree = 0} value, as \code{LPM.ratio} does for a constant variable, so the three normalised values still sum to 1. The ratio is scale-free: a total that underflows or overflows at high degree or extreme scale is recomputed on per-column rescaled deviations instead of returning 0 or \code{NaN}.
 #' @return Numeric; the n‑dimensional co‑upper partial moment.
 #' @examples
@@ -169,7 +169,7 @@ Co.UPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
 #'
 #' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row. A factor column is an error.
 #' @param target A numeric vector, length equal to ncol(data).
-#' @param degree numeric; degree for upper deviations (0 = frequency, 1 = area).
+#' @param degree numeric; degree applied to the absolute deviations \code{|x - target|} in every coordinate of each discordant observation (0 = frequency, 1 = area). Must be a finite number \code{>= 0}.
 #' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}. At \code{degree > 0} the total is 0 (0/0) when every observation ties the target in at least one coordinate (for example a constant column equal to its target); the result is then the \code{degree = 0} value, as \code{LPM.ratio} does for a constant variable, so the three normalised values still sum to 1. The ratio is scale-free: a total that underflows or overflows at high degree or extreme scale is recomputed on per-column rescaled deviations instead of returning 0 or \code{NaN}.
 #' @return Numeric; the n-dimensional divergent partial moment.
 #' @examples
@@ -198,14 +198,14 @@ DPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
 #' This function generates an empirical CDF using partial moment ratios \link{LPM.ratio}, and resulting survival, hazard and cumulative hazard functions.
 #'
 #' @param variable a numeric vector, a one-column data.frame or matrix (univariate), or a data.frame or matrix of >= 2 variables for joint CDF. A factor is an error.
-#' @param degree numeric; \code{(degree = 0)} (default) is frequency, the empirical distribution of \code{variable}; \code{(degree = 1)} is area, the share of deviation area below each point, which is not \eqn{P(X \le t)}.
-#' @param target numeric; \code{NULL} (default) Must be finite and lie within support of each variable. For univariate \code{variable} a vector of targets is evaluated element-wise; for multivariate \code{variable} give one value per column.
-#' @param type options("CDF", "survival", "hazard", "cumulative hazard"); \code{"CDF"} (default) Selects type of function to return.  For multivariate \code{variable} the joint survival is \eqn{P(X_1 > t_1, \ldots, X_d > t_d)} at \code{degree = 0}, by inclusion-exclusion over the column subsets for \eqn{d \le 3} and as the share of observations above \eqn{t} in every column for larger \eqn{d}, and the joint upper partial moment \link{Co.UPM_nD} at \code{degree > 0}, normalised like the CDF.  The multivariate cumulative hazard is the transform \eqn{-\log S(t)} and requires \code{degree = 0}; it is not automatically an integral of a scalar multivariate hazard. Multivariate \code{type = "hazard"} is unsupported and raises an error: a joint density-over-survival or a coordinate-hazard definition requires a separate estimator, and dividing the joint CDF by survival does not estimate either.  At \code{degree > 0} with two or more columns, each target's co-partial moment is normalised by its own total, so the "CDF" and "survival" values are generalised co-partial-moment ratios, not a joint distribution function: they can assign a negative probability to a rectangle. A target with a zero total (every observation ties it in some coordinate, as with a constant column) takes the \code{degree = 0} value, as in \link{Co.LPM_nD} and \link{Co.UPM_nD}.  At \code{degree = 0}, and in one dimension at any degree, they are proper distribution functions; at positive degree the univariate induced law describes deviation-area balance rather than the frequency law of the original variable.
+#' @param degree numeric; \code{(degree = 0)} (default) is frequency, the empirical distribution of \code{variable}; \code{(degree = 1)} is area, the share of deviation area below each point, which is not \eqn{P(X \le t)}. Must be a finite number \code{>= 0}.
+#' @param target numeric; \code{NULL} (default) evaluates no target, and \code{target.value} is then \code{numeric(0)}. Otherwise must be finite and lie within the support of each variable; a target outside it is an error. For univariate \code{variable} a vector of targets is evaluated element-wise; for multivariate \code{variable} give one value per column.
+#' @param type options("CDF", "survival", "hazard", "cumulative hazard"); \code{"CDF"} (default) Selects type of function to return.  For multivariate \code{variable} the joint survival is \eqn{P(X_1 > t_1, \ldots, X_d > t_d)} at \code{degree = 0}, by inclusion-exclusion over the column subsets for \eqn{d \le 3} and as the share of observations above \eqn{t} in every column for larger \eqn{d}, and the joint upper partial moment \link{Co.UPM_nD} at \code{degree > 0}, normalised like the CDF.  The multivariate cumulative hazard is the transform \eqn{-\log S(t)} and requires \code{degree = 0}; it is not automatically an integral of a scalar multivariate hazard. Multivariate \code{type = "hazard"} is unsupported and raises an error: a joint density-over-survival or a coordinate-hazard definition requires a separate estimator, and dividing the joint CDF by survival does not estimate either.  At \code{degree > 0} with two or more columns, each target's co-partial moment is normalised by its own total, so the "CDF" and "survival" values are generalised co-partial-moment ratios, not a joint distribution function: they can assign a negative probability to a rectangle. A target with a zero total (every observation ties it in some coordinate, as with a constant column) takes the \code{degree = 0} value, as in \link{Co.LPM_nD} and \link{Co.UPM_nD}.  At \code{degree = 0}, and in one dimension at any degree, they are proper distribution functions; at positive degree the univariate induced law describes deviation-area balance rather than the frequency law of the original variable.  For univariate \code{variable}, \code{"hazard"} is a smoothed estimate: a windowed difference quotient of the CDF (a density proxy) is fitted with \code{NNS.reg} and divided by the survival function, and the result is clamped to \code{[0, 1e6]}; it requires at least two distinct values of \code{variable}. Survival is floored at \code{1e-10} before dividing and before taking \code{-log}, so where the survival is 0 (at the sample maximum) the hazard is the fitted proxy divided by \code{1e-10} (usually the cap \code{1e6}) and the cumulative hazard is \code{-log(1e-10)}.
 #' @param plot logical; plots CDF.
 #' @return Returns:
 #' \itemize{
 #'  \item{\code{"Function"}} a data.frame (class \code{NNS.data.frame}) containing the observations and the resulting function of the variable.
-#'  \item{\code{"target.value"}} value from the \code{target} argument.
+#'  \item{\code{"target.value"}} the selected function (CDF, survival, hazard or cumulative hazard) evaluated at \code{target}; \code{numeric(0)} when \code{target = NULL}.
 #' }
 #' @author Fred Viole, OVVO Financial Systems
 #' @references Viole, F. and Nawrocki, D. (2013) "Nonlinear Nonparametric Statistics: Using Partial Moments" (ISBN: 1490523995, 2nd edition: \url{https://ovvo-financial.github.io/NNS/book/})
@@ -482,7 +482,7 @@ NNS.CDF <- function(variable,
 #' This function returns the first 4 moments of the distribution.
 #'
 #' @param x a numeric vector. A factor is an error.
-#' @param population logical; \code{TRUE} (default) returns the population (unadjusted) statistics. \code{FALSE} returns the sample-adjusted statistics (variance with \code{n - 1}, sample skewness and sample excess kurtosis).
+#' @param population logical; \code{TRUE} (default) returns the population (unadjusted) statistics. \code{FALSE} returns the sample-adjusted statistics (variance with \code{n - 1}, the adjusted Fisher-Pearson sample skewness \eqn{G_1} and sample excess kurtosis \eqn{G_2}).
 #' @return Returns:
 #' \itemize{
 #'  \item{\code{"$mean"}} mean of the distribution.
@@ -550,8 +550,8 @@ NNS.moments <- function(x, population = TRUE) {
 #' @name PM.matrix
 #' @title Partial Moment Matrix
 #' @description Builds a list containing CUPM, DUPM, DLPM, CLPM and the overall covariance matrix.
-#' @param LPM_degree numeric; lower partial moment degree (0 = freq, 1 = area).
-#' @param UPM_degree numeric; upper partial moment degree (0 = freq, 1 = area).
+#' @param LPM_degree numeric; lower partial moment degree (0 = freq, 1 = area). Must be a finite number \code{>= 0}.
+#' @param UPM_degree numeric; upper partial moment degree (0 = freq, 1 = area). Must be a finite number \code{>= 0}.
 #' @param target numeric vector; thresholds for each column. There is no default: pass \code{NULL} to use the column means, computed in compiled code as a sequential double-precision sum divided by \code{nrow(variable)}, which can differ from \code{colMeans(variable)} in the last bit; a constant column uses its value, so every row ties its target exactly. The strings \code{"mean"} and \code{"means"} are accepted as legacy aliases for \code{NULL}; any other non-numeric target is an error.
 #' @param variable numeric matrix or data.frame with at least one row.
 #' @param pop_adj logical; \code{TRUE} applies the sample adjustment \code{n / (n - 1)} to the co-/divergent moments (with both degrees 1, \code{target = NULL} and \code{norm = FALSE}, the covariance matrix then equals \code{cov()}). It is ignored when either degree is 0.
@@ -593,15 +593,15 @@ PM.matrix <- function(LPM_degree, UPM_degree, target, variable, pop_adj, norm = 
 #' @name Co.LPM
 #' @title Co‑Lower Partial Moment
 #' @description
-#'   Computes the co‑lower partial moment (lower‑left quadrant 4) between two
+#'   Computes the co‑lower partial moment (lower‑left quadrant 3) between two
 #'   equal‑length numeric vectors at any degree and target.
-#' @param degree_lpm numeric; degree for x ("degree_x"). degree = 0 gives frequency, degree = 1 gives area.
+#' @param degree_lpm numeric; degree for x ("degree_x"). degree = 0 gives frequency, degree = 1 gives area. Must be a finite number \code{>= 0}.
 #' @param x numeric vector of observations.
 #' @param y numeric vector of the same length as x.
 #' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error, as are factor \code{x} or \code{y}.
 #' @param target_y numeric vector; thresholds for y. There is no default: pass \code{NULL} to use \code{mean(y)}. \code{target_x} and \code{target_y} must be non-empty and the same length, or one of them length 1.
 #' @param degree_y numeric; optional degree for y. If omitted, `degree_lpm` is
-#'   used for both x and y.
+#'   used for both x and y. Must be a finite number \code{>= 0} when given.
 #' @return Numeric vector of co‑LPM values.
 #' @author Fred Viole, OVVO Financial Systems
 #' @references
@@ -624,13 +624,13 @@ Co.LPM <- function(degree_lpm, x, y, target_x, target_y, degree_y = NULL) {
 #' @description
 #'   Computes the co‑upper partial moment (upper‑right quadrant 1) between two
 #'   equal‑length numeric vectors at any degree and target.
-#' @param degree_upm numeric; degree for x ("degree_x"). degree = 0 gives frequency, degree = 1 gives area.
+#' @param degree_upm numeric; degree for x ("degree_x"). degree = 0 gives frequency, degree = 1 gives area. Must be a finite number \code{>= 0}.
 #' @param x numeric vector of observations.
 #' @param y numeric vector of the same length as x.
 #' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error, as are factor \code{x} or \code{y}.
 #' @param target_y numeric vector; thresholds for y. There is no default: pass \code{NULL} to use \code{mean(y)}. \code{target_x} and \code{target_y} must be non-empty and the same length, or one of them length 1.
 #' @param degree_y numeric; optional degree for y. If omitted, `degree_upm` is
-#'   used for both x and y.
+#'   used for both x and y. Must be a finite number \code{>= 0} when given.
 #' @return Numeric vector of co‑UPM values.
 #' @author Fred Viole, OVVO Financial Systems
 #' @references

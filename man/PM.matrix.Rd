@@ -7,9 +7,9 @@
 PM.matrix(LPM_degree, UPM_degree, target, variable, pop_adj, norm = FALSE)
 }
 \arguments{
-\item{LPM_degree}{numeric; lower partial moment degree (0 = freq, 1 = area).}
+\item{LPM_degree}{numeric; lower partial moment degree (0 = freq, 1 = area). Must be a finite number \code{>= 0}.}
 
-\item{UPM_degree}{numeric; upper partial moment degree (0 = freq, 1 = area).}
+\item{UPM_degree}{numeric; upper partial moment degree (0 = freq, 1 = area). Must be a finite number \code{>= 0}.}
 
 \item{target}{numeric vector; thresholds for each column. There is no default: pass \code{NULL} to use the column means, computed in compiled code as a sequential double-precision sum divided by \code{nrow(variable)}, which can differ from \code{colMeans(variable)} in the last bit; a constant column uses its value, so every row ties its target exactly. The strings \code{"mean"} and \code{"means"} are accepted as legacy aliases for \code{NULL}; any other non-numeric target is an error.}
 
