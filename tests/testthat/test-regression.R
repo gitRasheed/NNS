@@ -368,7 +368,7 @@ test_that("REG04: regression or classification: REG keeps numeric binary respons
     f <- NNS.reg(x, y, type = "CLASS", order = 2, plot = FALSE)
     expect_true(all(f$Fitted.xy$y.hat[1:4] %in% c(1, 3)))
   })
-  aud_case("categorical NNS.reg honours an explicit n.best", {
+  aud_case("categorical NNS.reg honours an explicit n.best (#150)", {
     x <- data.frame(a = factor(c("a", "a", "b")), b = factor(c("u", "v", "u")))
     q <- data.frame(a = "b", b = "v")   # an unobserved joint combination
     est <- function(nb) NNS.reg(x, c(0, 10, 20), point.est = q, n.best = nb,

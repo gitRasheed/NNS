@@ -237,7 +237,7 @@ test_that("ARMA06: NNS.ARMA.optim reports the score of the validation forecast i
     expect_equal(x$applied.shift, 0)
     expect_equal(x$status, "insufficient_validation")
   })
-  aud_case("NNS.ARMA.optim adds no bias shift by default", {
+  aud_case("NNS.ARMA.optim adds no bias shift by default (#150)", {
     expect_identical(eval(formals(NNS.ARMA.optim)$bias.correction), c("none", "split"))
     # The same-window rule (estimate and accept on one window) is not offered.
     expect_error(NNS.ARMA.optim(as.numeric(AirPassengers[1:96]), h = 12, seasonal.factor = 12,

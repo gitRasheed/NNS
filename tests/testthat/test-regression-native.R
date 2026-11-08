@@ -409,7 +409,7 @@ test_that("MREG04: distance modes: NULL is NNS, NNS differs from L1 and L2, R an
       "distance code"
     )
   })
-  aud_case("bulk distance wrappers match an unnamed matrix by position", {
+  aud_case("bulk distance wrappers match an unnamed matrix by position (#150)", {
     rpm <- data.frame(X1 = c(0, 1, 0, 1), X2 = c(0, 0, 1, 1), y.hat = c(1, 2, 3, 4))
     q <- matrix(c(.2, .9, .1, .8), 2)
     expect_equal(NNS:::NNS.distance.bulk(rpm, q, 2),

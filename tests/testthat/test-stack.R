@@ -118,7 +118,7 @@ test_that("STK03: inputs: character responses and predictors, duplicate predicto
       NA
     )
   })
-  aud_case("a declared factor level with no training rows is a valid test value", {
+  aud_case("a declared factor level with no training rows is a valid test value (#150)", {
     x <- data.frame(g = factor(c(rep(c("a", "b"), 19), "a", "rare")))
     y <- factor(rep(c("L", "R"), 20))
     fit <- NNS.boost(x, y, ts.test = 8, learner.trials = 1, epochs = 0,
@@ -150,7 +150,7 @@ test_that("STK03: inputs: character responses and predictors, duplicate predicto
     expect_error(NNS.reg(data.frame(g = c("a", "b", "a", "b")), c(1, 2, 1, 2),
       point.est = data.frame(g = "c"), plot = FALSE), "unseen level")
   })
-  aud_case("stack accepts a single test row with a factor predictor", {
+  aud_case("stack accepts a single test row with a factor predictor (#150)", {
     # vapply() returned the one-row dummy block as a vector, which was then
     # reshaped into one column per row instead of one row.
     g <- factor(rep(c("a", "b"), 20))
@@ -161,7 +161,7 @@ test_that("STK03: inputs: character responses and predictors, duplicate predicto
     expect_length(fit$stack, 1)
     expect_true(abs(fit$stack - 1.5) < .25)
   })
-  aud_case("stack keeps the same method 1 columns when a fold has a constant predictor", {
+  aud_case("stack keeps the same method 1 columns when a fold has a constant predictor (#150)", {
     # b is constant in the first chronological training fold, so its fold
     # coefficient is 0. Dropping it gave that fold a univariate design with no
     # neighbour counts to tune, and the stack stopped.
@@ -277,7 +277,7 @@ test_that("STK04: scoring: ALL candidates, single-predictor n.best and OBJfn.reg
     s <- pmax(c(b$OBJfn.reg, b$OBJfn.dim.red), 1e-10)
     expect_equal(unname(b$weights), (1 / s^2) / sum(1 / s^2))
   })
-  aud_case("class probabilities over a neighbour-count path equal separate fits", {
+  aud_case("class probabilities over a neighbour-count path equal separate fits (#150)", {
     set.seed(11)
     X <- cbind(u = round(runif(120), 1), v = round(runif(120), 1))  # tied distances
     cls <- sample(1:3, 120, TRUE)

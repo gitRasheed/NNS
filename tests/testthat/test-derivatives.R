@@ -98,7 +98,7 @@ test_that("DER02: dy.d_: stencils in support, discrete and constant conventions,
     expect_lt(abs(mean(r[r <= 10000] %% 2) - 0.5), 0.01)
     expect_identical(NNS:::.nns_spread_rows(50, 80), 1:50)
   })
-  aud_case("dy.d_ accepts a one-column data frame of evaluation points", {
+  aud_case("dy.d_ accepts a one-column data frame of evaluation points (#150)", {
     set.seed(1)
     x <- cbind(a = runif(200, -1, 1), b = runif(200, -1, 1))
     y <- x[, 1]^2 + x[, 2]
