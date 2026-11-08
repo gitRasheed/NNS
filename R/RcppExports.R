@@ -161,8 +161,8 @@ NNS_reg_points_cpp <- function(x_, y_, rpx_, rpy_, dependence, stn) {
     .Call(`_NNS_NNS_reg_points_cpp`, x_, y_, rpx_, rpy_, dependence, stn)
 }
 
-CoLPM_nD_batch_RCPP <- function(data, targets, degree = 0.0, norm = TRUE) {
-    .Call(`_NNS_CoLPM_nD_batch_RCPP`, data, targets, degree, norm)
+CoLPM_nD_batch_RCPP <- function(data, targets, degree = 0.0, norm = TRUE, upper = FALSE) {
+    .Call(`_NNS_CoLPM_nD_batch_RCPP`, data, targets, degree, norm, upper)
 }
 
 LPM_CPv <- function(degree, target, variable) {
@@ -203,9 +203,11 @@ UPM_RCPP <- function(degree, target, variable, excess_ret) {
 #'   This function generates a standardized univariate lower partial moment
 #'   of any non‑negative degree for a given target.
 #' @param degree numeric; degree = 0 gives frequency (CDF), degree = 1 gives area.
-#' @param target numeric vector; threshold(s). There is no default: pass \code{NULL} to use \code{mean(variable)}.
-#' @param variable numeric vector or data‑frame column to evaluate.
-#' @return Numeric vector of standardized lower partial moments. For
+#' @param target numeric vector; threshold(s). There is no default: pass \code{NULL} to use \code{mean(variable)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error.
+#' @param variable numeric vector or data‑frame column to evaluate. A factor is an error.
+#' @return Numeric vector of standardized lower partial moments.
+#'   The ratio is scale-free: where the raw sums underflow or overflow (high \code{degree}, or deviations of extreme magnitude) it is recomputed on deviations divided by \code{max(abs(variable - target))}, so it is not \code{NaN}.
+#'   For
 #'   \code{degree > 0}, a target at which every observation equals the target
 #'   (0/0) returns the \code{degree = 0} ratio.
 #' @author Fred Viole, OVVO Financial Systems
@@ -232,9 +234,11 @@ LPM.ratio <- function(degree, target, variable) {
 #'   This function generates a standardized univariate upper partial moment
 #'   of any non‑negative degree for a given target.
 #' @param degree numeric; degree = 0 gives frequency, degree = 1 gives area.
-#' @param target numeric vector; threshold(s). There is no default: pass \code{NULL} to use \code{mean(variable)}.
-#' @param variable numeric vector or data‑frame column to evaluate.
-#' @return Numeric vector of standardized upper partial moments. For
+#' @param target numeric vector; threshold(s). There is no default: pass \code{NULL} to use \code{mean(variable)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error.
+#' @param variable numeric vector or data‑frame column to evaluate. A factor is an error.
+#' @return Numeric vector of standardized upper partial moments.
+#'   The ratio is scale-free: where the raw sums underflow or overflow (high \code{degree}, or deviations of extreme magnitude) it is recomputed on deviations divided by \code{max(abs(variable - target))}, so it is not \code{NaN}.
+#'   For
 #'   \code{degree > 0}, a target at which every observation equals the target
 #'   (0/0) returns the \code{degree = 0} ratio.
 #' @author Fred Viole, OVVO Financial Systems
@@ -269,7 +273,7 @@ CoUPM_RCPP <- function(degree_upm, x, y, target_x, target_y, degree_y) {
 #' @param degree_upm numeric; UPM degree = 0 gives frequency, = 1 gives area.
 #' @param x numeric vector of observations.
 #' @param y numeric vector of the same length as x.
-#' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}.
+#' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error, as are factor \code{x} or \code{y}.
 #' @param target_y numeric vector; thresholds for y. There is no default: pass \code{NULL} to use \code{mean(y)}. \code{target_x} and \code{target_y} must be non-empty and the same length, or one of them length 1.
 #' @return Numeric vector of divergent LPM values.
 #' @author Fred Viole, OVVO Financial Systems
@@ -293,7 +297,7 @@ D.LPM <- function(degree_lpm, degree_upm, x, y, target_x, target_y) {
 #' @param degree_upm numeric; UPM degree = 0 gives frequency, = 1 gives area.
 #' @param x numeric vector of observations.
 #' @param y numeric vector of the same length as x.
-#' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}.
+#' @param target_x numeric vector; thresholds for x. There is no default: pass \code{NULL} to use \code{mean(x)}. A logical target is coerced (\code{NA} is not finite); a character, list or factor target is an error, as are factor \code{x} or \code{y}.
 #' @param target_y numeric vector; thresholds for y. There is no default: pass \code{NULL} to use \code{mean(y)}. \code{target_x} and \code{target_y} must be non-empty and the same length, or one of them length 1.
 #' @return Numeric vector of divergent UPM values.
 #' @author Fred Viole, OVVO Financial Systems

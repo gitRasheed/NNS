@@ -139,10 +139,12 @@ test_that("LPM.ratio on the prefix path is 0, not NaN, when only the upper sum o
   expect_identical(LPM.ratio(4, c(-1e-170, pad), y)[1], 0)
 })
 
-test_that("UPM.ratio stays NaN (Inf/Inf) on the prefix path when the upper sum overflows", {
+test_that("UPM.ratio on the prefix path is 1, not NaN (Inf/Inf), when the upper sum overflows", {
+  # Every observation lies above the target, so U/(L+U) = 1 exactly; the
+  # overflowed raw sums are recomputed on deviations scaled by max|x - t|.
   y <- c(0, 1e200)
   expect_identical(UPM.ratio(4, c(-1e-170, pad), y)[1], UPM.ratio(4, -1e-170, y))
-  expect_identical(UPM.ratio(4, c(-1e-170, pad), y)[1], NaN)
+  expect_identical(UPM.ratio(4, c(-1e-170, pad), y)[1], 1)
 })
 
 test_that("univariate NNS.CDF over 32 observations has no NaN when a power sum overflows", {

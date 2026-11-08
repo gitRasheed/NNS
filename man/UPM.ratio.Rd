@@ -14,7 +14,7 @@ UPM.ratio(degree, target, variable)
 \item{variable}{numeric vector or data‑frame column to evaluate. A factor is an error.}
 }
 \value{
-Numeric vector of standardized upper partial moments. For
+Numeric vector of standardized upper partial moments. The ratio is scale-free: where the raw sums underflow or overflow (high \code{degree}, or deviations of extreme magnitude) it is recomputed on deviations divided by \code{max(abs(variable - target))}, so it is not \code{NaN}. For
   \code{degree > 0}, a target at which every observation equals the target
   (0/0) returns the \code{degree = 0} ratio.
 }

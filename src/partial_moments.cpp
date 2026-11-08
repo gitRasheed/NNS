@@ -2,7 +2,10 @@
 // [[Rcpp::depends(RcppParallel)]]
 #include <Rcpp.h>
 #include <RcppParallel.h>
+#include <cfloat>
 #include <cmath>
+#include <limits>
+#include <vector>
 #include "partial_moments.h"
 
 using namespace Rcpp;
@@ -20,6 +23,15 @@ static inline void nns_parallel_for(std::size_t begin, std::size_t end, W& worke
   if (end <= begin) return;
   if (work < NNS_SERIAL_WORK) worker(begin, end);
   else parallelFor(begin, end, worker);
+}
+
+// A partial-moment total below this (or non-finite) has lost relative precision
+// to underflow, or overflowed: terms below DBL_MIN are denormal or zero, so the
+// total is only accurate to about n * DBL_MIN in absolute terms.
+static const double NNS_SAFE_TOTAL = DBL_MIN / DBL_EPSILON;
+
+static inline bool nns_unsafe_total(double total) {
+  return !(total >= NNS_SAFE_TOTAL && total <= DBL_MAX);
 }
 
 static inline double lower_component(double diff, double degree, bool degree_is_int) {
@@ -234,6 +246,76 @@ struct DpmSumWorker : public Worker {
   }
 };
 
+// Normalized nD partial moments (CLPM, CUPM, DPM) / (CLPM + CUPM + DPM) for a
+// target whose plain total is unsafe (zero, under- or overflowed). Pure C++ with
+// no R API, so the batch worker can call it.
+//
+// For degree > 0 a row contributes to none of the three cells iff it ties the
+// target in some column. If every row ties, the total is exactly 0 (0/0): return
+// the degree-0 cells (inclusive all-below, strict all-above, the rest), as
+// LPM.ratio does for a constant variable; they partition the sample. Otherwise
+// the zero or non-finite total is under/overflow: divide column j's deviations by
+// s_j = max_i |x_ij - t_j| (the cells are invariant to per-column scale) and, if
+// the products still underflow, sum them in the log domain.
+static void nD_normalized_rescue(const RMatrix<double> &data, const double *t,
+                                 const double degree, double out[3]) {
+  const std::size_t n = data.nrow(), d = data.ncol();
+  std::vector<double> s(d, 0.0);
+  for (std::size_t j = 0; j < d; ++j)
+    for (std::size_t i = 0; i < n; ++i)
+      s[j] = std::max(s[j], std::fabs(data(i, j) - t[j]));
+  
+  // cell: 0 = CLPM (all below), 1 = CUPM (all above), 2 = DPM, -1 = tied row.
+  std::vector<int> cell(n);
+  std::vector<double> logterm(n);
+  double direct[3] = {0.0, 0.0, 0.0};
+  double c0[3] = {0.0, 0.0, 0.0};
+  double max_log = -std::numeric_limits<double>::infinity();
+  bool any_untied = false;
+  for (std::size_t i = 0; i < n; ++i) {
+    bool all_le = true, all_gt = true, all_lt = true, tied = false;
+    double prod = 1.0, lsum = 0.0;
+    for (std::size_t j = 0; j < d; ++j) {
+      const double diff = data(i, j) - t[j];
+      if (diff > 0.0) all_le = false;
+      if (diff <= 0.0) all_gt = false;
+      if (diff >= 0.0) all_lt = false;
+      if (diff == 0.0) { tied = true; continue; }
+      const double z = std::fabs(diff) / s[j];
+      prod *= std::pow(z, degree);
+      lsum += std::log(z);
+    }
+    c0[all_le ? 0 : (all_gt ? 1 : 2)] += 1.0;
+    if (tied) { cell[i] = -1; continue; }
+    any_untied = true;
+    cell[i] = all_lt ? 0 : (all_gt ? 1 : 2);
+    direct[cell[i]] += prod;
+    logterm[i] = degree * lsum;
+    max_log = std::max(max_log, logterm[i]);
+  }
+  
+  if (!any_untied) {
+    for (int k = 0; k < 3; ++k) out[k] = c0[k] / double(n);
+    return;
+  }
+  double total = direct[0] + direct[1] + direct[2];
+  if (nns_unsafe_total(total)) {
+    direct[0] = direct[1] = direct[2] = 0.0;
+    for (std::size_t i = 0; i < n; ++i)
+      if (cell[i] >= 0) direct[cell[i]] += std::exp(logterm[i] - max_log);
+    total = direct[0] + direct[1] + direct[2];
+  }
+  for (int k = 0; k < 3; ++k) out[k] = direct[k] / total;
+}
+
+static inline double nD_normalized_rescue_cell(const NumericMatrix &data,
+                                               const NumericVector &target,
+                                               const double degree, const int k) {
+  double out[3];
+  nD_normalized_rescue(RMatrix<double>(data), &target[0], degree, out);
+  return out[k];
+}
+
 double clpm_nD_cpp(const NumericMatrix& data,
                    const NumericVector& target,
                    double degree,
@@ -260,7 +342,9 @@ double clpm_nD_cpp(const NumericMatrix& data,
     double cupm_un = cupm_nD_cpp(data, target, degree, false);
     double dpm_un  = dpm_nD_cpp(data, target, degree, false);
     double norm_const = clpm_un + cupm_un + dpm_un;
-    result = norm_const > 0.0 ? (clpm_un / norm_const) : 0.0;
+    result = nns_unsafe_total(norm_const)
+      ? nD_normalized_rescue_cell(data, target, degree, 0)
+      : clpm_un / norm_const;
   }
   return result;
 }
@@ -291,7 +375,9 @@ double cupm_nD_cpp(const NumericMatrix& data,
     double clpm_un = clpm_nD_cpp(data, target, degree, false);
     double dpm_un  = dpm_nD_cpp(data, target, degree, false);
     double norm_const = clpm_un + cupm_un + dpm_un;
-    result = norm_const > 0.0 ? (cupm_un / norm_const) : 0.0;
+    result = nns_unsafe_total(norm_const)
+      ? nD_normalized_rescue_cell(data, target, degree, 1)
+      : cupm_un / norm_const;
   }
   return result;
 }
@@ -322,7 +408,9 @@ double dpm_nD_cpp(const NumericMatrix& data,
     double clpm_un = clpm_nD_cpp(data, target, degree, false);
     double cupm_un = cupm_nD_cpp(data, target, degree, false);
     double norm_const = clpm_un + cupm_un + dpm_un;
-    result = norm_const > 0.0 ? (dpm_un / norm_const) : 0.0;
+    result = nns_unsafe_total(norm_const)
+      ? nD_normalized_rescue_cell(data, target, degree, 2)
+      : dpm_un / norm_const;
   }
   return result;
 }
@@ -336,7 +424,7 @@ double dpm_nD_cpp(const NumericMatrix& data,
 // in one C++ call.  This replaces the R-side pattern:
 //   apply(variable, 1, function(row) Co.LPM_nD(variable, row, degree = degree))
 //
-// Semantics match clpm_nD_cpp():
+// Semantics match clpm_nD_cpp() (cupm_nD_cpp() with upper = true):
 //   degree == 0 returns the raw lower-count probability, regardless of norm.
 //   degree  > 0 returns raw CLPM if norm = false.
 //   degree  > 0 returns CLPM / (CLPM + CUPM + DPM) if norm = true.
@@ -346,6 +434,7 @@ struct CoLPMnDBatchWorker : public Worker {
   const RMatrix<double> targets;
   const double degree;
   const bool norm;
+  const bool upper;
   const bool degree_is_int;
   RVector<double> output;
   
@@ -353,11 +442,13 @@ struct CoLPMnDBatchWorker : public Worker {
                      const NumericMatrix& targets_,
                      double degree_,
                      bool norm_,
+                     bool upper_,
                      NumericVector& output_)
     : data(data_),
       targets(targets_),
       degree(degree_),
       norm(norm_),
+      upper(upper_),
       degree_is_int(nns_is_integer_degree(degree_)),
       output(output_) {}
   
@@ -376,7 +467,8 @@ struct CoLPMnDBatchWorker : public Worker {
           bool below_all = true;
           
           for (std::size_t j = 0; j < d; ++j) {
-            if (data(i, j) > targets(r, j)) {
+            // Inclusive below for CLPM, strictly above for CUPM.
+            if (upper ? data(i, j) <= targets(r, j) : data(i, j) > targets(r, j)) {
               below_all = false;
               break;
             }
@@ -429,15 +521,24 @@ struct CoLPMnDBatchWorker : public Worker {
       
       const double inv_n = 1.0 / static_cast<double>(n_obs);
       const double clpm_un = clpm_sum * inv_n;
+      const double cupm_un = cupm_sum * inv_n;
+      const double num_un = upper ? cupm_un : clpm_un;
       
       if (!norm) {
-        output[r] = clpm_un;
+        output[r] = num_un;
       } else {
-        const double cupm_un = cupm_sum * inv_n;
         const double dpm_un  = dpm_sum  * inv_n;
         const double norm_const = clpm_un + cupm_un + dpm_un;
         
-        output[r] = norm_const > 0.0 ? clpm_un / norm_const : 0.0;
+        if (nns_unsafe_total(norm_const)) {
+          std::vector<double> t_row(d);
+          for (std::size_t j = 0; j < d; ++j) t_row[j] = targets(r, j);
+          double cells[3];
+          nD_normalized_rescue(data, t_row.data(), degree, cells);
+          output[r] = cells[upper ? 1 : 0];
+        } else {
+          output[r] = num_un / norm_const;
+        }
       }
     }
   }
@@ -448,7 +549,8 @@ struct CoLPMnDBatchWorker : public Worker {
 NumericVector CoLPM_nD_batch_RCPP(const NumericMatrix& data,
                                   const NumericMatrix& targets,
                                   double degree = 0.0,
-                                  bool norm = true) {
+                                  bool norm = true,
+                                  bool upper = false) {
   nns_check_degree(degree, "degree");
   if (data.ncol() != targets.ncol()) {
     stop("`targets` must have the same number of columns as `data`");
@@ -460,7 +562,7 @@ NumericVector CoLPM_nD_batch_RCPP(const NumericMatrix& data,
   
   NumericVector output(targets.nrow());
   
-  CoLPMnDBatchWorker worker(data, targets, degree, norm, output);
+  CoLPMnDBatchWorker worker(data, targets, degree, norm, upper, output);
   nns_parallel_for(0, targets.nrow(), worker,
                    double(targets.nrow()) * double(data.nrow()) * double(data.ncol()));
   
@@ -519,12 +621,51 @@ NumericVector UPM_CPv(const double &degree,
   NNS_LPM_UPM_PARALLEL_FOR_FUNC(UPM_Worker);
 }
 
+// L/(L+U) is scale-free, but the raw sums of |x - t|^degree under- or overflow
+// for small or large deviations at high degree (0/0 or Inf/Inf = NaN). For each
+// such target, recompute with deviations divided by s = max|x - t|: the largest
+// term is then exactly 1, so the total is at least 1 and finite. Targets with a
+// safe total are left untouched; s == 0 (every observation equals the target)
+// is left as computed, for fill_degenerate_ratio.
+static NumericVector rescale_unsafe_ratio(NumericVector lpm, NumericVector upm,
+                                          const double degree,
+                                          const NumericVector &target,
+                                          const NumericVector &variable,
+                                          const bool lower) {
+  const R_xlen_t n = variable.size();
+  NumericVector out = (lower ? lpm : upm) / (lpm + upm);
+  if (n == 0) return out;
+  bool have_range = false;
+  double vmin = 0.0, vmax = 0.0;
+  for (R_xlen_t i = 0; i < out.size(); ++i) {
+    if (!nns_unsafe_total(lpm[i] + upm[i])) continue;
+    if (!have_range) {
+      vmin = vmax = variable[0];
+      for (R_xlen_t j = 1; j < n; ++j) {
+        vmin = std::min(vmin, variable[j]);
+        vmax = std::max(vmax, variable[j]);
+      }
+      have_range = true;
+    }
+    const double t = target[i];
+    const double s = std::max(std::fabs(vmax - t), std::fabs(t - vmin));
+    if (!(s > 0.0) || !R_FINITE(s)) continue;
+    double L = 0.0, U = 0.0;
+    for (R_xlen_t j = 0; j < n; ++j) {
+      const double z = (variable[j] - t) / s;
+      if (z < 0.0) L += std::pow(-z, degree);
+      else if (z > 0.0) U += std::pow(z, degree);
+    }
+    out[i] = (lower ? L : U) / (L + U);
+  }
+  return out;
+}
+
 NumericVector LPM_ratio_CPv(const double &degree, const NumericVector &target, const NumericVector &variable) {
   if (degree>0) {
     NumericVector lpm_output = LPM_CPv(degree, target, variable);
     NumericVector upm_output = UPM_CPv(degree, target, variable);
-    NumericVector area = lpm_output+upm_output;
-    return(lpm_output / area);
+    return rescale_unsafe_ratio(lpm_output, upm_output, degree, target, variable, true);
   } else {
     return LPM_CPv(degree, target, variable);
   }
@@ -533,8 +674,7 @@ NumericVector UPM_ratio_CPv(const double &degree, const NumericVector &target, c
   if (degree>0) {
     NumericVector lpm_output = LPM_CPv(degree, target, variable);
     NumericVector upm_output = UPM_CPv(degree, target, variable);
-    NumericVector area = lpm_output+upm_output;
-    return(upm_output / area);
+    return rescale_unsafe_ratio(lpm_output, upm_output, degree, target, variable, false);
   } else {
     return UPM_CPv(degree, target, variable);
   }

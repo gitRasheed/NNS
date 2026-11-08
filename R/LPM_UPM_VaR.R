@@ -5,7 +5,7 @@
 #' @param percentile numeric [0, 1]; The percentile for left-tail VaR.
 #' @param degree integer; \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, percentile, type = 7)}), which on tied data need not be an exact inverse of \code{LPM.ratio(0, ., x)}. Use it for probability statements, such as a VaR exceeded with a given frequency.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the \code{percentile}-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies below it, so it is not a quantile of \code{x} (for exponential data the degree-1 5\% point has about a quarter of the observations below it).  Higher degrees weight large deviations more.
 #' @param x a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error. A data frame (including a tibble or data.table) is flattened to one vector.
-#' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area below it (\code{degree > 0}).
+#' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area below it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved to an absolute ratio tolerance of about \code{.Machine$double.eps^0.75} (1.8e-12), so percentiles within about 1e-11 of 0 or 1 are not resolved to relative precision.
 #' @author Fred Viole, OVVO Financial Systems
 #' @references Viole, F. and Nawrocki, D. (2013) "Nonlinear Nonparametric Statistics: Using Partial Moments" (ISBN: 1490523995, 2nd edition: \url{https://ovvo-financial.github.io/NNS/book/})
 #' @examples
@@ -42,7 +42,7 @@ LPM.VaR <- function(percentile, degree, x) {
 #' @param percentile numeric [0, 1]; The percentile for right-tail VaR.
 #' @param degree integer; \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, 1 - percentile, type = 7)}), which on tied data need not be an exact inverse of \code{UPM.ratio(0, ., x)}. Use it for probability statements.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the (1 - \code{percentile})-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies above it, so it is not a quantile of \code{x}.  Higher degrees weight large deviations more.
 #' @param x a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error. A data frame (including a tibble or data.table) is flattened to one vector.
-#' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area above it (\code{degree > 0}).
+#' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area above it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved to an absolute ratio tolerance of about \code{.Machine$double.eps^0.75} (1.8e-12), so percentiles within about 1e-11 of 0 or 1 are not resolved to relative precision.
 #' @author Fred Viole, OVVO Financial Systems
 #' @references Viole, F. and Nawrocki, D. (2013) "Nonlinear Nonparametric Statistics: Using Partial Moments" (ISBN: 1490523995, 2nd edition: \url{https://ovvo-financial.github.io/NNS/book/})
 #' @examples
@@ -98,11 +98,12 @@ UPM.VaR <- function(percentile, degree, x) {
 
 
 .NNS_is_supported_integer_degree <- function(degree) {
+  # Range first: as.integer() warns on a degree beyond the integer range.
   length(degree) == 1L &&
     is.finite(degree) &&
-    degree == as.integer(degree) &&
     degree >= 1 &&
-    degree <= 4
+    degree <= 4 &&
+    degree == as.integer(degree)
 }
 
 
@@ -144,7 +145,10 @@ UPM.VaR <- function(percentile, degree, x) {
   x_sorted <- sort(x)
   # Center at the sorted median: (t - x) is translation-invariant, so results
   # are mathematically identical, but prefix powers are built at deviation
-  # scale, eliminating catastrophic cancellation for level-shifted data.
+  # scale. This removes the cancellation from a level shift; it does not make
+  # the expanded sums cancellation-free for degree >= 3, so the break ratios
+  # and the solve are accurate to an absolute ratio error (about 2^degree * eps,
+  # solver tolerance eps^0.75), not relative to tiny percentiles.
   .vshift <- x_sorted[(n + 1L) %/% 2L]
   x_sorted <- x_sorted - .vshift
   x_min <- x_sorted[1L]
@@ -153,6 +157,14 @@ UPM.VaR <- function(percentile, degree, x) {
   if (n == 1L || x_min == x_max) {
     return(rep(x_min + .vshift, length(p)))
   }
+  
+  # The ratio is scale-free, but deviations of extreme magnitude under- or
+  # overflow in the degree-d powers; solve on data scaled by an exact power of
+  # two (1 for ordinary data) and scale the answer back.
+  .vscale <- .nns_pow2_rescale(max(-x_min, x_max))
+  x_sorted <- x_sorted * .vscale
+  x_min <- x_sorted[1L]
+  x_max <- x_sorted[n]
   
   prep <- .NNS_prepare_integer_VaR_backend(x_sorted, degree)
   
@@ -199,7 +211,7 @@ UPM.VaR <- function(percentile, degree, x) {
     out[middle] <- out_mid
   }
   
-  out + .vshift
+  out / .vscale + .vshift
 }
 
 

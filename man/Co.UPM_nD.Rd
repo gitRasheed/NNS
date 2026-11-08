@@ -13,7 +13,7 @@ Co.UPM_nD(data, target, degree = 0, norm = TRUE)
 
 \item{degree}{numeric; degree for upper deviations (0 = frequency, 1 = area).}
 
-\item{norm}{logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}.}
+\item{norm}{logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}. At \code{degree > 0} the total is 0 (0/0) when every observation ties the target in at least one coordinate (for example a constant column equal to its target); the result is then the \code{degree = 0} value, as \code{LPM.ratio} does for a constant variable, so the three normalised values still sum to 1. The ratio is scale-free: a total that underflows or overflows at high degree or extreme scale is recomputed on per-column rescaled deviations instead of returning 0 or \code{NaN}.}
 }
 \value{
 Numeric; the n‑dimensional co‑upper partial moment.

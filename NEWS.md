@@ -18,7 +18,8 @@
 * `LPM()`, `UPM()`, `LPM.ratio()`, `UPM.ratio()` with more than 32 targets,
   and univariate `NNS.CDF()` with more than 32 observations, return `Inf` (or
   the corresponding 0/1 ratio) instead of `NaN` when an intermediate power sum
-  overflows, matching the 32-or-fewer-target path; `Inf/Inf` remains `NaN`.
+  overflows, matching the 32-or-fewer-target path. (The ratios no longer
+  return `NaN` from `Inf/Inf` either; see the scale-free ratio entry below.)
 * `LPM()` and `UPM()` require `excess_ret` to be a single `TRUE` or `FALSE`
   (numeric 0/1 still work); `NA`, vectors and strings now give "`excess_ret`
   must be TRUE or FALSE." for every target length. `NA` used to run the
@@ -67,6 +68,37 @@
   `NaN` or 0.
 * `LPM()`/`UPM()` with `excess_ret = TRUE` index `variable` with `R_xlen_t`,
   so vectors longer than `.Machine$integer.max` are no longer truncated.
+* `LPM.ratio()` and `UPM.ratio()` are scale-free at any degree: where the raw
+  sums underflow or overflow (high degree, or deviations of extreme
+  magnitude) the ratio is recomputed on deviations divided by
+  `max(abs(variable - target))` instead of returning `NaN` (e.g.
+  `LPM.ratio(400, 0, c(-0.01, 0.01))` is 0.5). This also removes the `NaN`
+  curves of univariate `NNS.CDF()` at high degree and the wrong roots and
+  "NA/NaN replaced" warnings of `LPM.VaR()`/`UPM.VaR()` for non-integer or
+  > 4 degrees. Results with a safe total are unchanged.
+* `LPM.VaR()`/`UPM.VaR()` with integer degree 1 to 4 solve on data rescaled by
+  an exact power of two when the deviations are below 2^-200 or above 2^200,
+  so data of scale 1e-200 no longer returns the same value for every
+  percentile. A degree above `.Machine$integer.max` no longer warns "NAs
+  introduced by coercion to integer range".
+* `NNS.moments()` computes skewness and kurtosis from deviations rescaled by an
+  exact power of two at extreme scales, so data of scale 1e-200 or 1e200 gives
+  finite values instead of `NaN` (the variance is still `mean((x - mean(x))^2)`,
+  which can underflow to 0).
+* Normalised `Co.LPM_nD()`, `Co.UPM_nD()` and `DPM_nD()` at degree > 0, and
+  multivariate `NNS.CDF()` at degree > 0, no longer return 0 for all three
+  cells when the total is 0. If every observation ties the target in some
+  coordinate (e.g. a constant column) the result is the degree-0 value, as
+  `LPM.ratio()` does for a constant variable, so the cells sum to 1 and the
+  degree-1 CDF of data with a constant column is no longer 0 everywhere. A
+  total that underflowed or overflowed is recomputed on per-column rescaled
+  deviations.
+* Multivariate `NNS.CDF(type = "survival")` at degree > 0 is computed by the
+  batched `Co.UPM_nD()` directly (bit-identical on ordinary data), so its
+  zero-total fallback is the strict all-above count of `Co.UPM_nD()`.
+* The `LPM.VaR()`/`UPM.VaR()` help states that integer degrees 1 to 4 are
+  solved to an absolute ratio tolerance (about 1.8e-12), so percentiles within
+  about 1e-11 of 0 or 1 are not resolved to relative precision.
 
 # NNS 13.3 (development changes)
 

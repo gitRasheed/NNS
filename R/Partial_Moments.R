@@ -87,7 +87,7 @@ UPM <- function(degree, target, variable, excess_ret = FALSE) {
 #' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row. A factor column is an error.
 #' @param target A numeric vector, length equal to ncol(data).
 #' @param degree numeric; degree for lower deviations (0 = frequency, 1 = area).
-#' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}.
+#' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}. At \code{degree > 0} the total is 0 (0/0) when every observation ties the target in at least one coordinate (for example a constant column equal to its target); the result is then the \code{degree = 0} value, as \code{LPM.ratio} does for a constant variable, so the three normalised values still sum to 1. The ratio is scale-free: a total that underflows or overflows at high degree or extreme scale is recomputed on per-column rescaled deviations instead of returning 0 or \code{NaN}.
 #' @return Numeric; the n‑dimensional co‑lower partial moment.
 #' @examples
 #' \dontrun{
@@ -117,10 +117,11 @@ Co.LPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
 #' @param targets A numeric matrix with target rows and the same number of columns as data.
 #' @param degree numeric; degree for lower deviations.
 #' @param norm logical; normalize result.
+#' @param upper logical; \code{TRUE} returns \code{Co.UPM_nD} instead of \code{Co.LPM_nD}.
 #' @return Numeric vector, one value per row of targets.
 #' @keywords internal
 
-Co.LPM_nD.batch <- function(data, targets, degree = 0.0, norm = TRUE) {
+Co.LPM_nD.batch <- function(data, targets, degree = 0.0, norm = TRUE, upper = FALSE) {
   data    <- as.matrix(data)
   targets <- as.matrix(targets)
   degree  <- as.numeric(degree)
@@ -129,7 +130,7 @@ Co.LPM_nD.batch <- function(data, targets, degree = 0.0, norm = TRUE) {
   if (!all(is.finite(data))) stop("`data` must be finite.")
   if (!all(is.finite(targets))) stop("`targets` must be finite.")
   
-  .Call("_NNS_CoLPM_nD_batch_RCPP", data, targets, degree, norm)
+  .Call("_NNS_CoLPM_nD_batch_RCPP", data, targets, degree, norm, isTRUE(upper))
 }
 
 
@@ -140,7 +141,7 @@ Co.LPM_nD.batch <- function(data, targets, degree = 0.0, norm = TRUE) {
 #' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row. A factor column is an error.
 #' @param target A numeric vector, length equal to ncol(data).
 #' @param degree numeric; degree for upper deviations (0 = frequency, 1 = area).
-#' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}.
+#' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}. At \code{degree > 0} the total is 0 (0/0) when every observation ties the target in at least one coordinate (for example a constant column equal to its target); the result is then the \code{degree = 0} value, as \code{LPM.ratio} does for a constant variable, so the three normalised values still sum to 1. The ratio is scale-free: a total that underflows or overflows at high degree or extreme scale is recomputed on per-column rescaled deviations instead of returning 0 or \code{NaN}.
 #' @return Numeric; the n‑dimensional co‑upper partial moment.
 #' @examples
 #' \dontrun{
@@ -169,7 +170,7 @@ Co.UPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
 #' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row. A factor column is an error.
 #' @param target A numeric vector, length equal to ncol(data).
 #' @param degree numeric; degree for upper deviations (0 = frequency, 1 = area).
-#' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}.
+#' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}. At \code{degree > 0} the total is 0 (0/0) when every observation ties the target in at least one coordinate (for example a constant column equal to its target); the result is then the \code{degree = 0} value, as \code{LPM.ratio} does for a constant variable, so the three normalised values still sum to 1. The ratio is scale-free: a total that underflows or overflows at high degree or extreme scale is recomputed on per-column rescaled deviations instead of returning 0 or \code{NaN}.
 #' @return Numeric; the n-dimensional divergent partial moment.
 #' @examples
 #' \dontrun{
@@ -199,7 +200,7 @@ DPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
 #' @param variable a numeric vector, a one-column data.frame or matrix (univariate), or a data.frame or matrix of >= 2 variables for joint CDF. A factor is an error.
 #' @param degree numeric; \code{(degree = 0)} (default) is frequency, the empirical distribution of \code{variable}; \code{(degree = 1)} is area, the share of deviation area below each point, which is not \eqn{P(X \le t)}.
 #' @param target numeric; \code{NULL} (default) Must be finite and lie within support of each variable. For univariate \code{variable} a vector of targets is evaluated element-wise; for multivariate \code{variable} give one value per column.
-#' @param type options("CDF", "survival", "hazard", "cumulative hazard"); \code{"CDF"} (default) Selects type of function to return.  For multivariate \code{variable} the joint survival is \eqn{P(X_1 > t_1, \ldots, X_d > t_d)} at \code{degree = 0}, by inclusion-exclusion over the column subsets for \eqn{d \le 3} and as the share of observations above \eqn{t} in every column for larger \eqn{d}, and the joint upper partial moment \link{Co.UPM_nD} at \code{degree > 0}, normalised like the CDF.  The multivariate cumulative hazard is the transform \eqn{-\log S(t)} and requires \code{degree = 0}; it is not automatically an integral of a scalar multivariate hazard. Multivariate \code{type = "hazard"} is unsupported and raises an error: a joint density-over-survival or a coordinate-hazard definition requires a separate estimator, and dividing the joint CDF by survival does not estimate either.  At \code{degree > 0} with two or more columns, each target's co-partial moment is normalised by its own total, so the "CDF" and "survival" values are generalised co-partial-moment ratios, not a joint distribution function: they can assign a negative probability to a rectangle.  At \code{degree = 0}, and in one dimension at any degree, they are proper distribution functions; at positive degree the univariate induced law describes deviation-area balance rather than the frequency law of the original variable.
+#' @param type options("CDF", "survival", "hazard", "cumulative hazard"); \code{"CDF"} (default) Selects type of function to return.  For multivariate \code{variable} the joint survival is \eqn{P(X_1 > t_1, \ldots, X_d > t_d)} at \code{degree = 0}, by inclusion-exclusion over the column subsets for \eqn{d \le 3} and as the share of observations above \eqn{t} in every column for larger \eqn{d}, and the joint upper partial moment \link{Co.UPM_nD} at \code{degree > 0}, normalised like the CDF.  The multivariate cumulative hazard is the transform \eqn{-\log S(t)} and requires \code{degree = 0}; it is not automatically an integral of a scalar multivariate hazard. Multivariate \code{type = "hazard"} is unsupported and raises an error: a joint density-over-survival or a coordinate-hazard definition requires a separate estimator, and dividing the joint CDF by survival does not estimate either.  At \code{degree > 0} with two or more columns, each target's co-partial moment is normalised by its own total, so the "CDF" and "survival" values are generalised co-partial-moment ratios, not a joint distribution function: they can assign a negative probability to a rectangle. A target with a zero total (every observation ties it in some coordinate, as with a constant column) takes the \code{degree = 0} value, as in \link{Co.LPM_nD} and \link{Co.UPM_nD}.  At \code{degree = 0}, and in one dimension at any degree, they are proper distribution functions; at positive degree the univariate induced law describes deviation-area balance rather than the frequency law of the original variable.
 #' @param plot logical; plots CDF.
 #' @return Returns:
 #' \itemize{
@@ -364,10 +365,10 @@ NNS.CDF <- function(variable,
     # inclusion-exclusion, S = sum_A (-1)^|A| F_A(t_A) over subsets A of the
     # coordinates, up to d = 3; beyond that its 2^d terms are slow and cancel,
     # so count the rows above t directly.
-    # For degree > 0 use Co.UPM_nD(X, t) = Co.LPM_nD(-X, -t).
+    # For degree > 0 use Co.UPM_nD(X, t), batched.
     joint.survival <- function(points, joint_cdf) {
       points <- matrix(points, ncol = d)
-      if (degree > 0) return(Co.LPM_nD.batch(-variable, -points, degree = degree, norm = TRUE))
+      if (degree > 0) return(Co.LPM_nD.batch(variable, points, degree = degree, norm = TRUE, upper = TRUE))
       if (d > 3) {
         cols <- lapply(seq_len(d), function(j) variable[, j])
         o1 <- order(cols[[1]]); v1 <- cols[[1]][o1]; nv <- length(v1)
@@ -510,20 +511,25 @@ NNS.moments <- function(x, population = TRUE) {
   z <- x - m
   
   variance <- mean(z^2)
-  skew_base <- mean(z^3)
-  kurt_base <- mean(z^4)
+  # Skewness and kurtosis are scale-free, but z^3 and z^4 under- or overflow at
+  # extreme scales (0/0 = NaN at 1e-200). Compute them from z times an exact
+  # power of two; for ordinary data the factor is 1 and nothing changes.
+  zs <- z * .nns_pow2_rescale(if (n) max(abs(z)) else 0)
+  variance_s <- mean(zs^2)
+  skew_base <- mean(zs^3)
+  kurt_base <- mean(zs^4)
   
   if (population) {
-    skewness <- skew_base / variance^(3 / 2)
-    kurtosis <- (kurt_base / variance^2) - 3
+    skewness <- skew_base / variance_s^(3 / 2)
+    kurtosis <- (kurt_base / variance_s^2) - 3
   } else {
     # Adjusted Fisher-Pearson G1: n/((n-1)(n-2)) * sum(z^3) / s^3, with s the
     # sample (n-1) standard deviation, as in the kurtosis branch below.
     skewness <- (n / ((n - 1) * (n - 2))) *
-      ((n * skew_base) / (variance * (n / (n - 1)))^(3 / 2))
+      ((n * skew_base) / (variance_s * (n / (n - 1)))^(3 / 2))
     
     kurtosis <- ((n * (n + 1)) / ((n - 1) * (n - 2) * (n - 3))) *
-      ((n * kurt_base) / (variance * (n / (n - 1)))^2) -
+      ((n * kurt_base) / (variance_s * (n / (n - 1)))^2) -
       ((3 * ((n - 1)^2)) / ((n - 2) * (n - 3)))
     
     variance <- variance * (n / (n - 1))
@@ -639,4 +645,4 @@ Co.UPM <- function(degree_upm, x, y, target_x, target_y, degree_y = NULL) {
     degree_y <- degree_upm
   }
   .Call(`_NNS_CoUPM_RCPP`, degree_upm, x, y, target_x, target_y, degree_y)
-}
+}

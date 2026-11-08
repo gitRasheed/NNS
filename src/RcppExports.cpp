@@ -576,8 +576,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // CoLPM_nD_batch_RCPP
-NumericVector CoLPM_nD_batch_RCPP(const NumericMatrix& data, const NumericMatrix& targets, double degree, bool norm);
-RcppExport SEXP _NNS_CoLPM_nD_batch_RCPP(SEXP dataSEXP, SEXP targetsSEXP, SEXP degreeSEXP, SEXP normSEXP) {
+NumericVector CoLPM_nD_batch_RCPP(const NumericMatrix& data, const NumericMatrix& targets, double degree, bool norm, bool upper);
+RcppExport SEXP _NNS_CoLPM_nD_batch_RCPP(SEXP dataSEXP, SEXP targetsSEXP, SEXP degreeSEXP, SEXP normSEXP, SEXP upperSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -585,7 +585,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< const NumericMatrix& >::type targets(targetsSEXP);
     Rcpp::traits::input_parameter< double >::type degree(degreeSEXP);
     Rcpp::traits::input_parameter< bool >::type norm(normSEXP);
-    rcpp_result_gen = Rcpp::wrap(CoLPM_nD_batch_RCPP(data, targets, degree, norm));
+    Rcpp::traits::input_parameter< bool >::type upper(upperSEXP);
+    rcpp_result_gen = Rcpp::wrap(CoLPM_nD_batch_RCPP(data, targets, degree, norm, upper));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -878,7 +879,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_NNS_downSample", (DL_FUNC) &_NNS_downSample, 4},
     {"_NNS_upSample", (DL_FUNC) &_NNS_upSample, 4},
     {"_NNS_NNS_reg_points_cpp", (DL_FUNC) &_NNS_NNS_reg_points_cpp, 6},
-    {"_NNS_CoLPM_nD_batch_RCPP", (DL_FUNC) &_NNS_CoLPM_nD_batch_RCPP, 4},
+    {"_NNS_CoLPM_nD_batch_RCPP", (DL_FUNC) &_NNS_CoLPM_nD_batch_RCPP, 5},
     {"_NNS_LPM_CPv", (DL_FUNC) &_NNS_LPM_CPv, 3},
     {"_NNS_UPM_CPv", (DL_FUNC) &_NNS_UPM_CPv, 3},
     {"_NNS_PMMatrix_CPv", (DL_FUNC) &_NNS_PMMatrix_CPv, 6},
