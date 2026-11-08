@@ -303,12 +303,13 @@ test_that("V07: tie-snap: integer-degree VaR returns an order statistic whose ra
     # test. The double data and percentile (1 / 3 included) are within rounding
     # of those values, and so is the root. Two or three levels among the first 13
     # multiples of 1 / den, repeated 3 to 8 times, make exact ratios common:
-    # with this seed there are 354 checks (169, 90, 45 and 50 at d = 1 to 4).
+    # with this seed there are 91 checks (43, 24, 16 and 8 at d = 1 to 4). Every
+    # mutant this case kills fails by iteration 201.
     probs <- list(c(4, 5), c(1, 5), c(1, 2), c(3, 4), c(1, 4), c(2, 5), c(9, 10),
                   c(1, 10), c(1, 3), c(2, 3))
     withr::local_seed(123)
     checks <- 0L
-    for (i in 1:5000) {
+    for (i in 1:1000) {
       den <- sample(c(10, 100, 1000), 1)
       offset <- sample(c(0, 0, 1, -3, 17), 1)
       k <- sample(sample(0:min(den, 12), sample(2:3, 1)), sample(3:8, 1), replace = TRUE)
@@ -332,7 +333,7 @@ test_that("V07: tie-snap: integer-degree VaR returns an order statistic whose ra
         }
       }
     }
-    expect_gt(checks, 200L)
+    expect_gt(checks, 80L)
   })
   aud_case("the order statistic 0 is returned as 0 (kills M42: the snap allowance at a break)", {
     # pin: tie-snap (9c65004) at an order statistic equal to 0, no ties; an allowance
@@ -342,5 +343,70 @@ test_that("V07: tie-snap: integer-degree VaR returns an order statistic whose ra
     expect_identical(UPM.VaR(UPM.ratio(4, 0, x), 4, x), 0)
     expect_identical(LPM.VaR(LPM.ratio(1, 0, x), 1, x), 0)
     expect_identical(UPM.VaR(UPM.ratio(1, 0, -x), 1, -x), 0)
+  })
+})
+
+test_that("V08: VaR scale and inversion at any data scale; fractional-degree inversion and the sample range at p = 0 and 1", {
+  withr::local_seed(20261108)
+  var_root_tolerance <- fx_var_root_tolerance()
+  aud_case("integer-degree LPM.VaR finds the symmetric median at small scale", {
+    x <- c(-.003, -.002, -.001, .001, .002, .003)
+    expect_equal(LPM.VaR(.5, 4, x), 0, tolerance = 1e-12)
+    expect_equal(UPM.VaR(.5, 4, x), 0, tolerance = 1e-12)
+  })
+  aud_case("LPM.VaR and UPM.VaR scale with the data", env = var_root_tolerance, {
+    p <- c(.01, .05, .5, .95)
+    for (x in var_root_data()) for (d in 1:5) {
+      spread <- diff(range(x))
+      lpm <- LPM.VaR(p, d, x)
+      upm <- UPM.VaR(p, d, x)
+      for (k in c(1e-4, 1, 1e4)) {
+        expect_lt(max(abs(LPM.VaR(p, d, k * x) - k * lpm)), 1e-10 * k * spread)
+        expect_lt(max(abs(UPM.VaR(p, d, k * x) - k * upm)), 1e-10 * k * spread)
+      }
+    }
+  })
+  aud_case("LPM.VaR and UPM.VaR invert their ratios at any scale", env = var_root_tolerance, {
+    p <- c(.01, .05, .5, .95)
+    for (x in var_root_data()) for (d in 1:5) for (k in c(1e-4, 1, 1e4)) {
+      y <- k * x
+      lr <- vapply(p, function(q) LPM.ratio(d, LPM.VaR(q, d, y), y), numeric(1))
+      ur <- vapply(p, function(q) UPM.ratio(d, UPM.VaR(q, d, y), y), numeric(1))
+      # Degree 5 uses the general solver, which the fractional-degree tests hold to 1e-7.
+      tol <- if (d <= 4) 1e-8 else 1e-7
+      expect_lt(max(abs(lr - p)), tol)
+      expect_lt(max(abs(ur - p)), tol)
+    }
+  })
+  aud_case("integer-degree VaR inverts the ratio where it is steep", {
+    x <- c(rep(0, 99999), 1)
+    for (d in 1:4) {
+      expect_lt(abs(LPM.ratio(d, LPM.VaR(.036, d, x), x) - .036), 1e-10)
+      expect_lt(abs(UPM.ratio(d, UPM.VaR(.964, d, x), x) - .964), 1e-10)
+    }
+  })
+  aud_case("fractional-degree LPM.VaR inverts LPM.ratio", {
+    set.seed(1)
+    x <- rnorm(500) / 50
+    p <- c(0.01, 0.05, 0.5, 0.95)
+    for (degree in c(0.5, 1.5)) {
+      expect_lt(max(abs(LPM.ratio(degree, LPM.VaR(p, degree, x), x) - p)), 1e-7)
+    }
+  })
+  aud_case("fractional-degree UPM.VaR inverts UPM.ratio", {
+    set.seed(1)
+    x <- rnorm(500) / 50
+    p <- c(0.01, 0.05, 0.5, 0.95)
+    for (degree in c(0.5, 1.5)) {
+      expect_lt(max(abs(UPM.ratio(degree, UPM.VaR(p, degree, x), x) - p)), 1e-7)
+    }
+  })
+  aud_case("fractional-degree VaR returns the sample range at p = 0 and 1", {
+    set.seed(1)
+    x <- rnorm(500) / 50
+    for (degree in c(0.5, 1.5)) {
+      expect_identical(LPM.VaR(c(0, 1), degree, x), range(x))
+      expect_identical(UPM.VaR(c(1, 0), degree, x), range(x))
+    }
   })
 })
