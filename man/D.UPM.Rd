@@ -7,9 +7,9 @@
 D.UPM(degree_lpm, degree_upm, x, y, target_x, target_y)
 }
 \arguments{
-\item{degree_lpm}{numeric; degree applied to the lower deviation of \code{x}, \code{(target_x - x)^+}; 0 gives frequency, 1 gives area. Must be a finite number \code{>= 0}.}
+\item{degree_lpm}{numeric; degree applied to the lower deviation of \code{x}, \code{(target_x - x)^+}; 0 gives frequency, 1 gives area. At degree 0 an observation counts when \code{x <= target_x} (inclusive). Must be a finite number \code{>= 0}.}
 
-\item{degree_upm}{numeric; degree applied to the upper deviation of \code{y}, \code{(y - target_y)^+}; 0 gives frequency, 1 gives area. Must be a finite number \code{>= 0}.}
+\item{degree_upm}{numeric; degree applied to the upper deviation of \code{y}, \code{(y - target_y)^+}; 0 gives frequency, 1 gives area. At degree 0 an observation counts when \code{y > target_y} (strict). Must be a finite number \code{>= 0}.}
 
 \item{x}{numeric vector of observations.}
 

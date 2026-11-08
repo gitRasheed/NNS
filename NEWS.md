@@ -219,8 +219,11 @@
   now also compare the curves at their closed-form extrema between sample
   points, so verdicts can change where the curves cross only between knots.
   These tests and `NNS.SSD()`/`NNS.SSD.uni()` treat differences at rounding
-  level (about 64 eps of the pooled half-range, after centring the pair on
-  its midrange) as ties, and the bidirectional `NNS.SSD()` and discrete
+  level as ties: below `64 * eps * S^d` (`S` the pooled half-range after
+  centring the pair on its midrange, `d = 1` for SSD and the mean condition,
+  2 for TSD, a ratio analogue for continuous FSD), plus an allowance for the
+  rounding of the inputs themselves; see the note on the help pages. The
+  bidirectional `NNS.SSD()` and discrete
   `NNS.FSD()` take their verdict from the pairwise test, so they agree with
   their `.uni` versions. Discrete FSD still compares exact empirical CDF
   values.
