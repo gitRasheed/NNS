@@ -7,9 +7,9 @@
 NNS.SSD(x, y, plot = TRUE)
 }
 \arguments{
-\item{x}{a numeric vector.}
+\item{x}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.}
 
-\item{y}{a numeric vector.}
+\item{y}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.}
 
 \item{plot}{logical; \code{TRUE} (default) plots the SSD test.}
 }

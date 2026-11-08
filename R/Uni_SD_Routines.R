@@ -2,8 +2,8 @@
 #'
 #' Uni-directional test of first degree stochastic dominance using lower partial moments used in SD Efficient Set routine.
 #'
-#' @param x a numeric vector.
-#' @param y a numeric vector.
+#' @param x a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.
+#' @param y a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.
 #' @param type \code{"discrete"} (default) uses empirical FSD. At degree 1, \code{"continuous"} retains the degree-one area-ratio (Omega/expectile) ordering, which need not imply FSD or preference for every increasing utility. SSD and TSD are unaffected by \code{type}.
 #' @return Returns (1) if X dominates Y in the selected order (ordinary FSD or Omega/expectile order), else (0).
 #' @note The curves are compared on the merged sample points and, for TSD and continuous area order, also at their closed-form extrema between those points. Differences smaller than \code{64 * .Machine$double.eps * S^d} (\code{S} = largest absolute value in \code{x} and \code{y}, \code{d} = 1 for SSD and the mean condition, 2 for TSD; a ratio analogue for continuous area order) are treated as ties, so that rounding noise does not decide dominance. Discrete FSD compares exact empirical CDF values.
@@ -38,8 +38,8 @@ NNS.FSD.uni <- function(x, y, type = "discrete"){
 #' NNS SSD Test uni-directional
 #'
 #' Uni-directional test of second degree stochastic dominance using lower partial moments used in SD Efficient Set routine.
-#' @param x a numeric vector.
-#' @param y a numeric vector.
+#' @param x a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.
+#' @param y a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.
 #' @return Returns (1) if \code{"X SSD Y"}, else (0).
 #' @note The curves are compared on the merged sample points and, for TSD and continuous area order, also at their closed-form extrema between those points. Differences smaller than \code{64 * .Machine$double.eps * S^d} (\code{S} = largest absolute value in \code{x} and \code{y}, \code{d} = 1 for SSD and the mean condition, 2 for TSD; a ratio analogue for continuous area order) are treated as ties, so that rounding noise does not decide dominance. Discrete FSD compares exact empirical CDF values.
 #' @author Fred Viole, OVVO Financial Systems
@@ -67,8 +67,8 @@ NNS.SSD.uni <- function(x, y){
 #' NNS TSD Test uni-directional
 #'
 #' Uni-directional test of third degree stochastic dominance using lower partial moments used in SD Efficient Set routine.
-#' @param x a numeric vector.
-#' @param y a numeric vector.
+#' @param x a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.
+#' @param y a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.
 #' @return Returns (1) if \code{"X TSD Y"}, else (0).
 #' @note The curves are compared on the merged sample points and, for TSD and continuous area order, also at their closed-form extrema between those points. Differences smaller than \code{64 * .Machine$double.eps * S^d} (\code{S} = largest absolute value in \code{x} and \code{y}, \code{d} = 1 for SSD and the mean condition, 2 for TSD; a ratio analogue for continuous area order) are treated as ties, so that rounding noise does not decide dominance. Discrete FSD compares exact empirical CDF values.
 #' @author Fred Viole, OVVO Financial Systems

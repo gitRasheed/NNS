@@ -7,9 +7,9 @@
 NNS.FSD.uni(x, y, type = "discrete")
 }
 \arguments{
-\item{x}{a numeric vector.}
+\item{x}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.}
 
-\item{y}{a numeric vector.}
+\item{y}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.}
 
 \item{type}{\code{"discrete"} (default) uses empirical FSD. At degree 1, \code{"continuous"} retains the degree-one area-ratio (Omega/expectile) ordering, which need not imply FSD or preference for every increasing utility. SSD and TSD are unaffected by \code{type}.}
 }

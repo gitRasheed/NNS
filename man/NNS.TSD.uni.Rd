@@ -7,9 +7,9 @@
 NNS.TSD.uni(x, y)
 }
 \arguments{
-\item{x}{a numeric vector.}
+\item{x}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.}
 
-\item{y}{a numeric vector.}
+\item{y}{a numeric vector (or a single-column data frame, matrix or xts object). Factors and character data are an error.}
 }
 \value{
 Returns (1) if \code{"X TSD Y"}, else (0).
