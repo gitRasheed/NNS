@@ -154,12 +154,13 @@
   quadrants still sum to 1: such a column has `$cov.matrix` diagonal 1 (was
   0), and its off-diagonal entries are `2 * F_j(t_j) - 1` (was 0), with
   `F_j(t_j)` the share of the other column at or below its target. This is a
-  convention, not a limit: at degree 1 with the mean target the off-diagonal
-  entries of nearly constant data are near 0, as the old value was. A cell
-  total that underflowed or overflowed (deviations of scale 1e-200, or high
-  degree) is recomputed on per-column rescaled deviations, in the log domain
-  if needed, instead of returning 0 for every quadrant, with a relative error of
-  order degree * `.Machine$double.eps` (about 3e-14 at degree 1000); with equal
+  convention, not a limit: at degree 1 a column constant just above or below
+  a supplied target, against a column at its mean, has off-diagonal entries 0,
+  the old value. A cell total that underflowed or overflowed (deviations of
+  scale 1e-200, or high degree) is recomputed on per-column rescaled
+  deviations, in the log domain if needed, instead of returning 0 for every
+  quadrant, with a relative error of order degree * `.Machine$double.eps`
+  (about 3e-14 at degree 1000); with equal
   degrees the result does not depend on the units of the data beyond rounding.
   Cells with a safe total are unchanged bit for bit. `NNS.copula()` drops
   constant columns before calling `PM.matrix()`, so it changes only for a pair
