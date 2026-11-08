@@ -1,10 +1,19 @@
 # Property tests for NNS.moments and the stochastic-dominance verdicts.
 #
-# Each test_that names the Lean theorem it mirrors in
-# nns-proofs/NNSProofs/Moments.lean (NNS.moments as partial moments about the
-# mean) or nns-proofs/NNSProofs/Integration.lean (LPM_{d+1} = (d+1) * integral
-# of LPM_d, dominance lifting FSD => SSD => TSD, exactness of R's knot walk).
-# Verdict-shape tests without a Lean theorem cite SPEC.md instead.
+# Each test_that names the Lean theorem it mirrors in nns-proofs/NNSProofs:
+#   Moments.lean       NNS.moments as partial moments about the mean.
+#   Integration.lean   LPM_{d+1} = (d+1) * integral of LPM_d, the lifting
+#                      FSD => SSD => TSD, knot sufficiency (LPM_one_le_of_le_at_knots,
+#                      LPM_two_le_of_le_at_knots) and the tsdCex / tsdVertexCex
+#                      counterexamples.
+#   PrefixBackend.lean the >32-target prefix backend equals the direct kernel
+#                      (prefixLPM_eq_LPM, prefixUPM_eq_UPM, usesPrefix_iff).
+#   DominanceAlgo.lean the C++ verdict kernel sd_dom_pair is exact: sdDomPair_fsd_iff,
+#                      sdDomPair_ssd_iff, sdDomPair_tsd_iff, sdDomPair_omega_iff
+#                      (continuous FSD), sdDomPair_eq_zero_or_one, centring and
+#                      translation (sdDomPairCentred_eq, sdDomPairCentred_omega_eq,
+#                      LPMDominates_shift), tsdKnotOnly_vertexCex.
+# Tests without a Lean theorem (the bidirectional string labels) cite SPEC.md.
 #
 # Data regimes:
 #   exact  : small integer / dyadic data with n a power of 2, so sums and
@@ -100,10 +109,17 @@ ssd_expected <- function(d, tol) {
   NA_integer_
 }
 
-# Exact TSD criterion of LPM_two_le_of_le_at_knots for integer samples:
-# knots, interior vertices s* = b / a, mean gate, strictness at a knot.
-# All quantities are integers scaled by mx * my, so the test is exact.
-tsd_exact <- function(x, y) {
+# Implementation-free LPM(1, t, x) = mean(max(t - x, 0)), used as the SSD oracle
+# (identical() to LPM(1, t, x) on the integer pairs, but shares no code with NNS).
+lpm1_ref <- function(ts, x) vapply(ts, function(t) mean(pmax(t - x, 0)), numeric(1))
+
+# Exact TSD criterion of sdDomPair_tsd_iff for integer samples. Sufficiency is
+# LPM_two_le_of_le_at_knots (knots, interior vertices s* = b / a, mean gate);
+# strictness is checked at the knots only, which LPM_two_eq_of_eq_at_knots
+# makes exact. All quantities are integers scaled by mx * my, so the test is
+# exact. tsd_parts returns the three components separately so tests can count
+# which one decided.
+tsd_parts <- function(x, y) {
   mx <- length(x); my <- length(y)
   k <- sort(unique(c(x, y)))
   A <- vapply(k, function(t) sum(x <= t) * my - sum(y <= t) * mx, numeric(1))
@@ -112,12 +128,55 @@ tsd_exact <- function(x, y) {
   q_knot <- A * k^2 - 2 * B * k + C
   lo <- head(k, -1); hi <- k[-1]; a <- head(A, -1); b <- head(B, -1); cc <- head(C, -1)
   inside <- a < 0 & lo * a > b & b > hi * a
-  vertex_bad <- any(inside & (cc * a - b^2 < 0))
-  mean_ok <- sum(x) * my >= sum(y) * mx
-  as.integer(all(q_knot <= 0) && !vertex_bad && mean_ok && any(q_knot != 0))
+  list(knots_ok = all(q_knot <= 0),
+       vertex_bad = any(inside & (cc * a - b^2 < 0)),
+       mean_ok = sum(x) * my >= sum(y) * mx,
+       differs = any(q_knot != 0))
+}
+tsd_exact <- function(x, y) {
+  p <- tsd_parts(x, y)
+  as.integer(p$knots_ok && !p$vertex_bad && p$mean_ok && p$differs)
+}
+
+# Exact continuous-FSD (Omega) criterion of sdDomPair_omega_iff for integer
+# samples: R_x(t) <= R_y(t) for all t, with R = LPM.ratio(1, t, .) =
+# L1 / (L1 + U1) (0/0 -> k/m, SPEC "sd_dom_pair, continuous FSD"), and the
+# curves differ somewhere. Independent of NNS: counts and prefix sums only.
+# On a knot cell both denominators are positive, so R_x <= R_y iff
+# g(t) = L1x * U1y - L1y * U1x <= 0, a quadratic al t^2 + be t + ga; it is
+# checked at the knots and at an interior vertex. A quadratic that vanishes
+# at both knots and at the midpoint is zero, so "differs" is knots + midpoints.
+omega_parts <- function(x, y) {
+  mx <- length(x); my <- length(y); sx <- sum(x); sy <- sum(y)
+  k <- sort(unique(c(x, y)))
+  ax <- vapply(k, function(t) sum(x <= t), numeric(1))
+  px <- vapply(k, function(t) sum(x[x <= t]), numeric(1))
+  ay <- vapply(k, function(t) sum(y <= t), numeric(1))
+  py <- vapply(k, function(t) sum(y[y <= t]), numeric(1))
+  lx <- ax * k - px; dx <- sx - 2 * px + (2 * ax - mx) * k   # m * L1, m * (L1 + U1)
+  ly <- ay * k - py; dy <- sy - 2 * py + (2 * ay - my) * k
+  nx <- ifelse(dx == 0, ax, lx); dx <- ifelse(dx == 0, mx, dx)
+  ny <- ifelse(dy == 0, ay, ly); dy <- ifelse(dy == 0, my, dy)
+  g_knot <- nx * dy - ny * dx                                 # sign(R_x - R_y)
+  i <- seq_len(length(k) - 1)
+  a1 <- ax[i]; p1 <- px[i]; a2 <- ay[i]; p2 <- py[i]; lo <- k[i]; hi <- k[i + 1]
+  al <- -a1 * (my - a2) + a2 * (mx - a1)
+  be <- a1 * (sy - p2) + p1 * (my - a2) - a2 * (sx - p1) - p2 * (mx - a1)
+  ga <- -p1 * (sy - p2) + p2 * (sx - p1)
+  inside <- al < 0 & -be > 2 * al * hi & -be < 2 * al * lo   # -be / (2 al) in (lo, hi)
+  mid <- lo + hi
+  list(knots_ok = all(g_knot <= 0),
+       vertex_bad = any(inside & (4 * al * ga - be^2 < 0)),
+       knot_differs = any(g_knot != 0),
+       mid_differs = any(al * mid^2 + 2 * be * mid + 4 * ga != 0))
+}
+omega_exact <- function(x, y) {
+  p <- omega_parts(x, y)
+  as.integer(p$knots_ok && !p$vertex_bad && (p$knot_differs || p$mid_differs))
 }
 
 lpm_each <- function(d, ts, x) vapply(ts, function(t) LPM(d, t, x), numeric(1))
+upm_each <- function(d, ts, x) vapply(ts, function(t) UPM(d, t, x), numeric(1))
 
 # ---- data ------------------------------------------------------------------
 
@@ -165,6 +224,30 @@ verdicts <- function(p) c(
 int_verdicts <- t(vapply(int_pairs, verdicts, integer(3)))
 int_verdicts_rev <- t(vapply(int_pairs, function(p) verdicts(list(x = p$y, y = p$x)), integer(3)))
 fsd_verdicts <- t(vapply(fsd_pairs, verdicts, integer(3)))
+int_omega <- vapply(int_pairs, function(p) NNS.FSD.uni(p$x, p$y, type = "continuous"), integer(1))
+int_omega_rev <- vapply(int_pairs, function(p) NNS.FSD.uni(p$y, p$x, type = "continuous"), integer(1))
+
+# Pairs on which the interior TSD vertex check fires (some knot cell has its
+# vertex s* = b / a inside with a positive LPM2 difference). On int_pairs the
+# vertex never decides a verdict, so reject-sample a wider regime (values 0..5,
+# sizes 2..15) until 25 pairs pass the knots, the min gate and the mean gate and
+# are rejected by the vertex alone; keep up to 200 vertex-firing pairs overall.
+# The 1e5 iteration cap is a safety net only: seed 23 reaches 25 in about 2.5e4.
+set.seed(23)
+vertex_pairs <- list(); n_vertex_decided <- 0L; iter <- 0L
+while (n_vertex_decided < 25L && iter < 100000L) {
+  iter <- iter + 1L
+  x <- sample(0:5, sample(2:15, 1), replace = TRUE)
+  y <- sample(0:5, sample(2:15, 1), replace = TRUE)
+  pt <- tsd_parts(x, y)
+  if (!pt$vertex_bad) next
+  decided <- pt$knots_ok && pt$mean_ok && pt$differs && min(x) >= min(y)
+  if (decided || length(vertex_pairs) < 200L) {
+    vertex_pairs[[length(vertex_pairs) + 1L]] <- list(x = x, y = y, decided = decided)
+    n_vertex_decided <- n_vertex_decided + decided
+  }
+}
+rm(x, y, pt, iter)
 
 # ============================================================================
 # Moments.lean
@@ -420,14 +503,39 @@ test_that("LPM_succ_eq_integral d = 0, 1, 2: random and real data via the >32-ta
   }
 })
 
-test_that("LPM_succ_eq_integral: prefix backend (>32 targets) agrees with scalar targets", {
+test_that("prefixLPM_eq_LPM / prefixUPM_eq_UPM (workerLPM_eq_rLPMVec / workerUPM_eq_rUPMVec): >32-target prefix backend agrees with scalar targets", {
   for (nm in names(all_samples)) {
     x <- all_samples[[nm]]
     ts <- sort(c(targets_of(x), seq(min(x), max(x), length.out = 40)))
     for (d in 0:3) {
-      expect_within(LPM(d, ts, x), lpm_each(d, ts, x),
-                    8 * (length(x) + d) * eps * max(abs_mom(x, d, min(x)), abs_mom(x, d, max(x))),
-                    label = sprintf("%s d=%d", nm, d))
+      tol <- 8 * (length(x) + d) * eps * max(abs_mom(x, d, min(x)), abs_mom(x, d, max(x)))
+      expect_within(LPM(d, ts, x), lpm_each(d, ts, x), tol, label = sprintf("%s LPM d=%d", nm, d))
+      expect_within(UPM(d, ts, x), upm_each(d, ts, x), tol, label = sprintf("%s UPM d=%d", nm, d))
+    }
+  }
+})
+
+test_that("usesPrefix_iff: 32 targets stay on the direct kernel (identical to scalar calls), 33 switch to the prefix backend", {
+  # NNS_DIRECT_PATH_MAX_TARGETS = 32: a 32-target call runs the same scalar
+  # kernel per target, so it is bit-identical; at 33 targets the prefix backend
+  # takes over (a probe shows ~1e-16 differences at d >= 1), held to the
+  # backend's rounding bound.
+  for (nm in names(all_samples)) {
+    x <- all_samples[[nm]]
+    for (nt in c(32L, 33L)) {
+      ts <- seq(min(x) - 0.5, max(x) + 0.5, length.out = nt)
+      ts[c(2, nt - 1)] <- c(x[1], median(x))   # include ties with observations
+      for (d in 0:3) {
+        lab <- sprintf("%s nt=%d d=%d", nm, nt, d)
+        if (nt == 32L) {
+          expect_identical(LPM(d, ts, x), lpm_each(d, ts, x), label = paste(lab, "LPM"))
+          expect_identical(UPM(d, ts, x), upm_each(d, ts, x), label = paste(lab, "UPM"))
+        } else {
+          tol <- 8 * (length(x) + d) * eps * max(abs_mom(x, d, min(ts)), abs_mom(x, d, max(ts)))
+          expect_within(LPM(d, ts, x), lpm_each(d, ts, x), tol, label = paste(lab, "LPM"))
+          expect_within(UPM(d, ts, x), upm_each(d, ts, x), tol, label = paste(lab, "UPM"))
+        }
+      }
     }
   }
 })
@@ -514,18 +622,21 @@ test_that("LPM_add_le_of_forall_le: FSD => SSD => TSD on real data (mtcars, fait
   }
 })
 
-# ---- dominance: R's knot walk is exact --------------------------------------
+# ---- dominance: R's knot walk is exact (DominanceAlgo.lean) -----------------
 
-test_that("LPM_one_le_of_le_at_knots: SSD.uni == 1 iff LPM1_x <= LPM1_y at all merged knots (strict somewhere)", {
+test_that("sdDomPair_ssd_iff: SSD.uni == 1 iff LPM1_x <= LPM1_y at all merged knots, strict at one (base-R oracle)", {
+  # LPM_one_le_of_le_at_knots gives the knot sufficiency, LPM_one_eq_of_eq_at_knots
+  # makes knot-only strictness exact; the oracle is mean(pmax(t - x, 0)).
   ssd_knot <- vapply(int_pairs, function(p) {
     k <- sort(unique(c(p$x, p$y)))
-    d <- LPM(1, k, p$x) - LPM(1, k, p$y)
+    d <- lpm1_ref(k, p$x) - lpm1_ref(k, p$y)
     as.integer(all(d <= 0) && any(d < 0))
   }, integer(1))
+  expect_gt(sum(ssd_knot), 50)
   expect_identical(int_verdicts[, "ssd"], ssd_knot)
 })
 
-test_that("LPM_one_le_of_le_at_knots: SSD knot criterion on random rounded and real data", {
+test_that("sdDomPair_ssd_iff: SSD knot criterion on random rounded and real data (base-R oracle)", {
   set.seed(3)
   pairs <- list(
     list(x = random_samples$normal[1:200] + 0.3, y = random_samples$normal[201:400]),
@@ -539,7 +650,7 @@ test_that("LPM_one_le_of_le_at_knots: SSD knot criterion on random rounded and r
   for (i in seq_along(pairs)) {
     p <- pairs[[i]]
     k <- sort(unique(c(p$x, p$y)))
-    d <- LPM(1, k, p$x) - LPM(1, k, p$y)
+    d <- lpm1_ref(k, p$x) - lpm1_ref(k, p$y)
     S <- max(abs(c(p$x, p$y)))
     want <- ssd_expected(d, 64 * eps * S + 4 * (length(p$x) + length(p$y)) * eps * S)
     expect_false(is.na(want), label = paste("pair", i, "outside the tolerance band"))
@@ -547,24 +658,49 @@ test_that("LPM_one_le_of_le_at_knots: SSD knot criterion on random rounded and r
   }
 })
 
-test_that("LPM_two_le_of_le_at_knots: TSD.uni equals the exact knot + vertex + mean-gate criterion", {
+test_that("sdDomPair_tsd_iff: TSD.uni equals the exact knot + vertex + mean-gate criterion on random integer pairs", {
   tsd_ref <- vapply(int_pairs, function(p) tsd_exact(p$x, p$y), integer(1))
   expect_gt(sum(tsd_ref), 50)
+  # on this regime only the knots and the mean gate decide
+  mean_decided <- vapply(int_pairs, function(p) {
+    q <- tsd_parts(p$x, p$y); q$knots_ok && q$differs && !q$mean_ok
+  }, logical(1))
+  expect_gt(sum(mean_decided), 0)
   expect_identical(int_verdicts[, "tsd"], tsd_ref)
 })
 
-test_that("tsdVertexCex: knot-only TSD check is insufficient; x=(0,4,5,1,4), y=(4,2,4,0) is no-TSD", {
+test_that("sdDomPair_tsd_iff (vertex branch): TSD.uni agrees with the exact criterion where the interior vertex fires", {
+  # LPM_two_le_of_le_at_knots needs the vertex hypothesis (src/SD.cpp:264-277);
+  # here the knots, min and mean gates all pass and the vertex alone says 0.
+  expect_identical(n_vertex_decided, 25L)
+  decided <- vapply(vertex_pairs, `[[`, logical(1), "decided")
+  expect_gt(sum(!decided), 0)
+  for (i in seq_along(vertex_pairs)) {
+    p <- vertex_pairs[[i]]
+    expect_identical(tsd_exact(p$x, p$y), 0L, label = paste("vertex pair", i))
+    expect_identical(NNS.TSD.uni(p$x, p$y), 0L, label = paste("vertex pair", i))
+  }
+  # the same pairs reversed exercise the vertex walk on the other orientation
+  rev_ref <- vapply(vertex_pairs, function(p) tsd_exact(p$y, p$x), integer(1))
+  rev_got <- vapply(vertex_pairs, function(p) NNS.TSD.uni(p$y, p$x), integer(1))
+  expect_identical(rev_got, rev_ref)
+})
+
+test_that("tsdKnotOnly_vertexCex / sdDomPair_tsd_vertexCex: knot-only TSD check is insufficient; x=(0,4,5,1,4), y=(4,2,4,0) is no-TSD", {
   x <- c(0, 4, 5, 1, 4); y <- c(4, 2, 4, 0)
   k <- sort(unique(c(x, y)))
   expect_true(all(LPM(2, k, x) - LPM(2, k, y) <= 0))     # tsdVertexCex_le_at_knots
   expect_gte(mean(x), mean(y))                            # tsdVertexCex_mean_le
   expect_equal(LPM(2, 3, x) - LPM(2, 3, y), 0.1, tolerance = 8 * eps)  # tsdVertexCex_not_le_at_three
-  expect_identical(tsd_exact(x, y), 0L)                  # the vertex branch decides
-  expect_identical(NNS.TSD.uni(x, y), 0L)
+  q <- tsd_parts(x, y)
+  expect_true(q$knots_ok && q$mean_ok && q$differs)       # tsdKnotOnly_vertexCex: knot-only says 1
+  expect_true(q$vertex_bad)                               # the vertex branch decides
+  expect_identical(tsd_exact(x, y), 0L)
+  expect_identical(NNS.TSD.uni(x, y), 0L)                 # sdDomPair_tsd_vertexCex
   expect_identical(NNS.TSD(x, y, plot = FALSE), "NO TSD EXISTS")
 })
 
-test_that("tsdCex: the TSD mean gate is load-bearing; x = 0, y = (-1, 2) is no-TSD", {
+test_that("tsdCex (Integration.lean): the TSD mean gate is load-bearing; x = 0, y = (-1, 2) is no-TSD", {
   x <- 0; y <- c(-1, 2)
   s <- seq(-2, 2, by = 0.25)
   expect_true(all(LPM(2, s, x) <= LPM(2, s, y)))  # tsdCex_le_on_Iic
@@ -575,54 +711,125 @@ test_that("tsdCex: the TSD mean gate is load-bearing; x = 0, y = (-1, 2) is no-T
   expect_identical(NNS.TSD(x, y, plot = FALSE), "NO TSD EXISTS")
 })
 
-test_that("exists_le_of_forall_LPM_le / mean_le_of_LPM_one_le: dominance forces min and mean gates", {
+test_that("exists_le_of_forall_LPM_le / mean_le_of_LPM_one_le (SSD) / mean_le_of_LPM_two_le (TSD): dominance forces min and mean gates", {
   for (i in seq_along(int_pairs)) {
     p <- int_pairs[[i]]
-    if (any(int_verdicts[i, ] == 1L)) expect_gte(min(p$x), min(p$y))
-    if (int_verdicts[i, "ssd"] == 1L || int_verdicts[i, "tsd"] == 1L) {
+    if (any(int_verdicts[i, ] == 1L) || int_omega[i] == 1L) expect_gte(min(p$x), min(p$y))
+    if (int_verdicts[i, "ssd"] == 1L) {                       # mean_le_of_LPM_one_le
+      expect_gte(sum(p$x) * length(p$y), sum(p$y) * length(p$x))
+    }
+    if (int_verdicts[i, "tsd"] == 1L) {                       # mean_le_of_LPM_two_le
       expect_gte(sum(p$x) * length(p$y), sum(p$y) * length(p$x))
     }
   }
 })
 
-# ---- verdict shape (SPEC "sd_dom_pair (all orders): verdict semantics") -----
+# ---- continuous FSD (Omega / area ratio) ------------------------------------
 
-test_that("verdict antisymmetry: never both X dominates Y and Y dominates X (SPEC verdict semantics)", {
-  expect_false(any(int_verdicts == 1L & int_verdicts_rev == 1L))
+test_that("sdDomPair_omega_iff: FSD.uni(continuous) equals the exact LPM.ratio(1) criterion on random integer pairs", {
+  parts <- lapply(int_pairs, function(p) omega_parts(p$x, p$y))
+  ref <- vapply(int_pairs, function(p) omega_exact(p$x, p$y), integer(1))
+  expect_gt(sum(ref), 50)
+  # both interior branches of the kernel are exercised: the stationary point
+  # decides (knots pass, interior crossing) and the midpoint alone shows the
+  # curves differ (equal at every knot)
+  expect_gt(sum(vapply(parts, function(q) q$knots_ok && q$vertex_bad, logical(1))), 0)
+  expect_gt(sum(vapply(parts, function(q) q$knots_ok && !q$vertex_bad && !q$knot_differs &&
+                         q$mid_differs, logical(1))), 0)
+  expect_identical(int_omega, ref)
+  expect_identical(int_omega_rev, vapply(int_pairs, function(p) omega_exact(p$y, p$x), integer(1)))
 })
 
-test_that("verdict irreflexivity: a sample never dominates itself or a permutation of itself", {
-  for (x in c(list(x_int, x_dy, 3), random_samples[1], real_samples["mpg"])) {
-    expect_identical(verdicts(list(x = x, y = rev(x))), c(fsd = 0L, ssd = 0L, tsd = 0L))
+test_that("sdDomPair_omega_iff: book pair x = (0,1,4,5), y = (0,2,2.5,3) is Omega but not FSD", {
+  x <- c(0, 1, 4, 5); y <- c(0, 2, 2.5, 3)
+  expect_identical(omega_exact(x, y), 1L)
+  expect_identical(NNS.FSD.uni(x, y, type = "continuous"), 1L)
+  expect_identical(NNS.FSD.uni(x, y, type = "discrete"), 0L)
+  expect_identical(NNS.FSD(x, y, type = "continuous", plot = FALSE), "X OMEGA Y")
+  expect_identical(NNS.FSD(x, y, type = "discrete", plot = FALSE), "NO FSD EXISTS")
+})
+
+test_that("sdDomPair_omega_iff: crossing ratio curves c(1,1) vs c(0,2) give 0 in both directions", {
+  expect_identical(omega_exact(c(1, 1), c(0, 2)), 0L)
+  expect_identical(omega_exact(c(0, 2), c(1, 1)), 0L)
+  expect_identical(NNS.FSD.uni(c(1, 1), c(0, 2), type = "continuous"), 0L)
+  expect_identical(NNS.FSD.uni(c(0, 2), c(1, 1), type = "continuous"), 0L)
+  expect_identical(NNS.FSD(c(1, 1), c(0, 2), type = "continuous", plot = FALSE),
+                   "NO OMEGA DOMINANCE EXISTS")
+})
+
+test_that("sdDomPair_omega_iff (0/0 -> k/m fallback): constant samples", {
+  # all observations at t: L1 + U1 = 0 and the ratio is k/m (LPM.ratio gives 1)
+  expect_identical(LPM.ratio(1, 2, c(2, 2)), 1)
+  expect_identical(NNS.FSD.uni(c(2, 2), 2, type = "continuous"), 0L)  # same distribution
+  expect_identical(NNS.FSD.uni(2, c(2, 2), type = "continuous"), 0L)
+  expect_identical(NNS.FSD.uni(c(3, 3), c(2, 2), type = "continuous"), 1L)
+  expect_identical(NNS.FSD.uni(c(2, 2), c(3, 3), type = "continuous"), 0L)
+  expect_identical(omega_exact(c(3, 3), c(2, 2)), 1L)
+})
+
+test_that("LPM_one_le_of_LPM_zero_le + UPM_succ_le_of_forall_le (d = 0) => sdDomPair_omega_iff: discrete FSD == 1 implies Omega == 1", {
+  # F_x <= F_y gives L1_x <= L1_y (LPM_one_le_of_LPM_zero_le) and U1_x >= U1_y
+  # (UPM_succ_le_of_forall_le at d = 0, since UPM0 = 1 - F), hence R_x <= R_y
+  expect_gt(sum(int_verdicts[, "fsd"]), 20)
+  expect_true(all(int_omega[int_verdicts[, "fsd"] == 1L] == 1L))
+  fsd_omega <- vapply(fsd_pairs, function(p) NNS.FSD.uni(p$x, p$y, type = "continuous"), integer(1))
+  expect_true(all(fsd_omega[fsd_verdicts[, "fsd"] == 1L] == 1L))
+})
+
+# ---- verdict shape ----------------------------------------------------------
+
+test_that("sdDomPair_eq_zero_or_one: every .uni verdict is the integer 0 or 1", {
+  for (v in list(int_verdicts, int_verdicts_rev, fsd_verdicts, int_omega, int_omega_rev)) {
+    expect_type(v, "integer")
+    expect_true(all(v %in% c(0L, 1L)))
   }
 })
 
-test_that("verdict on equal distributions of different sizes is 0 (curves identical)", {
+test_that("sdDomPair_{fsd,ssd,tsd,omega}_iff: antisymmetry, never both X dominates Y and Y dominates X", {
+  # exact dominance is antisymmetric (curves <= both ways means equal curves)
+  expect_false(any(int_verdicts == 1L & int_verdicts_rev == 1L))
+  expect_false(any(int_omega == 1L & int_omega_rev == 1L))
+})
+
+test_that("LPM_eq_of_identical / sdDomPair_*_iff: a sample never dominates itself or a permutation of itself", {
+  for (x in c(list(x_int, x_dy, 3), random_samples[1], real_samples["mpg"])) {
+    expect_identical(verdicts(list(x = x, y = rev(x))), c(fsd = 0L, ssd = 0L, tsd = 0L))
+    expect_identical(NNS.FSD.uni(x, rev(x), type = "continuous"), 0L)
+  }
+})
+
+test_that("sdDomPair_*_iff (curves never differ): equal distributions of different sizes give 0", {
   x <- c(1, 2); y <- c(1, 1, 2, 2)
   expect_identical(verdicts(list(x = x, y = y)), c(fsd = 0L, ssd = 0L, tsd = 0L))
   expect_identical(verdicts(list(x = y, y = x)), c(fsd = 0L, ssd = 0L, tsd = 0L))
+  expect_identical(NNS.FSD.uni(x, y, type = "continuous"), 0L)
+  expect_identical(NNS.FSD.uni(y, x, type = "continuous"), 0L)
 })
 
-test_that("n = 1 samples: 2 dominates 1 in every order, 1 vs 1 in none", {
+test_that("sdDomPair_*_iff: n = 1 samples, 2 dominates 1 in every order, 1 vs 1 in none", {
   expect_identical(verdicts(list(x = 2, y = 1)), c(fsd = 1L, ssd = 1L, tsd = 1L))
   expect_identical(verdicts(list(x = 1, y = 2)), c(fsd = 0L, ssd = 0L, tsd = 0L))
   expect_identical(verdicts(list(x = 1, y = 1)), c(fsd = 0L, ssd = 0L, tsd = 0L))
 })
 
-test_that("constant samples: equal constants of different sizes give 0, a higher constant dominates", {
+test_that("sdDomPair_*_iff: constant samples, equal constants give 0, a higher constant dominates", {
   expect_identical(verdicts(list(x = c(2, 2), y = 2)), c(fsd = 0L, ssd = 0L, tsd = 0L))
   expect_identical(verdicts(list(x = rep(3, 4), y = c(1, 3))), c(fsd = 1L, ssd = 1L, tsd = 1L))
   # mean-preserving spread: the constant SSD/TSD-dominates, FSD fails
   expect_identical(verdicts(list(x = c(1, 1), y = c(0, 2))), c(fsd = 0L, ssd = 1L, tsd = 1L))
 })
 
-test_that("verdict translation invariance: shifting both samples by 1024 keeps every verdict", {
+test_that("LPMDominates_shift / sdDomPairCentred_eq / sdDomPairCentred_omega_eq: shifting both samples by 1024 keeps every verdict", {
   shifted <- t(vapply(int_pairs, function(p) verdicts(list(x = p$x + 1024, y = p$y + 1024)),
                       integer(3)))
   expect_identical(shifted, int_verdicts)
+  shifted_omega <- vapply(int_pairs, function(p) NNS.FSD.uni(p$x + 1024, p$y + 1024, type = "continuous"),
+                          integer(1))
+  expect_identical(shifted_omega, int_omega)
 })
 
-test_that("bidirectional wrappers agree with the .uni verdicts and swap labels with the arguments", {
+test_that("bidirectional wrappers agree with the .uni verdicts and swap labels with the arguments (SPEC bidirectional wrappers)", {
   for (i in seq_len(60)) {
     p <- int_pairs[[i]]
     for (ord in c("FSD", "SSD", "TSD")) {
@@ -633,5 +840,9 @@ test_that("bidirectional wrappers agree with the .uni verdicts and swap labels w
               else paste("NO", ord, "EXISTS")
       expect_identical(fn(p$x, p$y, plot = FALSE), want)
     }
+    want <- if (int_omega[i] == 1L) "X OMEGA Y"
+            else if (int_omega_rev[i] == 1L) "Y OMEGA X"
+            else "NO OMEGA DOMINANCE EXISTS"
+    expect_identical(NNS.FSD(p$x, p$y, type = "continuous", plot = FALSE), want)
   }
 })

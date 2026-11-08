@@ -19,7 +19,11 @@
 #
 # Targets are always passed as numbers when results of different functions
 # are compared: PM.matrix (Rcpp colMeans), Co.LPM (Rcpp sugar mean) and R's
-# mean() can differ by an ulp, which moves tie membership at degree 0.
+# mean() can differ by an ulp, which moves tie membership at degree 0. The one
+# exception is the covariance_decomposition test with target_x = target_y =
+# NULL: it exercises the bivariate mean-default path, compares each function
+# only with others resolving the same NULL target, and checks the degree-0
+# quadrants through their sum, which is 1 whatever the tie membership.
 #
 # Every case and degree of a property is collected into one vector and
 # checked with a single expectation; a failure names the offending
@@ -44,17 +48,24 @@ co_tol <- function(c, dx, dy, k = 4) {
 mat_tol <- function(M, n, k = 4) k * (n + ncol(M)) * eps * max(abs(M))
 
 # Elementwise |actual - expected| <= tol, one expectation, failing entries named.
+# An empty comparison fails (a case list that collapsed to nothing would
+# otherwise pass vacuously), and tol must be a scalar or match actual.
 expect_within <- function(actual, expected, tol) {
+  non_empty <- length(actual) > 0
+  same_shape <- length(expected) %in% c(1L, length(actual))
+  tol_shape <- length(tol) %in% c(1L, length(actual))
+  if (!(non_empty && same_shape && tol_shape)) {
+    return(expect(FALSE, paste(c(if (!non_empty) "empty comparison",
+                                 if (!same_shape) "length mismatch (expected)",
+                                 if (!tol_shape) "length mismatch (tol)"), collapse = "; ")))
+  }
   err <- abs(actual - expected)
   tol <- rep_len(tol, length(err))
   bad <- which(!(is.finite(err) & err <= tol))
   where <- names(actual)
   if (is.null(where)) where <- as.character(seq_along(err))
   msg <- sprintf("%s: |diff| = %.3g > tol %.3g", where[bad], err[bad], tol[bad])
-  same_shape <- length(expected) %in% c(1L, length(actual))
-  expect(same_shape && length(bad) == 0,
-         paste(c(if (!same_shape) "length mismatch", "not within tolerance:", head(msg, 8)),
-               collapse = "\n"))
+  expect(length(bad) == 0, paste(c("not within tolerance:", head(msg, 8)), collapse = "\n"))
 }
 
 # Collect f over named cases / over degree pairs into one named vector.
@@ -171,6 +182,17 @@ test_that("covariance_decomposition: targets at the means give the population co
   pop_cov <- function(c) cov(c$x, c$y) * (length(c$x) - 1) / length(c$x)
   expect_within(over(mean_cases, decomposition), over(mean_cases, pop_cov),
                 over(mean_cases, function(c) co_tol(c, 1, 1)))
+})
+
+test_that("covariance_decomposition: target_x = target_y = NULL resolves to the means (bivariate mean-default path)", {
+  # one case per data set; its numeric targets are mean(x), mean(y), so co_tol
+  # is evaluated at the targets NULL resolves to
+  mean_cases <- sample_cases[grep("mean$", names(sample_cases))]
+  null_t <- function(c) list(x = c$x, y = c$y, tx = NULL, ty = NULL)
+  pop_cov <- function(c) cov(c$x, c$y) * (length(c$x) - 1) / length(c$x)
+  expect_within(over(mean_cases, function(c) decomposition(null_t(c))), over(mean_cases, pop_cov),
+                over(mean_cases, function(c) co_tol(c, 1, 1)))
+  expect_within(over(mean_cases, function(c) quadrant_sum0(null_t(c))), 1, 4 * eps)
 })
 
 test_that("quadrants_sum_eq_one: exact dyadic data, the degree-0 quadrants sum to exactly 1", {
@@ -737,6 +759,90 @@ test_that("SPEC DPM_nD (nD analogue of quadrants_sum_eq_one): random and real da
     })
   }))
   expect_within(sums, 1, 4 * eps)
+})
+
+# Independent oracle for the k-column functions (SPEC.md "Co.LPM_nD",
+# "DPM_nD"): with D = X - t row-wise, Co.LPM_nD = mean prod_j (t_j - x_ij)_+^d,
+# Co.UPM_nD = mean prod_j (x_ij - t_j)_+^d, DPM_nD = mean over rows that are
+# neither strictly all-below nor strictly all-above of prod_j |x_ij - t_j|^d.
+# At degree 0 the cells are the indicators all(D <= 0), all(D > 0) and
+# neither. ts attributes are dropped first (pmax on an mts fails).
+nd_oracle <- function(X, t, d) {
+  X <- matrix(as.numeric(X), nrow(X), ncol(X))
+  D <- sweep(X, 2, t)
+  rowprod <- function(M) apply(M, 1, prod)
+  if (d == 0) {
+    lo <- apply(D <= 0, 1, all)
+    hi <- apply(D > 0, 1, all)
+    return(c(clpm = mean(lo), cupm = mean(hi), dpm = mean(!lo & !hi)))
+  }
+  strict <- apply(D < 0, 1, all) | apply(D > 0, 1, all)
+  c(clpm = mean(rowprod(pmax(-D, 0)^d)), cupm = mean(rowprod(pmax(D, 0)^d)),
+    dpm = mean(ifelse(strict, 0, rowprod(abs(D)^d))))
+}
+nd_triple <- function(X, t, d) {
+  c(clpm = Co.LPM_nD(X, t, d, FALSE), cupm = Co.UPM_nD(X, t, d, FALSE), dpm = DPM_nD(X, t, d, FALSE))
+}
+# Scale of a k-column moment: mean prod_j |x_ij - t_j|^d (the three cells' total).
+nd_tol <- function(X, t, d, k = 4) {
+  X <- matrix(as.numeric(X), nrow(X), ncol(X))
+  k * (nrow(X) + d * ncol(X) + 2) * eps * mean(apply(abs(sweep(X, 2, t))^d, 1, prod))
+}
+
+# t_exact ties two rows in column c, so Co.LPM_nD is 0 for d > 0 there (zero
+# branch only); c(0.5, 1, 0.5) makes all three cells positive at every degree
+# with five ties; c(1, 1, 1) and c(0, 0, 0) put one of the co-cells at 0.
+nd_exact_targets <- list(t_exact = t_exact, mixed = c(0.5, 1, 0.5),
+                         ones = c(1, 1, 1), zeros = c(0, 0, 0))
+
+test_that("SPEC Co.LPM_nD / Co.UPM_nD / DPM_nD: k = 3 exact dyadic data, identical to the k-column product oracle", {
+  per_target <- function(f) unlist(lapply(nd_exact_targets, function(t) {
+    unlist(lapply(0:2, function(d) setNames(f(X_exact, t, d), paste0("d", d, ".", c("clpm", "cupm", "dpm")))))
+  }))
+  got <- per_target(nd_triple)
+  ref <- per_target(nd_oracle)
+  expect_identical(got, ref)
+  # the mixed target really exercises all three cells at d > 0
+  mixed_pos <- got[grep("^mixed\\.d[12]\\.", names(got))]
+  expect_true(length(mixed_pos) == 6 && all(mixed_pos > 0))
+})
+
+test_that("SPEC Co.LPM_nD / Co.UPM_nD / DPM_nD: k = 3..4, random and real data, within n * eps of the oracle", {
+  vals <- function(f) unlist(lapply(pm_samples, function(X) {
+    lapply(list(mean = colMeans(X), obs = X[3, ]), function(tg) {
+      unlist(lapply(0:2, function(d) setNames(f(X, unname(tg), d), paste0("d", d, ".", c("clpm", "cupm", "dpm")))))
+    })
+  }))
+  expect_within(vals(nd_triple), vals(nd_oracle), vals(function(X, t, d) rep(nd_tol(X, t, d), 3)))
+})
+
+test_that("SPEC Co.LPM_nD / Co.UPM_nD / DPM_nD: n = 1 rows (k = 3)", {
+  t <- c(2, 2, 2)
+  expect_identical(c(Co.LPM_nD(rbind(c(1, 2, 3)), t, 1, FALSE),
+                     Co.UPM_nD(rbind(c(3, 4, 5)), t, 1, FALSE),
+                     DPM_nD(rbind(c(1, 3, 5)), t, 1, FALSE),
+                     Co.LPM_nD(rbind(c(0, 1, 1.5)), t, 2, FALSE)),
+                   c(0, 6, 3, 2 * 2 * 1 * 1 * 0.5 * 0.5))
+  # a tie in one coordinate: 0^0 = 1 at degree 0 but 0^d = 0 for d > 0
+  expect_identical(c(Co.LPM_nD(rbind(c(1, 2, 3)), t, 0, FALSE),
+                     DPM_nD(rbind(c(1, 2, 3)), t, 0, FALSE),
+                     DPM_nD(rbind(c(1, 2, 3)), t, 1, FALSE),
+                     Co.LPM_nD(rbind(c(1, 2, 1)), t, 0, FALSE),
+                     Co.LPM_nD(rbind(c(1, 2, 1)), t, 1, FALSE)),
+                   c(0, 1, 0, 1, 0))
+})
+
+test_that("SPEC Co.LPM_nD / DPM_nD: a sample constant at its target, raw cells", {
+  X <- matrix(1, 3, 2)
+  expect_identical(c(nd_triple(X, c(1, 1), 0), nd_triple(X, c(1, 1), 1)),
+                   c(clpm = 1, cupm = 0, dpm = 0, clpm = 0, cupm = 0, dpm = 0))
+})
+
+test_that("SPEC Co.LPM_nD: norm = TRUE cells sum to 1 for a sample constant at its target (degree > 0)", {
+  # fails on 8898017: see BUGS.md #18 (normaliser 0 -> every norm = TRUE cell
+  # returns 0, so the sum is 0 instead of 1)
+  sums <- vapply(1:2, function(d) nd_sum(matrix(1, 3, 2), c(1, 1), d, TRUE), numeric(1))
+  expect_within(sums, 1, 8 * eps)
 })
 
 nd_cases <- function(f) over(all_cases, function(c) vapply(0:2, function(d) f(c, d), numeric(1)))
