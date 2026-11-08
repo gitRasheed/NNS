@@ -187,6 +187,22 @@ test_that("D03: continuous FSD (Omega) equals the exact LPM.ratio(1) criterion",
     expect_identical(NNS.FSD.uni(c(2, 2), c(3, 3), type = "continuous"), 0L)
     expect_identical(aud_omega_exact(c(3, 3), c(2, 2)), 1L)
   })
+  aud_case("continuous dominance is reported as area order, not ordinary FSD", {
+    x <- c(0, 1, 4, 5)
+    y <- c(0, 2, 2.5, 3)
+    expect_equal(NNS.FSD(x, y, type = "continuous", plot = FALSE), "X OMEGA Y")
+    expect_equal(NNS.FSD(y, x, type = "continuous", plot = FALSE), "Y OMEGA X")
+    expect_equal(NNS.FSD(x, y, type = "discrete", plot = FALSE), "NO FSD EXISTS")
+    expect_equal(NNS.FSD.uni(x, y, type = "continuous"), 1)
+    expect_equal(NNS.FSD.uni(x, y, type = "discrete"), 0)
+
+    # The original CDFs cross and an increasing utility can prefer y.
+    expect_gt(mean(x <= 1), mean(y <= 1))
+    expect_lt(mean(x <= 3), mean(y <= 3))
+    expect_lt(mean(x > 1), mean(y > 1))
+    expect_equal(NNS.FSD(x, x, type = "continuous", plot = FALSE),
+                 "NO OMEGA DOMINANCE EXISTS")
+  })
 })
 
 # Lean: sdDomPair_eq_zero_or_one, LPM_eq_of_identical, LPMDominates_shift, sdDomPairCentred_eq, sdDomPairCentred_omega_eq | BUGS: none
@@ -285,5 +301,157 @@ test_that("D05: bidirectional wrappers agree with the .uni verdicts whatever plo
               else "NO OMEGA DOMINANCE EXISTS"
       expect_identical(NNS.FSD(p$x, p$y, type = "continuous", plot = FALSE), want)
     }
+  })
+})
+
+# pin: NNS-Python reference values
+test_that("D06: NNS-Python reference verdicts: FSD, SSD and TSD on the shared x, y pair and its square", {
+  withr::local_seed(20261108)
+  x <- nns_py$x
+  y <- nns_py$y
+  pairs <- list("x, y" = list(x, y), "x, y^2" = list(x, y^2), "y^2, x" = list(y^2, x))
+  # Wrapper verdicts, each with and without the plot; type is the FSD type.
+  wrappers <- read.table(header = TRUE, sep = "|", strip.white = TRUE, stringsAsFactors = FALSE, text = "
+    fn      | pair   | type       | expected
+    NNS.FSD | x, y   | discrete   | NO FSD EXISTS
+    NNS.FSD | x, y   | continuous | NO OMEGA DOMINANCE EXISTS
+    NNS.FSD | x, y^2 | discrete   | X FSD Y
+    NNS.FSD | x, y^2 | continuous | X OMEGA Y
+    NNS.FSD | y^2, x | discrete   | Y FSD X
+    NNS.FSD | y^2, x | continuous | Y OMEGA X
+    NNS.SSD | x, y   |            | NO SSD EXISTS
+    NNS.SSD | x, y^2 |            | X SSD Y
+    NNS.SSD | y^2, x |            | Y SSD X
+    NNS.TSD | x, y   |            | NO TSD EXISTS
+    NNS.TSD | x, y^2 |            | X TSD Y
+    NNS.TSD | y^2, x |            | Y TSD X")
+  wrappers <- rbind(cbind(wrappers, plot = TRUE), cbind(wrappers, plot = FALSE))
+  wrappers$label <- sprintf("%s(%s%s, plot = %s)", wrappers$fn, wrappers$pair,
+                            ifelse(wrappers$type == "", "", paste0(", type = ", wrappers$type)), wrappers$plot)
+  aud_cases(wrappers, function(r) {
+    p <- pairs[[r$pair]]
+    got <- if (r$fn == "NNS.FSD") NNS.FSD(p[[1]], p[[2]], type = r$type, plot = r$plot) else
+      match.fun(r$fn)(p[[1]], p[[2]], plot = r$plot)
+    expect_equal(got, r$expected)
+  })
+  # The .uni verdicts behind them.
+  uni <- read.table(header = TRUE, sep = "|", strip.white = TRUE, stringsAsFactors = FALSE, text = "
+    fn          | pair   | type       | expected
+    NNS.FSD.uni | x, y   | discrete   | 0
+    NNS.FSD.uni | x, y^2 | discrete   | 1
+    NNS.FSD.uni | x, y^2 | continuous | 1
+    NNS.SSD.uni | x, y   |            | 0
+    NNS.SSD.uni | x, y^2 |            | 1
+    NNS.TSD.uni | x, y   |            | 0
+    NNS.TSD.uni | x, y^2 |            | 1")
+  uni$label <- sprintf("%s(%s%s)", uni$fn, uni$pair, ifelse(uni$type == "", "", paste0(", ", uni$type)))
+  aud_cases(uni, function(r) {
+    p <- pairs[[r$pair]]
+    got <- if (r$type == "") match.fun(r$fn)(p[[1]], p[[2]]) else match.fun(r$fn)(p[[1]], p[[2]], r$type)
+    expect_equal(got, r$expected)
+  })
+})
+
+test_that("D07: dominance between the knots: TSD LPM2, continuous FSD ratios, rounding-level ties and crossings", {
+  withr::local_seed(20261108)
+  aud_case("continuous FSD ratios that agree at the knots but cross are not dominance", {
+    x <- c(0, 0, 3, 3); y <- c(1, 1, 3, 0)
+    expect_equal(NNS.FSD.uni(x, y, "continuous"), 0)
+    expect_equal(NNS.FSD.uni(y, x, "continuous"), 0)
+    expect_setequal(NNS.SD.efficient.set(cbind(x, y), 1, "continuous", status = FALSE), c("x", "y"))
+  })
+  aud_case("continuous FSD uses CDF 1 when every observation equals the threshold", {
+    expect_equal(NNS.FSD.uni(rep(4, 6), c(5, 5, 0, 4, 0, 2), "continuous"), 0)
+    expect_equal(NNS.FSD.uni(c(0, 3), c(0, 0), "continuous"), 1)
+    expect_equal(NNS.FSD(c(0, 0), c(0, 3), "continuous", plot = FALSE), "Y OMEGA X")
+  })
+  aud_case("TSD checks LPM2 between the sample points", {
+    x <- c(-0.85, -1.52, 0.68); y <- c(-0.21, -0.33, -1.67)
+    expect_equal(mean(pmax(0.16 - x, 0)^2) - mean(pmax(0.16 - y, 0)^2), 0.03886667, tolerance = 1e-6)
+    expect_equal(NNS.TSD(x, y, plot = FALSE), "NO TSD EXISTS")
+    expect_equal(NNS.TSD.uni(x, y), 0)
+    expect_setequal(NNS.SD.efficient.set(cbind(x, y), 3, status = FALSE), c("x", "y"))
+  })
+  aud_case("continuous FSD checks the ratios between the sample points", {
+    x <- c(0.15, 1.55, -0.86, -0.8, 0.25, 0.33); y <- c(-0.15, 1.17, 0.26, -0.04, -2.44, 1.19)
+    ratio <- function(v, t) mean(pmax(t - v, 0)) / mean(abs(t - v))
+    expect_equal(ratio(x, 0.5) - ratio(y, 0.5), 0.002972295, tolerance = 1e-6)
+    expect_equal(NNS.FSD(x, y, "continuous", plot = FALSE), "NO OMEGA DOMINANCE EXISTS")
+    expect_equal(NNS.FSD.uni(x, y, "continuous"), 0)
+    expect_setequal(NNS.SD.efficient.set(cbind(x, y), 1, "continuous", status = FALSE), c("x", "y"))
+  })
+  aud_case("SSD treats rounding-level curve differences as ties", {
+    expect_equal(NNS.SSD(c(0.1, 0.7), c(0, 0.8), plot = FALSE), "X SSD Y")
+    expect_equal(NNS.SSD(c(1, 7), c(0, 8), plot = FALSE), "X SSD Y")
+    expect_equal(NNS.SSD.uni(c(0.1, 0.7), c(0, 0.8)), 1)
+    z <- qnorm(ppoints(100))
+    expect_equal(NNS.SSD(z, 2 * z, plot = FALSE), "X SSD Y")
+    expect_equal(NNS.SSD.uni(z + 0.37, 2 * z + 0.37), 1)
+    expect_equal(NNS.SSD(3 * z + 0.37, 6 * z + 0.37, plot = FALSE), "X SSD Y")
+  })
+  aud_case("continuous FSD sees ratios that differ only between the knots", {
+    x <- c(0, 1, 1); y <- c(0, 0, 1)
+    expect_equal(NNS.FSD(x, y, "continuous", plot = FALSE), "X OMEGA Y")
+    expect_equal(c(NNS.FSD.uni(x, y, "continuous"), NNS.FSD.uni(y, x, "continuous")), c(1, 0))
+    expect_equal(NNS.SD.efficient.set(cbind(x, y), 1, "continuous", status = FALSE), "x")
+    expect_equal(NNS.FSD(c(1, 1), c(0, 1), "continuous", plot = FALSE), "X OMEGA Y")
+    expect_equal(c(NNS.FSD.uni(c(1, 1), c(0, 1), "continuous"), NNS.FSD.uni(c(0, 1), c(1, 1), "continuous")), c(1, 0))
+  })
+})
+
+test_that("D08: .uni tests on samples of different lengths, coincident curves, spreads and shifts; empty, missing and infinite samples", {
+  withr::local_seed(20261108)
+  aud_case(".uni tests walk samples of different lengths", {
+    expect_equal(NNS.FSD.uni(4, c(3, 0)), 1)
+    expect_equal(NNS.SSD.uni(c(1, 4), c(3, 1, 3, 0, 2)), 1)
+    expect_equal(NNS.TSD.uni(c(4, 1), c(0, 3, 3, 4)), 1)
+    expect_equal(NNS.FSD(4, c(3, 0), plot = FALSE), "X FSD Y")
+    expect_equal(NNS.SSD(c(1, 4), c(3, 1, 3, 0, 2), plot = FALSE), "X SSD Y")
+    expect_equal(NNS.TSD(c(4, 1), c(0, 3, 3, 4), plot = FALSE), "X TSD Y")
+  })
+  aud_case(".uni tests report no dominance when the curves coincide", {
+    expect_equal(NNS.FSD.uni(c(1, 2), c(1, 1, 2, 2), "continuous"), 0)
+    expect_equal(NNS.SSD.uni(c(1, 2), c(1, 1, 2, 2)), 0)
+    expect_equal(NNS.TSD.uni(c(1, 2), c(1, 1, 2, 2)), 0)
+  })
+  aud_case("the missing-value check does not recycle samples of different lengths", {
+    expect_silent(NNS.FSD(c(1, 2, 5), c(0, 1, 1, 2, 3), plot = FALSE))
+    expect_silent(NNS.SSD(c(1, 2, 5), c(0, 1, 1, 2, 3), plot = FALSE))
+    expect_silent(NNS.TSD(c(1, 2, 5), c(0, 1, 1, 2, 3), plot = FALSE))
+    expect_silent(NNS.SSD.uni(c(1, 2, 5), c(0, 1, 1, 2, 3)))
+    expect_error(NNS.SSD(c(1, NA), 1:3, plot = FALSE), "missing values")
+    expect_error(NNS.TSD.uni(c(1, NaN), 1:3), "missing values")
+  })
+  aud_case("a mean-preserving spread of a large sample is still dominated", {
+    z <- qnorm(ppoints(1e5))
+    expect_equal(NNS.SSD.uni(z + 100, 2 * z + 100), 1)
+    expect_equal(NNS.TSD.uni(z + 100, 2 * z + 100), 1)
+    expect_equal(NNS.SSD(z + 100, 2 * z + 100, plot = FALSE), "X SSD Y")
+    expect_equal(NNS.TSD(z + 100, 2 * z + 100, plot = FALSE), "X TSD Y")
+  })
+  aud_case("an empty sample is an error", {
+    expect_error(NNS.FSD(numeric(0), c(0, 1), plot = FALSE), "at least one observation")
+    expect_error(NNS.SSD(c(0, 1), numeric(0), plot = FALSE), "at least one observation")
+    expect_error(NNS.TSD(numeric(0), c(0, 1), plot = FALSE), "at least one observation")
+  })
+  aud_case("adding a constant to both samples keeps the TSD result", {
+    x <- c(-.0085, -.0152, .0068); y <- c(-.0021, -.0033, -.0167)
+    expect_equal(NNS.TSD.uni(x + 20000, y + 20000), NNS.TSD.uni(x, y))
+    x <- c(.01, .07); y <- c(0, .08)
+    expect_equal(NNS.TSD.uni(x + 1e6, y + 1e6), 1)
+    expect_equal(NNS.SD.efficient.set(cbind(x, y) + 1e6, degree = 3, status = FALSE), "x")
+    x <- c(.01, .03); y <- c(0, .04)
+    expect_equal(c(NNS.SSD.uni(x + 20000, y + 20000), NNS.TSD.uni(x + 20000, y + 20000)), c(1, 1))
+    x <- c(0, .01, .03, 1:996, 1000); y <- c(0, .02, .02, 1:996, 999)
+    for (s in c(20000, 1e6)) {
+      expect_equal(NNS.TSD.uni(x + s, y + s), 0)
+      expect_equal(NNS.TSD.uni(c(0, .02, .02, 1:996, 1000) + s, x + s), 1)
+    }
+  })
+  aud_case("an infinite value is an error, not 'no dominance'", {
+    a <- c(0, 1, Inf); b <- c(0, 1, 2)
+    expect_error(NNS.SSD.uni(a, b), "`x` must be finite.", fixed = TRUE)
+    expect_error(NNS.TSD.uni(a, b), "`x` must be finite.", fixed = TRUE)
+    expect_error(NNS.FSD.uni(a, b, "continuous"), "`x` must be finite.", fixed = TRUE)
   })
 })
