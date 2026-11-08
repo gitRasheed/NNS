@@ -185,15 +185,18 @@ test_that("integer-degree VaR returns a tied decimal order statistic whose ratio
 test_that("integer-degree VaR returns the order statistic wherever the decimal ratio is p", {
   # Scores k / den + offset with integer k: the decimal partial moments at a
   # tie are integers, so "the decimal ratio is num / pden" is an exact integer
-  # test. The double data and percentile are within rounding of those
-  # decimals, and so is the root.
-  probs <- list(c(4, 5), c(1, 5), c(1, 2), c(3, 4), c(1, 4), c(2, 5), c(9, 10), c(1, 10))
+  # test. The double data and percentile (1 / 3 included) are within rounding
+  # of those values, and so is the root. Two or three levels among the first 13
+  # multiples of 1 / den, repeated 3 to 8 times, make exact ratios common:
+  # with this seed there are 354 checks (169, 90, 45 and 50 at d = 1 to 4).
+  probs <- list(c(4, 5), c(1, 5), c(1, 2), c(3, 4), c(1, 4), c(2, 5), c(9, 10),
+                c(1, 10), c(1, 3), c(2, 3))
   set.seed(123)
   checks <- 0L
   for (i in 1:5000) {
     den <- sample(c(10, 100, 1000), 1)
     offset <- sample(c(0, 0, 1, -3, 17), 1)
-    k <- sample(sample(0:den, sample(2:4, 1)), sample(4:40, 1), replace = TRUE)
+    k <- sample(sample(0:min(den, 12), sample(2:3, 1)), sample(3:8, 1), replace = TRUE)
     if (length(unique(k)) < 2L) next
     s <- k / den + offset
     d <- sample(1:4, 1)
@@ -214,7 +217,7 @@ test_that("integer-degree VaR returns the order statistic wherever the decimal r
       }
     }
   }
-  expect_gt(checks, 50L)
+  expect_gt(checks, 200L)
 })
 
 test_that("integer-degree VaR does not return a break for a root resolved off it", {
