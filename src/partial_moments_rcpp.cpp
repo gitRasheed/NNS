@@ -497,6 +497,8 @@ NumericVector CoUPM_RCPP(
    NumericVector tgt;
    if (is_supplied_target(target, "target")) {
      tgt=as<NumericVector>(target);
+     // Before the length check, so a scalar NA is reported as missing.
+     stop_if_not_finite(tgt, "target");
    }else{
      tgt=colMeans(variable_matrix);
      // The compiled mean (sequential sum / n) of a constant column need not

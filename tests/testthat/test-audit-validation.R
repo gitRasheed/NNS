@@ -170,6 +170,9 @@ test_that("PM.matrix rejects non-numeric targets", {
   expect_error(PM.matrix(1, 1, data.frame(0, 0), A, TRUE), "`target` must be numeric or NULL.", fixed = TRUE)
   expect_error(PM.matrix(1, 1, "median", A, TRUE), "`target` must be numeric or NULL.", fixed = TRUE)
   expect_error(PM.matrix(1, 1, c(NA, NA), A, TRUE), "`target` must be finite.", fixed = TRUE)
+  expect_error(PM.matrix(1, 1, NA, matrix(rnorm(9), 3), TRUE), "`target` must be finite.", fixed = TRUE)
+  expect_error(PM.matrix(1, 1, Inf, A, TRUE), "`target` must be finite.", fixed = TRUE)
+  expect_error(PM.matrix(1, 1, c(0, 0, 0), A, TRUE), "variable matrix cols != target vector length", fixed = TRUE)
 })
 
 test_that("PM.matrix keeps target = \"mean\"/\"means\" as an alias for NULL", {
