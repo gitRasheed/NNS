@@ -189,10 +189,25 @@ test_that("LPM_zero_monotone / LPM_one_monotone: degree 0 and 1 LPM nondecreasin
 
 # ---- RealDegree.lean -------------------------------------------------------
 
-test_that("rLPM_natCast / rUPM_natCast: integer-typed degree equals double degree", {
-  for (k in 0:4) {
-    expect_identical(lpm_each(k, t_exact, x_exact), lpm_each(as.integer(k), t_exact, x_exact))
-    expect_identical(upm_each(k, t_exact, x_exact), upm_each(as.integer(k), t_exact, x_exact))
+test_that("rLPM_natCast / rUPM_natCast: natural-degree kernel equals the real-power definition", {
+  # rLPM_natCast: the real-power definition rLPM (rLowerDev, (t - v)^d as
+  # rpow) at a natural degree k equals the natural-power LPM. In the kernel the
+  # natural degree goes through repeatMultiplication; the oracle below is the
+  # real-power route (R's `^` with a double exponent calls C pow; d = 0 keeps
+  # the tie, as rpow 0 0 = 1). k = 1, 2 are identical on both routes (pow(v, 1)
+  # = v, R squares as v * v), so k >= 3 is where the check bites.
+  rpow_lpm <- function(k, t, x) sum(ifelse(x <= t, (t - x)^(k + 0), 0)) / length(x)
+  rpow_upm <- function(k, t, x) sum(ifelse(x > t, (x - t)^(k + 0), 0)) / length(x)
+  for (nm in names(c(list(exact = x_exact), all_samples))) {
+    x <- c(list(exact = x_exact), all_samples)[[nm]]
+    ts <- c(targets_of(x), head(x, 5))
+    for (k in 0:6) {
+      tol <- pm_tol_v(k, ts, x)
+      expect_within(lpm_each(k, ts, x), vapply(ts, rpow_lpm, numeric(1), k = k, x = x), tol,
+                    label = sprintf("LPM %s k=%d", nm, k))
+      expect_within(upm_each(k, ts, x), vapply(ts, rpow_upm, numeric(1), k = k, x = x), tol,
+                    label = sprintf("UPM %s k=%d", nm, k))
+    }
   }
 })
 
@@ -250,12 +265,31 @@ test_that("rLPM_eq_strict: for d > 0 a tie at the target contributes nothing to 
   }
 })
 
-test_that("rUPM_eq_rLPM_neg: for d > 0, UPM(d, t, x) = LPM(d, -t, -x)", {
+test_that("rUPM_eq_rLPM_neg: for d > 0, UPM(d, t, x) = LPM(d, -t, -x) (direct path, structural)", {
+  # On the direct (<= 32 target) kernel this is a structural identity, not a
+  # numerical check: UPM_C forms x_i - t and LPM_C on (-t, -x) forms
+  # (-t) - (-x_i), the same IEEE operation in the same loop order. The
+  # numerical content is in the > 32 target test below.
   for (d in c(0.5, 1, 1.5, 2, 3)) {
     expect_identical(upm_each(d, t_exact, x_exact), lpm_each(d, -t_exact, -x_exact))
     for (x in all_samples) {
       ts <- targets_of(x)
       expect_identical(upm_each(d, ts, x), lpm_each(d, -ts, -x))
+    }
+  }
+})
+
+test_that("rUPM_eq_rLPM_neg: for integer d > 0, UPM(d, t, x) = LPM(d, -t, -x) on the > 32 target path", {
+  # The prefix backend computes LPM and UPM with different recurrences, so
+  # here the reflection is a real numerical check. Only integer d in 1..32
+  # take the prefix backend; non-integer d falls back to LPM_C / UPM_C and
+  # would be the structural identity again.
+  for (nm in names(c(list(exact = x_exact), all_samples))) {
+    x <- c(list(exact = x_exact), all_samples)[[nm]]
+    ts <- rep_len(c(targets_of(x), head(x, 10)), 40)
+    for (d in 1:6) {
+      expect_within(UPM(d, ts, x), LPM(d, -ts, -x), pm_tol_v(d, ts, x),
+                    label = sprintf("%s d=%d", nm, d))
     }
   }
 })
@@ -314,17 +348,28 @@ test_that("rLPM_mul_const / rUPM_mul_const: scaling by a > 0 multiplies by a^d f
 })
 
 test_that("rLPM_const / rUPM_const: constant sample gives [c <= t](t - c)^d and [c < t](c - t)^d", {
-  for (n in c(1, 5)) {
+  # 0 and 1 results are exact at every n (sums of zeros; n / n). A sum of n
+  # copies of v divided by n is exact for n in {1, 2} (v + v = 2v, /2 exact)
+  # but not in general for n >= 3, so there the (t - c)^d value is compared
+  # to n * eps relative (pm_tol: the scale is exactly (t - c)^d).
+  for (n in c(1, 2, 5, 8)) {
     x <- rep(2, n)
     expect_identical(LPM(0, 2, x), 1)
     expect_identical(UPM(0, 2, x), 0)
-    for (d in c(0.5, 1, 2, 3)) {
+    for (d in c(0.5, 1, 2, 3, 3.7)) {
       expect_identical(LPM(d, 2, x), 0)
       expect_identical(UPM(d, 2, x), 0)
-      expect_identical(LPM(d, 3.5, x), 1.5^d)
       expect_identical(UPM(d, 3.5, x), 0)
-      expect_identical(UPM(d, 0.5, x), 1.5^d)
       expect_identical(LPM(d, 0.5, x), 0)
+      if (n <= 2) {
+        expect_identical(LPM(d, 3.5, x), 1.5^d, label = sprintf("LPM n=%d d=%g", n, d))
+        expect_identical(UPM(d, 0.5, x), 1.5^d, label = sprintf("UPM n=%d d=%g", n, d))
+      } else {
+        expect_lte(abs(LPM(d, 3.5, x) - 1.5^d), pm_tol(d, 3.5, x),
+                   label = sprintf("LPM n=%d d=%g", n, d))
+        expect_lte(abs(UPM(d, 0.5, x) - 1.5^d), pm_tol(d, 0.5, x),
+                   label = sprintf("UPM n=%d d=%g", n, d))
+      }
     }
   }
 })
@@ -466,11 +511,14 @@ test_that("rLPMVecExact_eq_rLPM: degree 0 is bit-identical on both paths, ties i
   }
 })
 
-test_that("rLPMVecExact_eq_rLPM: integer degrees 1..6 agree to n * eps on both paths", {
+test_that("rLPMVecExact_eq_rLPM: integer degrees 1..6, 16, 32 agree to n * eps on both paths", {
+  # d = 32 is the largest degree the prefix backend accepts
+  # (prefixDegreeOK_natCast_iff: d <= 32); targets outside the data range hit
+  # the k = 0 / k = n branches of the prefix lpm() / upm().
   for (nm in names(all_samples)) {
     x <- all_samples[[nm]]
-    ts <- rep_len(c(targets_of(x), head(x, 10)), 40)
-    for (d in 1:6) {
+    ts <- rep_len(c(targets_of(x), min(x) - 1, max(x) + 1, head(x, 10)), 40)
+    for (d in c(1:6, 16, 32)) {
       tol <- pm_tol_v(d, ts, x)
       expect_within(LPM(d, ts, x), lpm_each(d, ts, x), tol,
                     label = sprintf("LPM %s d=%d", nm, d))
@@ -488,6 +536,20 @@ test_that("rLPMVecExact_eq_rLPM: 32 vs 33 targets and degree > 32 give the direc
   z <- random_samples$normal
   ts <- rep_len(targets_of(z), 40)
   expect_identical(LPM(33, ts, z), lpm_each(33, ts, z))
+})
+
+test_that("rLPMVecExact_eq_rLPM: n = 1 and constant samples on the > 32 target path", {
+  # every gap is in {-1, 0, 1} and every power sum a small integer, so both
+  # paths are exact and bit-identity is justified
+  for (xx in list(2, rep(2, 7))) {
+    ts <- rep_len(c(1, 2, 3), 40)
+    for (d in 0:3) {
+      expect_identical(LPM(d, ts, xx), lpm_each(d, ts, xx),
+                       label = sprintf("LPM n=%d d=%d", length(xx), d))
+      expect_identical(UPM(d, ts, xx), upm_each(d, ts, xx),
+                       label = sprintf("UPM n=%d d=%d", length(xx), d))
+    }
+  }
 })
 
 test_that("rLPMVecExact_eq_rLPM: non-integer degrees are bit-identical on both paths", {

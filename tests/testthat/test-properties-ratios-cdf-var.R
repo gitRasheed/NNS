@@ -1,9 +1,11 @@
 # Property tests mirroring the Lean theorems of nns-proofs:
 #   NNSProofs/Ratios.lean  (LPM.ratio / UPM.ratio)
 #   NNSProofs/CDF.lean     (univariate NNS.CDF: CDF, survival, cumulative hazard)
-#   LPM.VaR / UPM.VaR as roots of the ratio (no VaRRoot.lean yet; the d > 0
-#   uniqueness comes from LPMratio_strictMonoOn, the d = 0 contract from SPEC.md).
-# Each test_that names the theorem it mirrors. Three data regimes:
+#   NNSProofs/VaRRoot.lean (LPM.VaR / UPM.VaR: d > 0 roots of the ratio via
+#                           existsUnique_LPMratio_eq / LPMratio_strictMonoOn_Icc;
+#                           d = 0 is the type-7 quantile, quantile7_eq).
+# Each test_that names the theorem it mirrors; tests with no Lean counterpart say so
+# ("BUGS #N regression", "test-derived bound"). Three data regimes:
 #   exact  : small dyadic data, n a power of two, arithmetic exact in double;
 #   random : fixed seed, normal / exponential / t(3), ties forced by rounding;
 #   real   : datasets shipped with R, targets at mean, median, quantiles, data points.
@@ -15,7 +17,10 @@ ratio_tol <- function(x) 8 * length(x) * eps
 
 expect_close <- function(object, expected, tol, info = NULL) {
   expect_equal(length(object), length(expected), info = info)
-  expect_lte(max(abs(object - expected)), tol, label = paste("max |diff|", info))
+  # NaN-safe: a NaN difference is a failure, not an error.
+  dev <- max(abs(object - expected))
+  expect_true(is.finite(dev) && dev <= tol,
+              info = paste("max |diff| =", format(dev, digits = 3), "> tol =", format(tol, digits = 3), info))
 }
 
 # Exact regime: n = 8, dyadic values, ties at 0 and 1, dyadic mean 0.34375.
@@ -42,8 +47,13 @@ targets_for <- function(x) {
 ecdf_count <- function(t, x) vapply(t, function(s) sum(x <= s), numeric(1)) / length(x)
 surv_count <- function(t, x) vapply(t, function(s) sum(x > s), numeric(1)) / length(x)
 
-# More than 32 targets: LPM_CPv switches to the prefix backend.
-grid_for <- function(x, k = 64) sort(c(seq(min(x) - 1, max(x) + 1, length.out = k), x[1:min(8, length(x))]))
+# More than 32 targets: LPM_CPv switches to the prefix backend. The margin is relative
+# to the range so that most grid points are strictly inside (min x, max x) for every
+# sample (dax has range ~0.15: an absolute margin of 1 left it 4 interior points).
+grid_for <- function(x, k = 64) {
+  m <- 0.1 * diff(range(x))
+  sort(c(seq(min(x) - m, max(x) + m, length.out = k), x[1:min(8, length(x))]))
+}
 
 # ---------------------------------------------------------------------------
 # Ratios.lean: range and complementarity
@@ -59,7 +69,8 @@ test_that("LPMratio_mem_Icc / UPMratio_mem_Icc: both ratios lie in [0, 1]", {
   }
 })
 
-test_that("LPMratio_mem_Icc: high degree on non-constant data stays in [0, 1] (= 1/2 by symmetry)", {
+test_that("BUGS #12 regression (no Lean theorem; under/overflow is outside the exact-real model of Ratios.lean): high degree on symmetric data gives 1/2, not NaN", {
+  # Symmetric two-point sample: normalised deviations are +/-1, so 0.5 is exact.
   # fails on 8898017: see BUGS.md #12 (L and U underflow / overflow to 0/0 or Inf/Inf -> NaN)
   expect_identical(LPM.ratio(400, 0, c(-1e-2, 1e-2)), 0.5)
   expect_identical(LPM.ratio(400, 0, c(-1e3, 1e3)), 0.5)
@@ -308,11 +319,13 @@ test_that("LPMratio_affine: random and real data under a = 3.7, b = -1.3", {
   }
 })
 
-test_that("LPMratio_affine: scale-free under a tiny power-of-two scale (degree 2)", {
+test_that("BUGS #12 regression (no Lean theorem; LPMratio_affine in exact reals): degree 2 is scale-free under a tiny power-of-two scale", {
   # fails on 8898017: see BUGS.md #12 (deviations^2 underflow at scale 2^-600 -> NaN)
+  # A fix that rescales (e.g. by max |x - t|) rounds differently at the non-dyadic
+  # targets (quantiles -1.475, 2.3): ~1e-16 apart, so compare to 4 eps, not bitwise.
   a <- 2^-600
   t <- targets_for(x_exact)
-  expect_identical(LPM.ratio(2, a * t, a * x_exact), LPM.ratio(2, t, x_exact))
+  expect_close(LPM.ratio(2, a * t, a * x_exact), LPM.ratio(2, t, x_exact), 4 * eps)
 })
 
 test_that("LPMratio_eq_UPMratio_neg: d > 0 reflection on exact dyadic data", {
@@ -375,13 +388,30 @@ test_that("cdfCurve_zero_eq_ecdf: degree-0 NNS.CDF equals stats::ecdf at the sor
   }
 })
 
-test_that("cdfTable_zero_ge / cdfTable_zero_of_injective: row k has CDF >= k/n, = k/n without ties", {
+test_that("cdfTable_zero_ge: degree-0 row k has CDF >= k/n (ties push it up)", {
   for (nm in names(samples)) {
     x <- samples[[nm]]
     n <- length(x)
     f <- cdf_fun(x)$Function
     expect_true(all(f$CDF >= seq_len(n) / n), info = nm)
-    if (!anyDuplicated(x)) expect_identical(f$CDF, seq_len(n) / n, info = nm)
+  }
+})
+
+test_that("cdfTable_zero_of_injective: tie-free sample, degree-0 row k has CDF = k/n exactly", {
+  tie_free <- list(
+    exact = c(3, -2, 0.25, -0.5, 1, 0),             # dyadic, n = 6 (k/6 not dyadic)
+    dyad8 = c(-2, -0.5, 0, 0.125, 0.25, 1, 2, 3),    # n = 8: k/8 exact
+    dax   = unique(samples$dax),                     # large n, real data
+    norm  = unique(samples$norm)
+  )
+  for (nm in names(tie_free)) {
+    x <- tie_free[[nm]]
+    n <- length(x)
+    expect_false(as.logical(anyDuplicated(x)), info = nm)  # the hypothesis really holds
+    expect_gt(n, 1)
+    f <- cdf_fun(x)$Function
+    expect_identical(f$x, sort(x), info = nm)
+    expect_identical(f$CDF, seq_len(n) / n, info = nm)
   }
 })
 
@@ -442,7 +472,18 @@ test_that("cdfCurve_lt_cdfCurve: d > 0 strictly increasing across distinct rows,
   }
 })
 
-test_that("cdfCurve_continuous: d = 1 CDF is Lipschitz with constant 1 / mean|x - median|", {
+# CDF.lean:369 cdfCurve_continuous (and VaRRoot.lean:208 LPMratio_continuous) prove only
+# `Continuous` for d > 0 on a non-constant sample. The two Lipschitz constants below are
+# derived here and are NOT formalised. With L, U the lower / upper partial moments at t,
+# F0 = #{x <= t}/n, F = L / (L + U), F' = (L' U - L U') / (L + U)^2:
+#   d = 1: L' = F0, U' = -(1 - F0), numerator F0 U + (1 - F0) L <= L + U, so
+#          F' <= 1 / (L + U) = 1 / mean|x - t| <= 1 / mean|x - median| (median minimises).
+#   d = 2: L' = 2 l1, U' = -2 u1 with l1 = mean (t - x)_+, u1 = mean (x - t)_+;
+#          Cauchy-Schwarz l1 <= sqrt(F0 L), u1 <= sqrt((1 - F0) U) gives
+#          l1 U + u1 L <= sqrt(L U) sqrt(L + U) <= (L + U)^(3/2) / 2, so
+#          F' <= 1 / sqrt(L + U) = 1 / sqrt(mean (x - t)^2) <= 1 / sd_pop.
+#          The test uses 2 / sd_pop (2x slack).
+test_that("cdfCurve_continuous (quantitative, test-derived bound): d = 1 CDF is Lipschitz with constant 1 / mean|x - median|", {
   for (nm in names(samples)) {
     x <- samples[[nm]]
     xs <- sort(unique(x))
@@ -453,7 +494,7 @@ test_that("cdfCurve_continuous: d = 1 CDF is Lipschitz with constant 1 / mean|x 
   }
 })
 
-test_that("cdfCurve_continuous: d = 2 CDF is Lipschitz with constant 2 / sd_pop", {
+test_that("cdfCurve_continuous (quantitative, test-derived bound): d = 2 CDF is Lipschitz with constant 2 / sd_pop", {
   for (nm in names(samples)) {
     x <- samples[[nm]]
     xs <- sort(unique(x))
@@ -494,7 +535,11 @@ test_that("survivalCurve: NNS.CDF survival column is 1 - CDF column", {
   }
 })
 
-test_that("survivalCurve_zero_eq_count / survivalCurve_eq_UPMratio': survival = UPM.ratio = #{x > t}/n", {
+# survivalCurve_eq_UPMratio' / cdfCurve_eq_LPMratio (the CDF <-> Ratios bridge) appear only
+# in the CDF.lean doc comment and are not compiled; the compiled statements are
+# survivalCurve_eq_UPMratio (d > 0, `if all x = t then 0 else U/(L+U)`, which is exactly
+# UPM.ratio's definition) and survivalCurve_zero_eq_UPM / survivalCurve_zero_eq_count (d = 0).
+test_that("survivalCurve_eq_UPMratio / survivalCurve_zero_eq_UPM / survivalCurve_zero_eq_count: survival = UPM.ratio, = #{x > t}/n at d = 0", {
   for (nm in names(samples)) for (d in 0:3) {
     x <- samples[[nm]]
     s <- cdf_fun(x, d, "survival")$Function[["S(x)"]]
@@ -512,7 +557,7 @@ test_that("cumHazardCurve_eq: H = -log(max(S, 1e-10))", {
   }
 })
 
-test_that("cumHazardCurve_eq with survivalCurve_eq_UPMratio': H = -log(max(UPM.ratio, 1e-10))", {
+test_that("cumHazardCurve_eq with survivalCurve_eq_UPMratio: H = -log(max(UPM.ratio, 1e-10))", {
   for (nm in names(samples)) for (d in 0:3) {
     x <- samples[[nm]]
     h <- cdf_fun(x, d, "cumulative hazard")$Function[["H(x)"]]
@@ -648,7 +693,7 @@ test_that("LPMratio_of_forall_eq (VaR): constant sample and n = 1 return the com
   }
 })
 
-test_that("LPMratio_zero_eq_ecdf (VaR, d = 0): degree 0 is the type-7 sample quantile", {
+test_that("quantile7_eq / UPMVaR0_eq_LPMVaR0 (VaRRoot.lean): degree-0 VaR is the type-7 sample quantile", {
   for (nm in names(samples)) {
     x <- samples[[nm]]
     expect_identical(LPM.VaR(var_p, 0, x), quantile(x, var_p, type = 7), info = nm)
@@ -656,7 +701,10 @@ test_that("LPMratio_zero_eq_ecdf (VaR, d = 0): degree 0 is the type-7 sample qua
   }
 })
 
-test_that("LPMratio_zero_eq_ecdf (VaR, d = 0): at p = k/(n-1) VaR is the minimal t with ECDF(t) >= p", {
+# At p = k/(n-1) the type-7 index (n-1)p = k is an integer: floor_add_one_le_card_le_quantile7
+# gives ECDF(VaR) >= (k+1)/n >= p and card_lt_quantile7_le_ceil gives #{x < VaR} <= k, so the
+# ECDF just below VaR is <= k/n < p: VaR is the minimal t with ECDF(t) >= p there.
+test_that("floor_add_one_le_card_le_quantile7 / card_lt_quantile7_le_ceil (d = 0): at p = k/(n-1) VaR is the minimal t with ECDF(t) >= p", {
   for (nm in names(samples)) {
     x <- samples[[nm]]
     n <- length(x)
@@ -669,13 +717,24 @@ test_that("LPMratio_zero_eq_ecdf (VaR, d = 0): at p = k/(n-1) VaR is the minimal
   }
 })
 
-test_that("LPMratio_zero_eq_ecdf (VaR, d = 0): for any p the type-7 VaR is within one atom 1/n of the inverse", {
+test_that("LPMratio_zero_quantile7_gt / floor_add_one_le_card_le_quantile7 / card_lt_quantile7_le_ceil (d = 0): type-7 VaR count bounds", {
   for (nm in names(samples)) {
     x <- samples[[nm]]
     n <- length(x)
     v <- unname(LPM.VaR(var_p, 0, x))
-    strictly_below <- vapply(v, function(s) sum(x < s), numeric(1)) / n
-    expect_true(all(LPM.ratio(0, v, x) > var_p - 1 / n), info = nm)
-    expect_true(all(strictly_below < var_p + 1 / n), info = nm)
+    h <- (n - 1) * var_p  # the type-7 index, computed in double exactly as quantile() does
+    n_le <- vapply(v, function(s) sum(x <= s), numeric(1))
+    n_lt <- vapply(v, function(s) sum(x < s), numeric(1))
+    expect_true(all(n_le >= floor(h) + 1), info = nm)                  # floor_add_one_le_card_le_quantile7
+    expect_true(all(LPM.ratio(0, v, x) > var_p - var_p / n), info = nm) # LPMratio_zero_quantile7_gt
+    expect_true(all(n_lt <= ceiling(h)), info = nm)                      # card_lt_quantile7_le_ceil
   }
+})
+
+test_that("LPMVaR0_counterexample / LPMVaR0_not_minimal: type 7 is not the ECDF inverse on (0, 1, 2)", {
+  x <- c(0, 1, 2)
+  v <- unname(LPM.VaR(c(0.1, 0.9), 0, x))
+  expect_close(v, c(0.2, 1.8), 4 * eps)
+  expect_identical(LPM.ratio(0, v[2], x), 2 / 3)   # 2/3 < 0.9: ECDF(VaR) >= p fails
+  expect_identical(LPM.ratio(0, 0, x), 1 / 3)      # 0 < VaR(0.1) yet ECDF(0) >= 0.1
 })
