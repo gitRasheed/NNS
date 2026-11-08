@@ -11,7 +11,7 @@ LPM.VaR(percentile, degree, x)
 
 \item{degree}{integer; \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, percentile, type = 7)}), which on tied data need not be an exact inverse of \code{LPM.ratio(0, ., x)}. Use it for probability statements, such as a VaR exceeded with a given frequency.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the \code{percentile}-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies below it, so it is not a quantile of \code{x} (for exponential data the degree-1 5\% point has about a quarter of the observations below it).  Higher degrees weight large deviations more.}
 
-\item{x}{a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error.}
+\item{x}{a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error. A data frame (including a tibble or data.table) is flattened to one vector.}
 }
 \value{
 Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area below it (\code{degree > 0}).

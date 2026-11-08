@@ -6,7 +6,7 @@
 #' @param target numeric; Set to \code{target = mean(variable)} for classical equivalences, but does not have to be.
 #'   When \code{excess_ret = FALSE}, this can be a scalar or a vectorized target for the standard partial moment calculation.
 #'   When \code{excess_ret = TRUE}, it is interpreted element-wise as the benchmark/threshold relative to \code{variable}.
-#'   \code{NULL} uses \code{mean(variable)}; a zero-length target returns \code{numeric(0)}. A factor, character or list target is an error.
+#'   \code{NULL} uses \code{mean(variable)}; a zero-length target returns \code{numeric(0)} when \code{excess_ret = FALSE} (with \code{excess_ret = TRUE} it is a length error). A factor, character or list target is an error.
 #' @param variable a numeric vector. \link{data.frame} or \link{list} type objects are not permissible. A factor is an error: its level codes are not its values.
 #' @param excess_ret logical; \code{FALSE} (default). If \code{TRUE}, switches from the standard vectorized-target
 #'   partial moment to an element-wise excess-deviation calculation. For \code{LPM}, this computes
@@ -47,7 +47,7 @@ LPM <- function(degree, target, variable, excess_ret = FALSE) {
 #' @param target numeric; Set to \code{target = mean(variable)} for classical equivalences, but does not have to be.
 #'   When \code{excess_ret = FALSE}, this can be a scalar or a vectorized target for the standard partial moment calculation.
 #'   When \code{excess_ret = TRUE}, it is interpreted element-wise as the benchmark/threshold relative to \code{variable}.
-#'   \code{NULL} uses \code{mean(variable)}; a zero-length target returns \code{numeric(0)}. A factor, character or list target is an error.
+#'   \code{NULL} uses \code{mean(variable)}; a zero-length target returns \code{numeric(0)} when \code{excess_ret = FALSE} (with \code{excess_ret = TRUE} it is a length error). A factor, character or list target is an error.
 #' @param variable a numeric vector. \link{data.frame} or \link{list} type objects are not permissible. A factor is an error: its level codes are not its values.
 #' @param excess_ret logical; \code{FALSE} (default). If \code{TRUE}, switches from the standard vectorized-target
 #'   partial moment to an element-wise excess-deviation calculation. For \code{UPM}, this computes
@@ -84,7 +84,7 @@ UPM <- function(degree, target, variable, excess_ret = FALSE) {
 #'
 #' This function generates an n‑dimensional co‑lower partial moment (n >= 2) for any degree or target.
 #'
-#' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row.
+#' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row. A factor column is an error.
 #' @param target A numeric vector, length equal to ncol(data).
 #' @param degree numeric; degree for lower deviations (0 = frequency, 1 = area).
 #' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}.
@@ -96,6 +96,7 @@ UPM <- function(degree, target, variable, excess_ret = FALSE) {
 #' }
 #' @export
 Co.LPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
+  .nns_stop_if_factor_columns(data, "data")
   data   <- as.matrix(data)
   target <- .nns_as_numeric(target, "target")
   degree <- as.numeric(degree)
@@ -136,7 +137,7 @@ Co.LPM_nD.batch <- function(data, targets, degree = 0.0, norm = TRUE) {
 #'
 #' This function generates an n‑dimensional co‑upper partial moment (n >= 2) for any degree or target.
 #'
-#' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row.
+#' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row. A factor column is an error.
 #' @param target A numeric vector, length equal to ncol(data).
 #' @param degree numeric; degree for upper deviations (0 = frequency, 1 = area).
 #' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}.
@@ -148,6 +149,7 @@ Co.LPM_nD.batch <- function(data, targets, degree = 0.0, norm = TRUE) {
 #' }
 #' @export
 Co.UPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
+  .nns_stop_if_factor_columns(data, "data")
   data   <- as.matrix(data)
   target <- .nns_as_numeric(target, "target")
   degree <- as.numeric(degree)
@@ -164,7 +166,7 @@ Co.UPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
 #'
 #' This function generates the aggregate n‑dimensional divergent partial moment (n >= 2) for any degree or target.
 #'
-#' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row.
+#' @param data   A numeric matrix with observations in rows and variables in columns, with at least one row. A factor column is an error.
 #' @param target A numeric vector, length equal to ncol(data).
 #' @param degree numeric; degree for upper deviations (0 = frequency, 1 = area).
 #' @param norm   logical; if \code{TRUE} (default) divide by the sum of the co-lower, co-upper and divergent nD partial moments at the same degree and target (→ [0,1]), otherwise return the raw moment. \code{norm} is ignored at \code{degree = 0}.
@@ -176,6 +178,7 @@ Co.UPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
 #' }
 #' @export
 DPM_nD <- function(data, target, degree = 0.0, norm = TRUE) {
+  .nns_stop_if_factor_columns(data, "data")
   data   <- as.matrix(data)
   target <- .nns_as_numeric(target, "target")
   degree <- as.numeric(degree)
@@ -243,7 +246,7 @@ NNS.CDF <- function(variable,
     variable <- unlist(variable, use.names = FALSE)
     if (!is.factor(variable)) variable <- as.vector(variable)
   }
-  if (is.factor(variable)) stop("`variable` must be numeric, not a factor.")
+  .nns_stop_if_factor_columns(variable, "variable")
   if (any(class(variable) %in% c("tbl","data.table"))) {
     variable <- as.data.frame(variable)
   }

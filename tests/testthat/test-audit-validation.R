@@ -272,15 +272,69 @@ test_that("LPM/UPM excess_ret handle vectors longer than .Machine$integer.max", 
   skip_on_cran()
   skip_if_not(isTRUE(as.numeric(Sys.getenv("NNS_BIGMEM_GB", "0")) >= 64),
               "needs about 48 GiB; set NNS_BIGMEM_GB to run")
-  n <- 2^32 + 5 # an int length would wrap to 5
+  n <- 2^32 + 5 # an int length would wrap to 5 and miss the last element
   y <- numeric(n)
-  y[n] <- -1
-  expect_equal(LPM(1, 0, y, excess_ret = TRUE), 1 / n)
-  expect_equal(UPM(0, -0.5, y, excess_ret = TRUE), (n - 1) / n)
+  # The only non-zero deviation is the last element, of size n, so the exact
+  # answer is n / n = 1 and the truncated one is 0.
+  y[n] <- -n
+  expect_identical(LPM(1, 0, y, excess_ret = TRUE), 1)
+  y[n] <- n
+  expect_identical(UPM(1, 0, y, excess_ret = TRUE), 1)
 })
 
 test_that("VaR rejects a factor column inside a data.table", {
   skip_if_not_installed("data.table")
   dt <- data.table::data.table(a = factor(c(10, 20, 30)))
   expect_error(LPM.VaR(0.5, 1, dt), "`x` must be numeric, not a factor.", fixed = TRUE)
+})
+
+# --- review follow-ups ---------------------------------------------------------
+
+test_that("LPM/UPM reject a NULL variable, like LPM.ratio", {
+  expect_error(LPM(1, 2, NULL), "`variable` must be numeric.", fixed = TRUE)
+  expect_error(UPM(1, 2, NULL), "`variable` must be numeric.", fixed = TRUE)
+})
+
+test_that("LPM/UPM keep NaN for an empty numeric variable", {
+  expect_identical(LPM(1, 2, numeric(0)), NaN)
+  expect_identical(UPM(1, 2, numeric(0)), NaN)
+})
+
+test_that("a zero-length target with excess_ret = TRUE is a length error", {
+  expect_error(LPM(1, numeric(0), c(1, 2, 3), excess_ret = TRUE), "target must be length 1 or same length as variable", fixed = TRUE)
+})
+
+test_that("nD functions reject a factor column in data", {
+  df <- data.frame(a = factor(c(1, 2, 3)), b = c(1, 2, 3))
+  expect_error(Co.LPM_nD(df, c(1, 1), 1), "`data` must be numeric, not a factor.", fixed = TRUE)
+  expect_error(Co.UPM_nD(df, c(1, 1), 1), "`data` must be numeric, not a factor.", fixed = TRUE)
+  expect_error(DPM_nD(df, c(1, 1), 1), "`data` must be numeric, not a factor.", fixed = TRUE)
+})
+
+test_that("nD functions reject bare factor data", {
+  expect_error(Co.LPM_nD(factor(c(1, 2, 3)), 1, 1), "`data` must be numeric, not a factor.", fixed = TRUE)
+})
+
+test_that("nD functions still accept a numeric data frame", {
+  df <- data.frame(a = c(-1, 0, 2), b = c(1, -2, 3))
+  expect_identical(Co.LPM_nD(df, c(0, 0), 1, FALSE), Co.LPM_nD(as.matrix(df), c(0, 0), 1, FALSE))
+})
+
+test_that("multivariate NNS.CDF rejects a factor column", {
+  df <- data.frame(a = factor(c(1, 2, 3)), b = c(1, 2, 3))
+  expect_error(NNS.CDF(df, plot = FALSE), "`variable` must be numeric, not a factor.", fixed = TRUE)
+})
+
+test_that("VaR treats a one-column data.frame like a numeric vector", {
+  expect_identical(LPM.VaR(0.5, 1, data.frame(a = c(1, 2, 3))), LPM.VaR(0.5, 1, c(1, 2, 3)))
+  expect_identical(UPM.VaR(0.25, 2, data.frame(a = c(1, 5, 3))), UPM.VaR(0.25, 2, c(1, 5, 3)))
+})
+
+test_that("VaR flattens a multi-column data.frame like a multi-column tibble", {
+  expect_identical(LPM.VaR(0.5, 1, data.frame(a = c(1, 2), b = c(3, 4))), LPM.VaR(0.5, 1, c(1, 2, 3, 4)))
+})
+
+test_that("VaR rejects a factor column of a multi-column data.frame", {
+  df <- data.frame(a = factor(c(10, 20)), b = c(1, 2))
+  expect_error(LPM.VaR(0.5, 1, df), "`x` must be numeric, not a factor.", fixed = TRUE)
 })

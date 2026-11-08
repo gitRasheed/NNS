@@ -25,7 +25,8 @@
   excess-return path for a scalar target.
 * `LPM()` and `UPM()` with `target = NULL` now use `mean(variable)`, like
   `LPM.ratio()`, `Co.LPM()` and `PM.matrix()`, instead of returning
-  `numeric(0)`. A zero-length target still returns `numeric(0)`.
+  `numeric(0)`. A zero-length target still returns `numeric(0)` (with
+  `excess_ret = FALSE`).
 * Factors are rejected with "`x` must be numeric, not a factor." (named after
   the argument) instead of being computed on their level codes, as data or
   target, in `LPM()`, `UPM()`, `LPM.ratio()`, `UPM.ratio()`, `Co.LPM()`,
@@ -33,6 +34,9 @@
   `LPM.VaR()`, `UPM.VaR()`, `NNS.moments()` and the stochastic dominance
   functions (`NNS.FSD()`, `NNS.SSD()`, `NNS.TSD()` and their `.uni`
   versions), also when the factor is the column of a one-column data frame.
+  A factor column of multi-column data is rejected the same way in the `_nD`
+  functions, multivariate `NNS.CDF()` and `LPM.VaR()`/`UPM.VaR()`, where it
+  used to fail with "`data` must be finite." or be flattened to level codes.
 * A target that is not `NULL`, numeric or logical (a string, list, data frame
   or factor) is now an error in `LPM.ratio()`, `UPM.ratio()`, `Co.LPM()`,
   `Co.UPM()`, `D.LPM()`, `D.UPM()` and `PM.matrix()` instead of silently
@@ -42,6 +46,12 @@
 * `LPM()`, `UPM()`, `LPM.VaR()`, `UPM.VaR()`, `NNS.moments()`, `NNS.CDF()`
   targets and the stochastic dominance functions now reject character and
   list data ("`x` must be numeric.") instead of parsing or coercing it.
+  For `LPM()`/`UPM()` this includes a `NULL` `variable`, which used to give
+  `NaN` and is now an error as in `LPM.ratio()`; `numeric(0)` still gives
+  `NaN`.
+* `LPM.VaR()` and `UPM.VaR()` flatten any data frame, as they already did a
+  tibble or data.table, so a plain `data.frame` is accepted instead of
+  being an error.
 * `LPM.VaR()` and `UPM.VaR()` reject infinite values in `x` with "`x` must be
   finite." at every degree. Degrees 1-4 used to fail with "missing value
   where TRUE/FALSE needed", and degree 0 returned a quantile. `NA`/`NaN` are

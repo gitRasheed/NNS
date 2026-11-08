@@ -21,6 +21,16 @@
   as.numeric(x)
 }
 
+# Data frames and matrices go through as.matrix()/unlist(), which turn a
+# factor column into strings or level codes; reject it while the columns are
+# still visible.
+.nns_stop_if_factor_columns <- function(x, name, call = sys.call(-1L)) {
+  if (is.factor(x) || (is.data.frame(x) && any(vapply(x, is.factor, logical(1L))))) {
+    .nns_stop_arg(sprintf("`%s` must be numeric, not a factor.", name), call)
+  }
+  invisible(x)
+}
+
 # A single TRUE/FALSE flag. Numeric 0/1 keep working; NA, vectors and other
 # types are an error instead of depending on how C++ or `&&` coerce them.
 .nns_as_flag <- function(x, name, call = sys.call(-1L)) {
