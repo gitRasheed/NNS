@@ -585,3 +585,105 @@ test_that("I11: stochastic dominance set and cluster degree must be 1, 2 or 3", 
                  "degree must be 1, 2, or 3", fixed = TRUE)
   })
 })
+
+test_that("I12: integer targets and integer data are used as given by every partial-moment wrapper and NNS.CDF", {
+  withr::local_seed(20261108)
+  pm_ratio_targets <- fx_pm_ratio_targets()
+  aud_case("LPM.ratio and UPM.ratio use integer targets as given", env = pm_ratio_targets, {
+    expect_equal(LPM.ratio(0, 2L, x), 0.5)
+    expect_equal(LPM.ratio(0, 1:3, x), c(0.25, 0.5, 0.75))
+    expect_equal(UPM.ratio(0, 1:3, x), c(0.75, 0.5, 0.25))
+    expect_equal(LPM.ratio(1, 1:3, x), LPM.ratio(1, c(1, 2, 3), x))
+  })
+  aud_case("Co.LPM, Co.UPM, D.LPM and D.UPM use integer targets as given", env = pm_ratio_targets, {
+    expect_equal(Co.LPM(1, x, x, 2L, 2L), 0.25)
+    expect_equal(Co.UPM(1, x, x, 2L, 2L), Co.UPM(1, x, x, 2, 2))
+    expect_equal(D.LPM(1, 1, x, rev(x), 0L, 0L), 0)
+    expect_equal(D.UPM(1, 1, x, rev(x), 3L, 2L), D.UPM(1, 1, x, rev(x), 3, 2))
+  })
+  aud_case("PM.matrix uses an integer target as given", env = pm_ratio_targets, {
+    A <- cbind(x, rev(x))
+    expect_equal(PM.matrix(1, 1, c(0L, 0L), A, FALSE)$cupm[1, 1], mean(x^2))
+    expect_equal(PM.matrix(1, 1, c(2L, 3L), A, FALSE), PM.matrix(1, 1, c(2, 3), A, FALSE))
+  })
+  aud_case("NNS.CDF of an integer vector is the ECDF", {
+    expect_equal(NNS.CDF(1:10, plot = FALSE)$Function$CDF, (1:10) / 10)
+  })
+  aud_case("LPM.ratio and UPM.ratio use integer targets", {
+    x <- c(0, 1, 2, 3, 10)
+    expect_equal(LPM.ratio(0, 1L, x), 0.4)
+    expect_equal(UPM.ratio(1, c(1L, 2L), x), UPM.ratio(1, c(1, 2), x))
+  })
+  aud_case("NNS.CDF of integer data matches the same data as double", {
+    x <- rep(0:2, each = 20)
+    expect_equal(NNS.CDF(x, plot = FALSE)$Function[[2]], rep(c(1, 2, 3) / 3, each = 20))
+    expect_equal(NNS.CDF(x, type = "hazard", plot = FALSE)$Function[[2]],
+                 NNS.CDF(as.double(x), type = "hazard", plot = FALSE)$Function[[2]])
+  })
+})
+
+test_that("I13: multivariate NNS.CDF target: one value per column, bounds-checked on every coordinate", {
+  withr::local_seed(20261108)
+  A <- cbind(c(0, 1, 2), c(0, 1, 2), c(0, 1, 2))
+  aud_errors("target out of bounds", NNS.CDF(A, 0, target = c(0, 0, 1e6), type = "survival", plot = FALSE))
+  aud_errors("one value per column", NNS.CDF(A, 0, target = c(1, 1), plot = FALSE))
+})
+
+test_that("I14: co-moments reject unequal lengths, empty input and recycled targets; non-finite input is rejected by the ratio and co-moment wrappers", {
+  withr::local_seed(20261108)
+  aud_errors("must be finite",
+             LPM.ratio(0, 2, c(1, 2, NA)),
+             UPM.ratio(0, Inf, 1:3),
+             Co.LPM(0, c(1, 2, NaN), 1:3, 2, 2),
+             Co.UPM(0, 1:3, 1:3, 2, -Inf),
+             D.LPM(0, 0, 1:3, c(1, NA, 3), 2, 2),
+             D.UPM(0, 0, 1:3, 1:3, NA_real_, 2),
+             PM.matrix(1, 1, c(2, 2), cbind(1:3, c(1, 2, NA)), FALSE))
+  aud_case("co-moments reject unequal lengths, empty input and recycled targets", {
+    set.seed(1)
+    x <- rnorm(100); y <- rnorm(99)
+    fns <- list(
+      function(x, y, tx, ty) Co.LPM(1, x, y, tx, ty),
+      function(x, y, tx, ty) Co.UPM(1, x, y, tx, ty),
+      function(x, y, tx, ty) D.LPM(1, 1, x, y, tx, ty),
+      function(x, y, tx, ty) D.UPM(1, 1, x, y, tx, ty)
+    )
+    for (f in fns) {
+      expect_error(f(x, y, 0, 0), "same length")
+      expect_error(f(x, y, NULL, NULL), "same length")
+      expect_error(f(x, y, seq(-1, 1, length.out = 200), 0), "same length")
+      expect_error(f(numeric(0), numeric(0), 0, 0), "must not be empty")
+      expect_error(f(numeric(0), numeric(0), NULL, NULL), "must not be empty")
+      expect_error(f(1:5, 1:5, numeric(0), 0), "must not be empty")
+      expect_error(f(1:5, 1:5, 0, numeric(0)), "must not be empty")
+      expect_error(f(1:5, 1:5, numeric(0), numeric(0)), "must not be empty")
+      expect_error(f(x, x, c(0, 1, 2), c(0, 1)), "length 1")
+      expect_equal(f(x, x, c(-1, 0, 1), 0.5),
+                   c(f(x, x, -1, 0.5), f(x, x, 0, 0.5), f(x, x, 1, 0.5)))
+    }
+  })
+})
+
+test_that("I15: negative, NA and NaN degrees are rejected for scalar and vector targets and by every wrapper", {
+  withr::local_seed(20261108)
+  aud_errors("non-negative",
+             LPM(-1, 0, c(-2, 1)),
+             UPM(NaN, 0, c(-2, 1)),
+             LPM.ratio(-0.5, 0, c(-2, 1)),
+             Co.LPM(-1, c(-2, 1), c(-2, 1), 0, 0),
+             D.UPM(1, -2, c(-2, 1), c(-2, 1), 0, 0),
+             PM.matrix(-1, 1, NULL, matrix(rnorm(20), 10), TRUE),
+             Co.LPM_nD(matrix(rnorm(20), 10), c(0, 0), -1))
+  aud_case("a fractional degree is accepted", {
+    expect_equal(LPM(0.5, 0, c(-4, 1)), 1)
+  })
+  aud_case("vector-target LPM / UPM reject negative, NA and NaN degrees", {
+    x <- c(-2, 1)
+    for (t in list(c(0, 1), rep(0, 33))) {
+      expect_error(LPM(-1, t, x), "non-negative")
+      expect_error(UPM(-1, t, x), "non-negative")
+      expect_error(LPM(NaN, t, x), "non-negative")
+      expect_error(UPM(NA_real_, t, x), "non-negative")
+    }
+  })
+})
