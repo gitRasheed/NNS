@@ -4,24 +4,25 @@
 #
 # On the direct scan (<= 32 targets) every integer degree up to 32 is the same
 # left-fold product, so those loops run degree 0, 1 and their largest integer
-# degree; the prefix backend recombines d + 1 columns, so its loops keep every degree.
+# degree (U01's master identity also runs 2, 3 and 4, the central-moment
+# statements); the prefix backend recombines d + 1 columns, so its loops keep every degree.
 
-# Lean: UPM_add_neg_one_pow_mul_LPM, LPM_zero_add_UPM_zero, UPM_one_sub_LPM_one, LPM_add_UPM_of_even, LPM_two_add_UPM_two_mean, rLPM_add_rUPM | BUGS: none
+# Lean: UPM_add_neg_one_pow_mul_LPM, LPM_zero_add_UPM_zero, UPM_one_sub_LPM_one, LPM_add_UPM_of_even, LPM_two_add_UPM_two_mean, rLPM_add_rUPM, centralMoment_two_eq, centralMoment_three_eq, centralMoment_four_eq, UPM_one_mean_eq_LPM_one_mean | BUGS: none
 test_that("U01: LPM and UPM decompose the central and absolute moments on dyadic, random and real data", {
   withr::local_seed(20261108)
   fu <- aud_fx_uni()
-  aud_case("UPM_add_neg_one_pow_mul_LPM: master identity is exact on dyadic data, d = 0, 1, 6", {
-    for (d in c(0, 1, 6)) {
+  aud_case("UPM_add_neg_one_pow_mul_LPM: master identity is exact on dyadic data, d = 0 to 4 and 6", {
+    for (d in c(0, 1, 2, 3, 4, 6)) {
       lhs <- aud_upm_each(d, fu$t_exact, fu$x_exact) + (-1)^d * aud_lpm_each(d, fu$t_exact, fu$x_exact)
       rhs <- vapply(fu$t_exact, function(t) sum((fu$x_exact - t)^d) / 8, numeric(1))
       expect_identical(lhs, rhs, label = paste("degree", d))
     }
   })
-  aud_case("UPM_add_neg_one_pow_mul_LPM: master identity on random and real data, d = 0, 1, 6", {
+  aud_case("UPM_add_neg_one_pow_mul_LPM: master identity on random and real data, d = 0 to 4 and 6", {
     for (nm in names(fu$kept)) {
       x <- fu$kept[[nm]]
       ts <- aud_targets(x)
-      for (d in c(0, 1, 6)) {
+      for (d in c(0, 1, 2, 3, 4, 6)) {
         lhs <- aud_upm_each(d, ts, x) + (-1)^d * aud_lpm_each(d, ts, x)
         rhs <- vapply(ts, function(t) sum((x - t)^d) / length(x), numeric(1))
         aud_within_max(lhs, rhs, aud_pm_tol_v(d, ts, x), label = sprintf("%s d=%d", nm, d))
@@ -175,6 +176,10 @@ test_that("U02: degree-0 LPM is the right-continuous ECDF, and the d -> 0+ limit
       ts <- aud_targets(x)
       aud_within_max(aud_upm_each(1e-9, ts, x), aud_upm_each(0, ts, x), 1e-6, label = nm)
     }
+  })
+  aud_case("degree-0 ties with excess_ret = TRUE", {
+    expect_equal(LPM(0, 2, 1:3, excess_ret = TRUE), 2 / 3)
+    expect_equal(LPM(0, 2, 1:3, TRUE) + UPM(0, 2, 1:3, TRUE), 1)
   })
 })
 
@@ -348,18 +353,9 @@ test_that("U05: LPM is nondecreasing, continuous and (d >= 1) convex in the targ
   withr::local_seed(20261108)
   fm <- aud_fx_md()
   fu <- aud_fx_uni()
-  aud_case("LPM_monotone_target / UPM_antitone_target: monotone in the target, every degree", {
+  aud_case("LPM_monotone_target / UPM_antitone_target: monotone in the target at degree 0 on dyadic data", {
     expect_true(all(diff(LPM(0, fm$t_dy, fm$x_dy)) >= 0))
     expect_true(all(diff(UPM(0, fm$t_dy, fm$x_dy)) <= 0))
-    for (nm in names(fm$kept)) {
-      x <- fm$kept[[nm]]
-      ts <- sort(c(x[1:5], seq(min(x) - 1, max(x) + 1, length.out = 100)))
-      for (d in 0:3) {
-        tol <- 8 * length(x) * aud_eps * max(aud_abs_mom(x, d, min(x) - 1), aud_abs_mom(x, d, max(x) + 1))
-        expect_gte(min(diff(LPM(d, ts, x))), -tol, label = sprintf("%s LPM d=%d", nm, d))
-        expect_lte(max(diff(UPM(d, ts, x))), tol, label = sprintf("%s UPM d=%d", nm, d))
-      }
-    }
   })
   aud_case("rLPM_monotone: LPM is nondecreasing in t for real d >= 0 (direct path, exact)", {
     for (x in c(list(fu$x_exact), fu$kept)) {
@@ -377,7 +373,7 @@ test_that("U05: LPM is nondecreasing, continuous and (d >= 1) convex in the targ
       }
     }
   })
-  aud_case("rLPM_monotone / rUPM_antitone: monotone in t on the > 32 target path", {
+  aud_case("rLPM_monotone / rUPM_antitone (LPM_monotone_target / UPM_antitone_target): monotone in t on the > 32 target path", {
     for (x in fu$kept) {
       ts <- seq(min(x) - 1, max(x) + 1, length.out = 80)
       for (d in c(0, 0.5, 1, 2, 3)) {
@@ -442,17 +438,6 @@ test_that("U06: more than 32 targets (prefix backend) give the direct-scan value
   withr::local_seed(20261108)
   fm <- aud_fx_md()
   fu <- aud_fx_uni()
-  aud_case("prefixLPM_eq_LPM / prefixUPM_eq_UPM (workerLPM_eq_rLPMVec / workerUPM_eq_rUPMVec): >32-target prefix backend agrees with scalar targets", {
-    for (nm in names(fm$kept)) {
-      x <- fm$kept[[nm]]
-      ts <- sort(c(aud_targets(x), seq(min(x), max(x), length.out = 40)))
-      for (d in 0:3) {
-        tol <- 8 * (length(x) + d) * aud_eps * max(aud_abs_mom(x, d, min(x)), aud_abs_mom(x, d, max(x)))
-        aud_within_max(LPM(d, ts, x), aud_lpm_each(d, ts, x), tol, label = sprintf("%s LPM d=%d", nm, d))
-        aud_within_max(UPM(d, ts, x), aud_upm_each(d, ts, x), tol, label = sprintf("%s UPM d=%d", nm, d))
-      }
-    }
-  })
   aud_case("usesPrefix_iff: 32 targets stay on the direct kernel (identical to scalar calls), 33 switch to the prefix backend", {
     # NNS_DIRECT_PATH_MAX_TARGETS = 32: a 32-target call runs the same scalar
     # kernel per target, so it is bit-identical; at 33 targets the prefix backend
@@ -477,14 +462,14 @@ test_that("U06: more than 32 targets (prefix backend) give the direct-scan value
       }
     }
   })
-  aud_case("rLPMVecExact_eq_rLPM: degree 0 is bit-identical on both paths, ties included", {
+  aud_case("rLPMVecExact_eq_rLPM (prefixLPM_eq_LPM / prefixUPM_eq_UPM): degree 0 is bit-identical on both paths, ties included", {
     for (x in c(list(fu$x_exact), fu$kept)) {
       ts <- rep_len(c(aud_targets(x), head(x, 10)), 40)
       expect_identical(LPM(0, ts, x), aud_lpm_each(0, ts, x))
       expect_identical(UPM(0, ts, x), aud_upm_each(0, ts, x))
     }
   })
-  aud_case("rLPMVecExact_eq_rLPM: integer degrees 1..6, 16, 32 agree to n * eps on both paths", {
+  aud_case("rLPMVecExact_eq_rLPM (workerLPM_eq_rLPMVec / workerUPM_eq_rUPMVec): integer degrees 1..6, 16, 32 agree to n * eps on both paths", {
     # d = 32 is the largest degree the prefix backend accepts
     # (prefixDegreeOK_natCast_iff: d <= 32); targets outside the data range hit
     # the k = 0 / k = n branches of the prefix lpm() / upm().
@@ -521,6 +506,37 @@ test_that("U06: more than 32 targets (prefix backend) give the direct-scan value
                          label = sprintf("UPM n=%d d=%d", length(xx), d))
       }
     }
+  })
+  native_kernel_fixes <- fx_native_kernel_fixes()
+  aud_case("price and t(3) return series, degrees 0..4, 8, 12, > 32 targets, plus UPM(2) just below the maximum", env = native_kernel_fixes, {
+    set.seed(7)
+    price <- 400 * cumprod(1 + rnorm(1500, 4e-4, 0.012))
+    ret <- rt(1000, df = 3) * 0.01
+    for (x in list(price, ret)) {
+      t <- c(seq(min(x) - 0.1 * diff(range(x)), max(x) + 0.1 * diff(range(x)), length.out = 80),
+             sort(x)[seq(1, length(x), by = 25)])
+      for (d in c(0, 1, 2, 3, 4, 8, 12)) {
+        l <- LPM(d, t, x); u <- UPM(d, t, x)
+        expect_true(all(l >= 0) && all(u >= 0))
+        expect_equal(l, direct_lpm(d, t, x), tolerance = 1e-10)
+        expect_equal(u, direct_upm(d, t, x), tolerance = 1e-10)
+        r <- LPM.ratio(d, t, x)
+        expect_true(all(r >= 0 & r <= 1, na.rm = TRUE))
+      }
+    }
+    # Degree 2 just below the maximum used to come out negative.
+    x <- rnorm(1e4, 100, 1)
+    t <- sort(x)[(1e4 - 99):1e4] - 1e-9
+    expect_true(all(UPM(2, t, x) >= 0))
+  })
+  native_kernel_fixes <- fx_native_kernel_fixes()
+  aud_case("UPM and UPM.ratio relative accuracy just below the maximum (> 32 targets)", env = native_kernel_fixes, {
+    set.seed(11)
+    x <- rnorm(1e4, 100, 1)
+    t <- sort(x)[(1e4 - 39):1e4] - 1e-6
+    expect_equal(UPM(2, t, x) / direct_upm(2, t, x), rep(1, 40), tolerance = 1e-10)
+    direct_ratio <- vapply(t, function(tt) UPM.ratio(2, tt, x), numeric(1))
+    expect_equal(UPM.ratio(2, t, x) / direct_ratio, rep(1, 40), tolerance = 1e-10)
   })
 })
 
@@ -748,5 +764,25 @@ test_that("U11: BUGS #5: the prefix path gives Inf, not NaN, when anchored sums 
     out <- LPM(32, z, z)
     expect_false(any(is.nan(out)))
     expect_identical(is.infinite(out), is.infinite(vapply(z, function(t) LPM(32, t, z), numeric(1))))
+  })
+})
+
+# pin: NNS-Python reference values
+test_that("U12: NNS-Python reference values: LPM and UPM at the mean, degrees 0 to 2", {
+  withr::local_seed(20261108)
+  x <- nns_py$x
+  x_df <- as.data.frame(x)
+  ref <- data.frame(fn = rep(c("LPM", "UPM"), each = 3), degree = rep(c(0, 1, 2), 2),
+                    expected = c(0.49, 0.1032933, 0.02993767, 0.51, 0.1032933, 0.03027411))
+  ref$label <- sprintf("%s(%g, mean(x), x)", ref$fn, ref$degree)
+  aud_cases(ref, function(r) {
+    expect_equal(match.fun(r$fn)(r$degree, mean(x), x), r$expected, tolerance = 1e-5)
+  })
+  # Input derived from a one-column frame: a named target and a named sample.
+  aud_case("LPM(0, colMeans(x_df), unlist(x_df))", {
+    expect_equal(LPM(0, colMeans(x_df), unlist(x_df)), 0.49, tolerance = 1e-5)
+  })
+  aud_case("UPM(0, colMeans(x_df), unlist(x_df))", {
+    expect_equal(UPM(0, colMeans(x_df), unlist(x_df)), 0.51, tolerance = 1e-5)
   })
 })
