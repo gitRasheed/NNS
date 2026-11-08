@@ -529,7 +529,6 @@ test_that("U06: more than 32 targets (prefix backend) give the direct-scan value
     t <- sort(x)[(1e4 - 99):1e4] - 1e-9
     expect_true(all(UPM(2, t, x) >= 0))
   })
-  native_kernel_fixes <- fx_native_kernel_fixes()
   aud_case("UPM and UPM.ratio relative accuracy just below the maximum (> 32 targets)", env = native_kernel_fixes, {
     set.seed(11)
     x <- rnorm(1e4, 100, 1)
