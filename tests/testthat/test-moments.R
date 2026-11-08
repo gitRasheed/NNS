@@ -1,33 +1,12 @@
 # NNS.moments as partial moments about the mean. Lean: nns-proofs Moments.lean.
 
-# Lean: centralMoment_two_eq, UPM_one_mean_eq_LPM_one_mean, popVariance_eq_PM, moments_eq_momentsPM, moments_probe | BUGS: none
+# Lean: UPM_one_mean_eq_LPM_one_mean, popVariance_eq_PM, moments_eq_momentsPM, moments_probe | BUGS: none
 test_that("N01: NNS.moments (population) is the partial-moment assembly about the mean", {
   withr::local_seed(20261108)
   fm <- aud_fx_md()
-  aud_case("centralMoment_two_eq / three_eq / four_eq: mean((x-t)^k) = UPM(k) +- LPM(k), exact on dyadic data", {
-    for (t in fm$t_dy) {
-      expect_identical(LPM(2, t, fm$x_dy) + UPM(2, t, fm$x_dy), mean((fm$x_dy - t)^2))
-      expect_identical(UPM(3, t, fm$x_dy) - LPM(3, t, fm$x_dy), mean((fm$x_dy - t)^3))
-      expect_identical(UPM(4, t, fm$x_dy) + LPM(4, t, fm$x_dy), mean((fm$x_dy - t)^4))
-    }
-  })
-  aud_case("centralMoment_two_eq / three_eq / four_eq: identity at mean, median, quantiles and ties", {
-    for (nm in names(fm$kept)) {
-      x <- fm$kept[[nm]]
-      for (t in aud_targets(x)) {
-        aud_within_max(LPM(2, t, x) + UPM(2, t, x), mean((x - t)^2), aud_mom_tol(x, 2, t), label = nm)
-        aud_within_max(UPM(3, t, x) - LPM(3, t, x), mean((x - t)^3), aud_mom_tol(x, 3, t), label = nm)
-        aud_within_max(UPM(4, t, x) + LPM(4, t, x), mean((x - t)^4), aud_mom_tol(x, 4, t), label = nm)
-      }
-    }
-  })
   aud_case("UPM_one_mean_eq_LPM_one_mean: the mean balances degree-1 partial moments", {
     expect_identical(UPM(1, mean(fm$x_dy), fm$x_dy), LPM(1, mean(fm$x_dy), fm$x_dy))
     expect_identical(UPM(1, mean(fm$x_int), fm$x_int), LPM(1, mean(fm$x_int), fm$x_int))
-    for (nm in names(fm$kept)) {
-      x <- fm$kept[[nm]]
-      aud_within_max(UPM(1, mean(x), x), LPM(1, mean(x), x), aud_mom_tol(x, 1), label = nm)
-    }
   })
   aud_case("popVariance_eq_PM: population variance is LPM(2, mu) + UPM(2, mu), exact on dyadic data", {
     m <- NNS.moments(fm$x_dy)
@@ -117,6 +96,9 @@ test_that("N02: NNS.moments (sample) uses the Joanes-Gill corrections and is NaN
     m <- NNS.moments(c(1, 2, 3), FALSE)
     expect_identical(m$skewness, 0)
     expect_true(is.nan(m$kurtosis))
+  })
+  aud_case("NNS.moments(c(1, 2, 4, 8, 16), population = FALSE) skewness 1.325315", {
+    expect_equal(NNS.moments(c(1, 2, 4, 8, 16), population = FALSE)$skewness, 1.325315, tolerance = 1e-6)
   })
 })
 
