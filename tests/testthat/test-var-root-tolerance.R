@@ -164,3 +164,67 @@ test_that("integer-degree VaR solves two points whose spread overflows", {
     expect_lt(max(abs(w + root)), 1e308 * 1e-14)
   }
 })
+
+# --- A root within rounding of an order statistic is that order statistic -----
+# The breaks are tested by the sign of h = (1 - p) LPM - p UPM. On tied decimal
+# data whose decimal ratio at an order statistic is exactly p, rounding leaves
+# h a few eps off 0 at the break, and an exact sign test returned the order
+# statistic +/- 1 ulp (NNS.boost then dropped every learner tied at the cutoff).
+
+test_that("integer-degree VaR returns a tied decimal order statistic whose ratio is p", {
+  s <- c(0.1, 0.3, 0.5, 0.7, 0.7, 0.7, 0.7, 0.7, 0.8, 0.9)
+  # Decimal LPM and UPM at 0.7 are 1.2 and 0.3: the ratio is 0.8.
+  expect_identical(LPM.VaR(0.8, 1, s), 0.7)
+  expect_identical(UPM.VaR(0.2, 1, s), 0.7)
+  expect_identical(UPM.VaR(0.8, 1, -s), -0.7)
+  expect_identical(LPM.VaR(0.2, 1, -s), -0.7)
+  # NNS.boost keeps the learners at or above LPM.VaR(0.8, 1, scores).
+  expect_identical(sum(s >= LPM.VaR(0.8, 1, s)), 7L)
+})
+
+test_that("integer-degree VaR returns the order statistic wherever the decimal ratio is p", {
+  # Scores k / den + offset with integer k: the decimal partial moments at a
+  # tie are integers, so "the decimal ratio is num / pden" is an exact integer
+  # test. The double data and percentile are within rounding of those
+  # decimals, and so is the root.
+  probs <- list(c(4, 5), c(1, 5), c(1, 2), c(3, 4), c(1, 4), c(2, 5), c(9, 10), c(1, 10))
+  set.seed(123)
+  checks <- 0L
+  for (i in 1:5000) {
+    den <- sample(c(10, 100, 1000), 1)
+    offset <- sample(c(0, 0, 1, -3, 17), 1)
+    k <- sample(sample(0:den, sample(2:4, 1)), sample(4:40, 1), replace = TRUE)
+    if (length(unique(k)) < 2L) next
+    s <- k / den + offset
+    d <- sample(1:4, 1)
+    for (kk in unique(k)) {
+      L <- sum(pmax(kk - k, 0)^d)
+      U <- sum(pmax(k - kk, 0)^d)
+      if (L == 0 || U == 0) next
+      for (pr in probs) if (L * pr[2] == pr[1] * (L + U)) {
+        checks <- checks + 1L
+        t <- kk / den + offset
+        p <- pr[1] / pr[2]
+        q <- (pr[2] - pr[1]) / pr[2]
+        info <- sprintf("d = %d, p = %d/%d, t = %s, s = %s", d, pr[1], pr[2], t,
+                        paste(s, collapse = ", "))
+        expect_identical(LPM.VaR(p, d, s), t, info = info)
+        expect_identical(UPM.VaR(q, d, s), t, info = info)
+        expect_identical(UPM.VaR(p, d, -s), -t, info = info)
+      }
+    }
+  }
+  expect_gt(checks, 50L)
+})
+
+test_that("integer-degree VaR does not return a break for a root resolved off it", {
+  # The rounding allowance at a break is far below these offsets (#29).
+  expect_gt(LPM.VaR(1e-12, 4, c(0, 1)), 9.99e-4)
+  expect_lt(UPM.VaR(1e-12, 4, c(0, 1)), 1 - 9.99e-4)
+  # Root 1 + 1.33e-13 (about 600 eps from 1) at d = 1, as at d = 2 above.
+  x <- c(0, 1, 2)
+  p <- 0.5 + 1e-13
+  expect_gt(LPM.VaR(p, 1, x), 1)
+  expect_lt(abs(LPM.VaR(p, 1, x) - (1 + 4e-13 / 3)), 8 * .Machine$double.eps)
+  expect_lt(UPM.VaR(p, 1, x), 1)
+})

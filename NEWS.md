@@ -124,7 +124,13 @@
   gap (a tail percentile) is bracketed by a bound on its offset, so a
   percentile of 1e-300 takes tens of `uniroot()` iterations, not about a
   thousand. `UPM.VaR()` keeps its percentile exact instead of solving at
-  `1 - percentile`. On ordinary data the results change only by rounding
+  `1 - percentile`. An order statistic within rounding of the root is still
+  returned exactly: one where `(1 - p) LPM - p UPM` is within 16 eps times
+  `(1 - p) LPM + p UPM`, or one within 8 eps times its magnitude of the root.
+  Tied decimal scores whose decimal ratio is the percentile therefore return
+  the tied score, as before (`LPM.VaR(0.8, 1, c(0.1, 0.3, 0.5, rep(0.7, 5),
+  0.8, 0.9))` is 0.7, not 0.7 + 1 ulp), and `NNS.boost()` keeps the learners
+  tied at its cutoff. On ordinary data the results change only by rounding
   (less than 2e-14 times the largest threshold in the audit's samples), and
   the help no longer states a ratio tolerance. Degree 0 and the
   non-integer-degree solver are unchanged. `LPM.VaR(LPM.ratio(d, x_k, x), d,
