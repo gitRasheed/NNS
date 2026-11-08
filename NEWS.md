@@ -48,8 +48,10 @@
   `Co.UPM()`, `D.LPM()`, `D.UPM()` and `PM.matrix()` instead of silently
   becoming `mean(variable)`. It is also an error ("`target` must be
   numeric.") in `Co.LPM_nD()`, `Co.UPM_nD()` and `DPM_nD()`, whose target is
-  required (`NULL` is an error there as before), where a character target such
-  as `c("5", "3")` used to be coerced to numbers and a list was accepted. A
+  required (`NULL` remains an error, now with this message instead of
+  "`target` length must match number of columns in `data`"), where a
+  character target such as `c("5", "3")` used to be coerced to numbers and a
+  list was accepted. A
   logical target is coerced as `LPM()` does (`TRUE` is 1, `NA` gives
   "`target` must be finite."). `PM.matrix()` keeps
   accepting exactly `target = "mean"` and `"means"` as aliases for `NULL`.
