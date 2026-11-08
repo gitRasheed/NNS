@@ -593,7 +593,7 @@ PM.matrix <- function(LPM_degree, UPM_degree, target, variable, pop_adj, norm = 
 #' @name Co.LPM
 #' @title Co‑Lower Partial Moment
 #' @description
-#'   Computes the co‑lower partial moment (lower‑left quadrant 3) between two
+#'   Computes the co‑lower partial moment (lower‑left quadrant 4) between two
 #'   equal‑length numeric vectors at any degree and target.
 #' @param degree_lpm numeric; degree for x ("degree_x"). degree = 0 gives frequency, degree = 1 gives area. Must be a finite number \code{>= 0}.
 #' @param x numeric vector of observations.

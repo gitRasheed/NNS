@@ -24,7 +24,7 @@ used for both x and y. Must be a finite number \code{>= 0} when given.}
 Numeric vector of co‑LPM values.
 }
 \description{
-Computes the co‑lower partial moment (lower‑left quadrant 3) between two
+Computes the co‑lower partial moment (lower‑left quadrant 4) between two
   equal‑length numeric vectors at any degree and target.
 }
 \examples{

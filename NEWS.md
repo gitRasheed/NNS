@@ -207,8 +207,7 @@
   compiled efficient-set routine checks the degree before its LPM ordering
   pass, which ran `degree` multiplications per element (a degree of
   2147483647 took minutes before the error).
-* Help pages corrected: `Co.LPM()` is quadrant 3 (lower-left) and `D.LPM()`
-  quadrant 4 (lower-right); the `D.LPM()`/`D.UPM()` degree arguments name the
+* Help pages corrected: the `D.LPM()`/`D.UPM()` degree arguments name the
   deviation they apply to (`degree_upm` is the upper deviation of `x` in
   `D.LPM()` and of `y` in `D.UPM()`); the `DPM_nD()` degree applies to the
   absolute deviations of every coordinate; `NNS.CDF()` `target.value` is the

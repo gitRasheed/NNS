@@ -351,7 +351,7 @@ NumericVector CoUPM_RCPP(
 //' @name D.LPM
 //' @title Divergent‑Lower Partial Moment
 //' @description
-//'   Computes the divergent lower partial moment (lower‑right quadrant 4)
+//'   Computes the divergent lower partial moment (lower‑right quadrant 3)
 //'   between two equal‑length numeric vectors.
 //' @param degree_lpm numeric; degree applied to the lower deviation of \code{y}, \code{(target_y - y)^+}; 0 gives frequency, 1 gives area. At degree 0 an observation counts when \code{y <= target_y} (inclusive). Must be a finite number \code{>= 0}.
 //' @param degree_upm numeric; degree applied to the upper deviation of \code{x}, \code{(x - target_x)^+}; 0 gives frequency, 1 gives area. At degree 0 an observation counts when \code{x > target_x} (strict). Must be a finite number \code{>= 0}.

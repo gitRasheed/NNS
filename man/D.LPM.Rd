@@ -23,7 +23,7 @@ D.LPM(degree_lpm, degree_upm, x, y, target_x, target_y)
 Numeric vector of divergent LPM values.
 }
 \description{
-Computes the divergent lower partial moment (lower‑right quadrant 4)
+Computes the divergent lower partial moment (lower‑right quadrant 3)
   between two equal‑length numeric vectors.
 }
 \examples{
