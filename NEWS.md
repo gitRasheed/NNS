@@ -4,6 +4,11 @@
   `PM.matrix`, the `_nD` functions and `NNS.CDF`) now reject an infinite
   degree with "`degree` must be finite." (named after the argument) instead
   of returning Inf, 0 or NaN.
+* `LPM.VaR()` and `UPM.VaR()` check `degree` first, with the same messages as
+  the other partial-moment functions: `NA`, `NaN`, a negative, non-scalar or
+  non-numeric degree gives "'degree' must be a non-negative number" (`NA` and
+  `NaN` used to give "missing value where TRUE/FALSE needed"), and an infinite
+  one "`degree` must be finite.". Results for valid degrees are unchanged.
 * `LPM()`/`UPM()`/`LPM.ratio()`/`UPM.ratio()` with more than 32 targets, and
   univariate `NNS.CDF()` with more than 32 observations, no longer round a
   degree within 1e-12 of an integer to that integer, so they agree with the

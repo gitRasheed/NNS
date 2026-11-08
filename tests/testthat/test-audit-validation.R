@@ -223,6 +223,37 @@ test_that("VaR rejects a missing or non-numeric percentile at every degree", {
   expect_identical(LPM.VaR(c(-1, 2), 2, x), c(1, 5))
 })
 
+test_that("VaR rejects a missing, non-scalar or non-numeric degree by name", {
+  # NA and NaN used to fail with "missing value where TRUE/FALSE needed" from
+  # the degree == 0 branch.
+  x <- c(1, 2, 3, 5)
+  msg <- "'degree' must be a non-negative number"
+  for (f in list(LPM.VaR, UPM.VaR)) {
+    expect_error(f(0.1, NA, x), msg, fixed = TRUE)
+    expect_error(f(0.1, NA_real_, x), msg, fixed = TRUE)
+    expect_error(f(0.1, NaN, x), msg, fixed = TRUE)
+    expect_error(f(0.1, -1, x), msg, fixed = TRUE)
+    expect_error(f(0.1, -Inf, x), msg, fixed = TRUE)
+    expect_error(f(0.1, c(1, 2), x), msg, fixed = TRUE)
+    expect_error(f(0.1, numeric(0), x), msg, fixed = TRUE)
+    expect_error(f(0.1, NULL, x), msg, fixed = TRUE)
+    expect_error(f(0.1, "1", x), msg, fixed = TRUE)
+    expect_error(f(0.1, Inf, x), "`degree` must be finite.", fixed = TRUE)
+  }
+  # The degree is checked before the data, as the compiled kernels do.
+  expect_error(LPM.VaR(0.1, NA, c(1, Inf)), msg, fixed = TRUE)
+  # Valid degrees, including a logical, are unchanged.
+  expect_identical(LPM.VaR(0.1, TRUE, x), LPM.VaR(0.1, 1, x))
+  expect_identical(UPM.VaR(0.1, 0, x), stats::quantile(x, 0.9))
+})
+
+test_that("D.LPM and D.UPM count degree-0 ties on the documented side", {
+  x <- c(-1, 0, 0, 1, 2, 0)
+  y <- c(0, 0, 1, -1, 0, 2)
+  expect_identical(D.LPM(0, 0, x, y, 0, 0), mean(x > 0 & y <= 0))
+  expect_identical(D.UPM(0, 0, x, y, 0, 0), mean(x <= 0 & y > 0))
+})
+
 # --- NNS.CDF input forms (#13) -----------------------------------------------
 
 test_that("NNS.CDF accepts a one-column data.frame like a vector", {

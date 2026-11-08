@@ -3,7 +3,7 @@
 #' Generates a value at risk (VaR) quantile based on the Lower Partial Moment ratio.
 #'
 #' @param percentile numeric [0, 1]; The percentile for left-tail VaR. Values outside [0, 1] are clamped; \code{NA} is an error.
-#' @param degree numeric; a finite number \code{>= 0}, not necessarily an integer. \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, percentile, type = 7)}), which on tied data need not be an exact inverse of \code{LPM.ratio(0, ., x)}. Use it for probability statements, such as a VaR exceeded with a given frequency.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the \code{percentile}-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies below it, so it is not a quantile of \code{x} (for exponential data the degree-1 5\% point has about a quarter of the observations below it).  Higher degrees weight large deviations more.
+#' @param degree numeric; a finite number \code{>= 0}, not necessarily an integer; \code{NA} is an error. \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, percentile, type = 7)}), which on tied data need not be an exact inverse of \code{LPM.ratio(0, ., x)}. Use it for probability statements, such as a VaR exceeded with a given frequency.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the \code{percentile}-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies below it, so it is not a quantile of \code{x} (for exponential data the degree-1 5\% point has about a quarter of the observations below it).  Higher degrees weight large deviations more.
 #' @param x a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error. A data frame (including a tibble or data.table) is flattened to one vector.
 #' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area below it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved for itself, not to a tolerance on the ratio: it is the root to rounding error on the scale of the data, also for percentiles near 0 or 1, where the ratio is flat. A root within rounding of an order statistic returns that order statistic (for example \code{min(x)} at a tiny \code{percentile} when \code{min(x)} is not 0); where the offset from it is representable, as on data with minimum 0, the root is resolved to relative precision for percentiles down to the smallest normal double, about 2.2e-308.
 #' @author Fred Viole, OVVO Financial Systems
@@ -19,6 +19,7 @@
 #' @export
 
 LPM.VaR <- function(percentile, degree, x) {
+  .NNS_check_VaR_degree(degree)
   x <- .NNS_prepare_VaR_x(x)
   percentile <- .NNS_prepare_VaR_percentile(percentile)
   
@@ -40,7 +41,7 @@ LPM.VaR <- function(percentile, degree, x) {
 #' Generates an upside value at risk (VaR) quantile based on the Upper Partial Moment ratio.
 #'
 #' @param percentile numeric [0, 1]; The percentile for right-tail VaR. Values outside [0, 1] are clamped; \code{NA} is an error.
-#' @param degree numeric; a finite number \code{>= 0}, not necessarily an integer. \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, 1 - percentile, type = 7)}), which on tied data need not be an exact inverse of \code{UPM.ratio(0, ., x)}. Use it for probability statements.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the (1 - \code{percentile})-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies above it, so it is not a quantile of \code{x}.  Higher degrees weight large deviations more.
+#' @param degree numeric; a finite number \code{>= 0}, not necessarily an integer; \code{NA} is an error. \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, 1 - percentile, type = 7)}), which on tied data need not be an exact inverse of \code{UPM.ratio(0, ., x)}. Use it for probability statements.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the (1 - \code{percentile})-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies above it, so it is not a quantile of \code{x}.  Higher degrees weight large deviations more.
 #' @param x a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error. A data frame (including a tibble or data.table) is flattened to one vector.
 #' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area above it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved for itself, not to a tolerance on the ratio: it is the root to rounding error on the scale of the data, also for percentiles near 0 or 1, where the ratio is flat. A root within rounding of an order statistic returns that order statistic (for example \code{max(x)} at a tiny \code{percentile} when \code{max(x)} is not 0); where the offset from it is representable, as on data with maximum 0, the root is resolved to relative precision for percentiles down to the smallest normal double, about 2.2e-308.
 #' @author Fred Viole, OVVO Financial Systems
@@ -54,6 +55,7 @@ LPM.VaR <- function(percentile, degree, x) {
 #' @export
 
 UPM.VaR <- function(percentile, degree, x) {
+  .NNS_check_VaR_degree(degree)
   x <- .NNS_prepare_VaR_x(x)
   percentile <- .NNS_prepare_VaR_percentile(percentile)
   
@@ -103,6 +105,21 @@ UPM.VaR <- function(percentile, degree, x) {
   percentile <- .nns_as_numeric(percentile, "percentile", call = sys.call(-1L))
   if (anyNA(percentile)) .nns_stop_arg("`percentile` must not be NA.", sys.call(-1L))
   pmin(pmax(percentile, 0), 1)
+}
+
+
+
+# Same conditions and messages as nns_check_degree() in the compiled kernels,
+# checked before the degree == 0 branch so NA, NaN and non-scalar degrees get
+# a named error at every degree. A logical TRUE/FALSE stays accepted as 1/0.
+.NNS_check_VaR_degree <- function(degree) {
+  call <- sys.call(-1L)
+  if (!(is.numeric(degree) || is.logical(degree)) || is.object(degree) ||
+      length(degree) != 1L || !isTRUE(degree >= 0)) {
+    .nns_stop_arg("'degree' must be a non-negative number", call)
+  }
+  if (!is.finite(degree)) .nns_stop_arg("`degree` must be finite.", call)
+  invisible(degree)
 }
 
 
