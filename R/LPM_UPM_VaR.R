@@ -5,7 +5,7 @@
 #' @param percentile numeric [0, 1]; The percentile for left-tail VaR. Values outside [0, 1] are clamped; \code{NA} is an error.
 #' @param degree numeric; a finite number \code{>= 0}, not necessarily an integer; \code{NA} is an error. \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, percentile, type = 7)}), which on tied data need not be an exact inverse of \code{LPM.ratio(0, ., x)}. Use it for probability statements, such as a VaR exceeded with a given frequency.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the \code{percentile}-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies below it, so it is not a quantile of \code{x} (for exponential data the degree-1 5\% point has about a quarter of the observations below it).  Higher degrees weight large deviations more.
 #' @param x a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error. A data frame (including a tibble or data.table) is flattened to one vector.
-#' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area below it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved for itself, not to a tolerance on the ratio: it is the root to rounding error on the scale of the data, also for percentiles near 0 or 1, where the ratio is flat. A root within rounding of an order statistic returns that order statistic: one within 8 \code{.Machine$double.eps} times its magnitude (for example \code{min(x)} at a tiny \code{percentile} when \code{min(x)} is not 0), or one where the weighted difference of the lower and upper partial moments that defines the threshold is within 16 \code{.Machine$double.eps} times their weighted sum, as on tied decimal data whose decimal ratio at that order statistic is \code{percentile}; where the offset from it is representable, as on data with minimum 0, the root is resolved to relative precision for percentiles down to the smallest normal double, about 2.2e-308.
+#' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area below it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved for itself, not to a tolerance on the ratio: it is the root to rounding error on the scale of the data, also for percentiles near 0 or 1, where the ratio is flat. A root within rounding of an order statistic returns that order statistic: one within 2 \code{.Machine$double.eps} times its magnitude (at most a few ulps, and less than an eighth of its distance to the next order statistic) (for example \code{min(x)} at a tiny \code{percentile} when \code{min(x)} is not 0), or one where the weighted difference of the lower and upper partial moments that defines the threshold is within 16 \code{.Machine$double.eps} times their weighted sum, as on tied decimal data whose decimal ratio at that order statistic is \code{percentile}; where the offset from it is representable, as on data with minimum 0, the root is resolved to relative precision for percentiles down to the smallest normal double, about 2.2e-308.
 #' @author Fred Viole, OVVO Financial Systems
 #' @references Viole, F. and Nawrocki, D. (2013) "Nonlinear Nonparametric Statistics: Using Partial Moments" (ISBN: 1490523995, 2nd edition: \url{https://ovvo-financial.github.io/NNS/book/})
 #' @examples
@@ -43,7 +43,7 @@ LPM.VaR <- function(percentile, degree, x) {
 #' @param percentile numeric [0, 1]; The percentile for right-tail VaR. Values outside [0, 1] are clamped; \code{NA} is an error.
 #' @param degree numeric; a finite number \code{>= 0}, not necessarily an integer; \code{NA} is an error. \code{(degree = 0)} gives the interpolated empirical quantile (\code{quantile(x, 1 - percentile, type = 7)}), which on tied data need not be an exact inverse of \code{UPM.ratio(0, ., x)}. Use it for probability statements.  \code{(degree = 1)} gives an area-weighted (severity-weighted) threshold, the (1 - \code{percentile})-expectile of \code{x} (Newey and Powell 1987): \code{percentile} of the area of deviations, not of the observations, lies above it, so it is not a quantile of \code{x}.  Higher degrees weight large deviations more.
 #' @param x a numeric vector. \code{NA} and \code{NaN} are dropped; infinite values, factors and character data are an error. A data frame (including a tibble or data.table) is flattened to one vector.
-#' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area above it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved for itself, not to a tolerance on the ratio: it is the root to rounding error on the scale of the data, also for percentiles near 0 or 1, where the ratio is flat. A root within rounding of an order statistic returns that order statistic: one within 8 \code{.Machine$double.eps} times its magnitude (for example \code{max(x)} at a tiny \code{percentile} when \code{max(x)} is not 0), or one where the weighted difference of the lower and upper partial moments that defines the threshold is within 16 \code{.Machine$double.eps} times their weighted sum, as on tied decimal data whose decimal ratio at that order statistic is \code{percentile}; where the offset from it is representable, as on data with maximum 0, the root is resolved to relative precision for percentiles down to the smallest normal double, about 2.2e-308.
+#' @return Returns the type-7 empirical quantile (\code{degree = 0}), whose strict or inclusive sample tail fraction may differ from \code{percentile} because of interpolation or ties, or the threshold with \code{percentile} of the directional deviation area above it (\code{degree > 0}). For integer \code{degree} 1 to 4 the threshold is solved for itself, not to a tolerance on the ratio: it is the root to rounding error on the scale of the data, also for percentiles near 0 or 1, where the ratio is flat. A root within rounding of an order statistic returns that order statistic: one within 2 \code{.Machine$double.eps} times its magnitude (at most a few ulps, and less than an eighth of its distance to the next order statistic) (for example \code{max(x)} at a tiny \code{percentile} when \code{max(x)} is not 0), or one where the weighted difference of the lower and upper partial moments that defines the threshold is within 16 \code{.Machine$double.eps} times their weighted sum, as on tied decimal data whose decimal ratio at that order statistic is \code{percentile}; where the offset from it is representable, as on data with maximum 0, the root is resolved to relative precision for percentiles down to the smallest normal double, about 2.2e-308.
 #' @author Fred Viole, OVVO Financial Systems
 #' @references Viole, F. and Nawrocki, D. (2013) "Nonlinear Nonparametric Statistics: Using Partial Moments" (ISBN: 1490523995, 2nd edition: \url{https://ovvo-financial.github.io/NNS/book/})
 #' @examples
@@ -307,21 +307,30 @@ UPM.VaR <- function(percentile, degree, x) {
   # w_L * LPM + w_U * UPM for d <= 4. A percentile given as a decimal (0.8)
   # and decimal data (0.1, 0.7) are off their decimal values by a further
   # u each, which moves h by up to about 1 / (4 min(p, 1 - p)) eps of that
-  # scale (1.25 eps at p = 0.8). On tied decimal data whose decimal ratio at
-  # an order statistic is exactly p the computed |h| reached 10.2 eps of it;
-  # 16 eps is the next power of two. A root resolved apart from the break is
-  # far outside it: LPM.VaR(0.5 + 1e-13, d, c(0, 1, 2)) has |h| about 900 eps
-  # of its scale at t = 1 and LPM.VaR(1e-12, 4, c(0, 1)) about 4.5e15 eps.
+  # scale (1.25 eps at p = 0.8, 2.5 eps at p = 0.9), so the first-order bound
+  # is about 7.75 to 9 eps. It does not bound what was measured: on tied
+  # decimal data whose decimal ratio at an order statistic is exactly p the
+  # computed |h| reached 10.2 eps of that scale (second-order and
+  # long-double-to-double rounding and the number of tied terms add to it).
+  # 16 eps is chosen empirically, as the next power of two above 10.2 eps
+  # (about 1.6 times it; no tie checked fell outside it). A root resolved
+  # apart from the break is far outside it: LPM.VaR(0.5 + 1e-13, d,
+  # c(0, 1, 2)) has |h| about 900 eps of its scale at t = 1 and
+  # LPM.VaR(1e-12, 4, c(0, 1)) about 4.5e15 eps.
   #
   # snap_t: decimal data far from 0 relative to their spread (scores near 17
   # spaced 0.001 apart) are off their decimal values by u |x|, a large part of
   # each deviation, so h at a decimal tie is outside snap_h. The root is then
-  # within about one ulp of the order statistic (at most 0.92 eps |x_k| on the
-  # same check for data offset by 1, -3 and 17); an allowance of 8 eps |x_k|
-  # returns the order statistic. The root of LPM.VaR(0.5 + 1e-13, d,
-  # c(0, 1, 2)), about 600 eps from 1, is resolved.
+  # within about one ulp of the order statistic (at most 1.13 eps |x_k| on
+  # data near 0 and 0.46 eps |x_k| at offsets 1, -3, 17 and up to 1e12 from
+  # 0); an allowance of 2 eps |x_k| (at most 4 ulps of x_k) returns the order
+  # statistic. It is capped at a quarter of the half gap, so a snap never
+  # reaches towards the midpoint of a gap only a few ulps wide. A root more
+  # than 2 eps |x_k| from the break is resolved: the root of
+  # LPM.VaR(0.5 + 1e-13, d, c(0, 1, 2)), about 600 eps from 1, and that of
+  # LPM.VaR(0.5 + 1e-9, 1, 1e6 + 0:2), 11 ulps above 1e6 + 1.
   snap_h <- 16 * .Machine$double.eps
-  snap_t <- 8 * .Machine$double.eps
+  snap_t <- 2 * .Machine$double.eps
   
   solve_one <- function(wl, wu) {
     # h(u_1) = -wu * UPM(u_1) < 0 and h(u_m) = wl * LPM(u_m) > 0: find k with
@@ -359,9 +368,9 @@ UPM.VaR <- function(percentile, degree, x) {
     # in it; a break at 0 gets no allowance, and a root next to it keeps its
     # relative precision.
     half <- g / 2
-    delta <- min(snap_t * abs(u_orig[k]) * scale, half)
+    delta <- min(snap_t * abs(u_orig[k]) * scale, half / 4)
     if (delta > 0 && h_s(delta) >= 0) return(u_orig[k])
-    delta <- min(snap_t * abs(u_orig[k + 1L]) * scale, half)
+    delta <- min(snap_t * abs(u_orig[k + 1L]) * scale, half / 4)
     if (delta > 0 && h_r(delta) <= 0) return(u_orig[k + 1L])
     
     h_half <- h_s(half)

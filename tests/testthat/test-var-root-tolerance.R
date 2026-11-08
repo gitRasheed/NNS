@@ -228,3 +228,21 @@ test_that("integer-degree VaR does not return a break for a root resolved off it
   expect_lt(abs(LPM.VaR(p, 1, x) - (1 + 4e-13 / 3)), 8 * .Machine$double.eps)
   expect_lt(UPM.VaR(p, 1, x), 1)
 })
+
+test_that("integer-degree VaR resolves a root a few ulps off a break far from 0", {
+  # The order-statistic allowance is 2 eps |x_k|, at most a quarter of the
+  # half gap; an allowance of 8 eps |x_k| returned these breaks.
+  # Root 1e6 + 1 + 2e-9 * (4 / 3), 11 ulps above 1e6 + 1.
+  v <- LPM.VaR(0.5 + 1e-9, 1, 1e6 + 0:2)
+  expect_gt(v, 1e6 + 1)
+  expect_lt(abs(v - (1e6 + 1 + 4e-9 / 3)), 2 * 2^-33)
+  w <- UPM.VaR(0.5 + 1e-9, 1, -(1e6 + 0:2))
+  expect_identical(w, -v)
+  # Root 1e12 + 1.001, 8 ulps above 1e12 + 1.
+  x <- 1e12 + 0:3
+  t <- 1e12 + 1.001
+  expect_lte(abs(LPM.VaR(LPM.ratio(1, t, x), 1, x) - t), 2^-13)
+  # The ratio at 1e15 + 1.25 is exactly 0.375: (2 * 0.25 + 1) / 4.
+  expect_identical(LPM.VaR(0.375, 1, 1e15 + 0:3), 1e15 + 1.25)
+  expect_identical(UPM.VaR(0.375, 1, -(1e15 + 0:3)), -(1e15 + 1.25))
+})
