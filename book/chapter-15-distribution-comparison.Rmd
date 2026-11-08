@@ -100,7 +100,7 @@ $$
 P(X' > Y') + P(Y' > X') + P(X'=Y') = 1,
 $$
 
-these probabilities provide a complete comparison of the two distributions.
+these probabilities give a complete account of the pairwise ordering of two independent draws (though not of the distributions themselves).
 
 For continuous distributions, ties occur with probability zero, so
 
@@ -159,17 +159,17 @@ measures the opposite directional region.
 Within the partial-moment framework, these probabilities correspond to **degree-zero divergent co-partial moments**:
 
 $$
-DUPM_{0,0}(t,t) = P(X > t,\, Y \le t),
+DLPM_{0,0}(t,t) = P(X > t,\, Y \le t),
 $$
 
 $$
-DLPM_{0,0}(t,t) = P(X \le t,\, Y > t).
+DUPM_{0,0}(t,t) = P(X \le t,\, Y > t).
 $$
 
 The difference
 
 $$
-\Delta(t) = DUPM_{0,0}(t,t) - DLPM_{0,0}(t,t)
+\Delta(t) = DLPM_{0,0}(t,t) - DUPM_{0,0}(t,t) = F_Y(t) - F_X(t)
 $$
 
 indicates which distribution dominates relative to the benchmark.
@@ -221,7 +221,7 @@ LPM_1(t, X) = \frac{1}{n} \sum_{i=1}^n \max(0,\, t - x_i),
 UPM_1(t, X) = \frac{1}{n} \sum_{i=1}^n \max(0,\, x_i - t).
 $$
 
-Rather than counting the fraction of observations below $t$, this ratio measures the fraction of the **total area of deviations** that lies below $t$. Each observation is weighted by its distance from $t$, so this is a severity-weighted share, not the probability $P(X \le t)$: for an exponential sample, the point with 5% of the deviation area below it has about a quarter of the observations below it. That point is the 5% expectile (Newey and Powell, 1987): the degree-one ratio is the inverse of the expectile function, as the degree-zero ratio is the inverse of the quantile function. What the degree-one ratio offers instead is continuity in $t$, where the empirical CDF jumps by $1/n$, and the distribution-free anchor derived next. Probability statements about the original variable, such as event frequencies and ordinary quantiles, use degree 0. For a nondegenerate integrable variable, the univariate $F_1$ is itself continuous, increasing, and has limits 0 and 1, so it is a valid induced CDF. Its induced law differs from the original law; continuity does not erase this distinction.
+Rather than counting the fraction of observations below $t$, this ratio measures the fraction of the **total area of deviations** that lies below $t$. Each observation is weighted by its distance from $t$, so this is a severity-weighted share, not the probability $P(X \le t)$: for an exponential sample, the point with 5% of the deviation area below it has about a quarter of the observations below it. That point is the 5% expectile (Newey and Powell, 1987): the degree-one ratio is the inverse of the expectile function, as the degree-zero ratio is the inverse of the quantile function. What the degree-one ratio offers instead is continuity in $t$, where the empirical CDF jumps by $1/n$, and the distribution-free anchor derived next. Probability statements about the original variable, such as event frequencies and ordinary quantiles, use degree 0. For a nondegenerate integrable variable, the univariate $F_1$ is itself continuous, increasing, and has limits 0 and 1, so it is a valid induced CDF. Its induced law generally differs from the original law (the lone exception is the location-scale Student-$t$ family with 2 degrees of freedom (Koenker, 1993), where expectiles coincide with quantiles); continuity does not erase this distinction.
 
 In NNS, this is computed via `LPM.ratio(degree = 1, target, variable)`.
 
@@ -351,11 +351,11 @@ lpm1 = np.array([lpm_ratio(1, float(np.mean(x[:i])), x[:i]) for i in range(1, x.
 
 This property has direct consequences for the comparison methods developed in the remainder of this chapter.
 
-When two samples $X$ and $Y$ are evaluated at a shared benchmark such as the grand mean $\bar{z}$, the identity above makes $F_1(\bar{z}; X) - 0.5$ the distance from $\bar{z}$ to the group mean $\bar{x}$, in units of that group's deviation area, whatever the shape of the distribution. Under the null hypothesis of identical population means, both $F_1(\bar{z}; X)$ and $F_1(\bar{z}; Y)$ scatter around 0.5 with sampling noise, and departures from 0.5 measure how far each group mean sits from the grand statistic.
+When two samples $X$ and $Y$ are evaluated at a shared benchmark such as the grand mean $\bar{z}$, the identity above makes $F_1(\bar{z}; X) - 0.5$ the signed distance from the group mean $\bar{x}$ to $\bar{z}$, in units of twice that group's deviation area, whatever the shape of the distribution. Under the null hypothesis of identical population means, both $F_1(\bar{z}; X)$ and $F_1(\bar{z}; Y)$ scatter around 0.5 with sampling noise, and departures from 0.5 measure how far each group mean sits from the grand statistic.
 
 The discrete CDF has no such anchor. Its value at the mean estimates $P(X \le \mu)$, which is 0.5 for a continuous distribution symmetric about its mean, but not in general, so at degree 0 a departure from 0.5 mixes skewness with separation: two identical exponential groups both sit near 0.632, not 0.5.
 
-The NNS ANOVA procedure in Section 15.4.2 is built directly on this foundation.
+The NNS ANOVA procedure in Section 15.4.3 is built directly on this foundation.
 
 ---
 
@@ -394,8 +394,9 @@ Benchmark-based comparisons extend this idea further.
 Define
 
 $$
-\hat \Delta(t) = \hat P(X>t,\,Y\le t) - \hat P(Y>t,\,X\le t).
+\hat \Delta(t) = \hat F_Y(t) - \hat F_X(t) = L_0(t;Y) - L_0(t;X),
 $$
+which for independent draws equals $\hat P(X>t,\,Y\le t) - \hat P(Y>t,\,X\le t)$ (for paired samples of equal length, `D.LPM(0, 0, x, y, t, t) - D.UPM(0, 0, x, y, t, t)`).
 
 Plotting $\hat\Delta(t)$ across benchmarks produces a **directional dominance curve**.
 
@@ -493,6 +494,8 @@ $$
 \hat p = 0.64.
 $$
 
+One of the 25 comparisons ($x = y = -2$) is a tie, so the tie-adjusted estimate is $\hat p^* = 0.64 + \tfrac{1}{2}(0.04) = 0.66$.
+
 Interpretation:
 
 - Distribution $X$ tends to produce larger values than $Y$.
@@ -518,7 +521,7 @@ $$
 
 and that $F_1(\bar{x}; X) = 0.5$ exactly at the sample mean for every non-constant sample.
 
-This **mean-target property** provides a distribution-free anchor for comparing means across samples: under the null that two groups share a common population mean, both groups' degree-one CDFs evaluated at the grand mean scatter around 0.5, and a departure from 0.5 measures the distance between the group mean and the grand mean in units of that group's deviation area (Section 15.1.8). Because the anchor does not depend on the shape of either distribution, a skewed group is not read as a shifted one, as it would be by comparing the empirical CDF with 0.5.
+This **mean-target property** provides a distribution-free anchor for comparing means across samples: under the null that two groups share a common population mean, both groups' degree-one CDFs evaluated at the grand mean scatter around 0.5, and a departure from 0.5 measures the distance between the group mean and the grand mean in units of twice that group's deviation area (Section 15.1.8). Because the anchor does not depend on the shape of either distribution, a skewed group is not read as a shifted one, as it would be by comparing the empirical CDF with 0.5.
 
 The degree-one CDF is also continuous in $t$, unlike the empirical step function, because it encodes area-based mass rather than point counts. That smoothness is not robustness: deviations enter in proportion to their size, so a single extreme observation shifts the degree-one CDF at every $t$, while it changes the degree-zero CDF by one count. Chapter 17 gives a numerical example for the tail thresholds.
 
@@ -583,7 +586,7 @@ $$
 \text{Certainty}_{\text{ANOVA}} = \min\!\left(1,\; \text{Certainty}_{\text{ANOVA, raw}} \times \left(\frac{n + m - 2}{n + m}\right)^2\right).
 $$
 
-This correction reduces certainty modestly for small combined samples, reflecting the increased estimation uncertainty when fewer observations inform the CDF comparisons. As $n + m \to \infty$ the adjustment approaches one and becomes negligible.
+This correction reduces certainty for small combined samples, substantially when $n+m$ is very small (the factor is 0.64 at $n+m=10$ and 0.25 at $n+m=4$), reflecting the increased estimation uncertainty when fewer observations inform the CDF comparisons. As $n + m \to \infty$ the adjustment approaches one and becomes negligible.
 
 The raw score equals 1 at maximal benchmark agreement. After the finite-sample adjustment, the maximum is $((n+m-2)/(n+m))^2$, below 1 for finite nonempty groups. Smaller values describe stronger disagreement at the selected benchmarks; agreement of this finite profile does not establish equality of distributions.
 
@@ -617,7 +620,7 @@ where $\bar{x}^*_{\alpha/2}$ and $\bar{x}^*_{1-\alpha/2}$ denote the lower and u
 
 #### Robust Estimation via Bootstrap Resampling
 
-The certainty statistic can be made more robust through bootstrap resampling. In this mode, the control and treatment samples are independently resampled with replacement across a specified number of iterations (typically 100), and the certainty statistic is recomputed for each resample.
+The certainty statistic can be made more robust through bootstrap resampling. In this mode, the control and treatment samples are independently resampled with replacement 100 times (fixed in the current implementation), and the certainty statistic is recomputed for each resample.
 
 The resulting distribution of certainty values provides:
 
@@ -636,7 +639,7 @@ Power is the rejection probability of a specified, calibrated decision rule unde
 
 #### Multi-Group and Pairwise Comparisons
 
-The NNS ANOVA framework extends naturally to **multiple groups**. When more than two samples are supplied, the procedure computes a grand statistic across all groups and evaluates each group's CDF at this common benchmark. Pairwise certainty values can also be returned, summarizing all bilateral comparisons in matrix form.
+The NNS ANOVA framework extends naturally to **multiple groups**. When more than two samples are supplied (and `pairwise = FALSE`), the procedure computes a pooled grand statistic and group-averaged tail targets across all groups, evaluates every pair of groups at these common benchmarks, and returns the mean of the resulting pairwise certainties. With `pairwise = TRUE`, bilateral certainties are returned in matrix form, each pair evaluated at its own two-group grand statistic and targets.
 
 This multi-group capability retains the chosen central or distribution-profile target across groups. No parametric family is selected, but a claim about statistical significance still requires a reference distribution calibrated to that target and sampling design.
 
@@ -681,7 +684,7 @@ $$
 
 which maps the comparison to $[0,1]$, where $0$ denotes no directional separation and $1$ denotes complete separation. Unlike a p-value, both $p^*_{X,Y}$ and $C_{SS}$ retain a direct frequency interpretation.
 
-This differs from stochastic dominance. Stochastic superiority is a pairwise exceedance probability, while stochastic dominance requires one distribution to be preferred over the entire shared support. It also differs from NNS ANOVA. NNS ANOVA asks whether the distributions are in agreement at the grand mean and selected benchmark points; stochastic superiority asks which distribution tends to generate larger draws overall. It is therefore stronger than a simple mean comparison, because it uses the full cross-sample ordering, but weaker than dominance, because it does not require the ordering to hold at every threshold. A distribution may have $p^*_{X,Y} > 0.5$ and still fail to dominate if the CDFs cross.
+This differs from stochastic dominance. Stochastic superiority is a pairwise exceedance probability, while stochastic dominance requires one distribution to be weakly preferred at every threshold (its CDF, or integrated CDF, never above the other's), not just on average. It also differs from NNS ANOVA. NNS ANOVA asks whether the distributions are in agreement at the grand mean and selected benchmark points; stochastic superiority asks which distribution tends to generate larger draws overall. It is therefore more informative than a simple mean comparison, because it uses the full cross-sample ordering (although neither $p^*_{X,Y} > 0.5$ nor $E[X] > E[Y]$ implies the other), but weaker than dominance, because it does not require the ordering to hold at every threshold. A distribution may have $p^*_{X,Y} > 0.5$ and still fail to dominate if the CDFs cross.
 
 Given samples
 
@@ -767,7 +770,7 @@ $$
 
 with strict inequality for at least one $t$.
 
-Equivalently, $X$ dominates $Y$ in the first order if and only if every non-decreasing utility function assigns at least as high an expected value to $X$ as to $Y$. This means any decision-maker who prefers more to less will prefer $X$.
+Equivalently, $X$ dominates $Y$ in the first order if and only if every non-decreasing utility function assigns at least as high an expected value to $X$ as to $Y$, with strict preference for at least one such utility. This means any decision-maker who prefers more to less will prefer $X$.
 
 In terms of the empirical CDF, $X \succ_1 Y$ whenever the distribution of $X$ lies entirely to the right of the distribution of $Y$ across all quantiles.
 
@@ -822,7 +825,7 @@ $$
 
 These equivalences identify **stochastic dominance with partial moment inequalities** over all real benchmarks. In an empirical support-restricted computation, TSD also requires $E[X] \ge E[Y]$ so that the inequality continues beyond the maximum support point. `NNS.TSD` checks this mean condition. The ratios used by `type = "continuous"` in `NNS.FSD` define the separate area ordering described below.
 
-This is also the bridge to Chapter 17: the degree-one quantile objects used for magnitude-calibrated bands (`LPM.VaR(..., degree = 1, ...)`, `UPM.VaR(..., degree = 1, ...)`) are generated from the same degree-one lower/upper partial moment geometry used here for SSD and TSD diagnostics. Put differently, interval construction and dominance testing are not separate methods — they are two uses of the same directional representation.
+This is also the bridge to Chapter 17: the degree-one quantile objects used for magnitude-calibrated bands (`LPM.VaR(..., degree = 1, ...)`, `UPM.VaR(..., degree = 1, ...)`) are generated from the same degree-one lower/upper partial moment geometry used here for the SSD diagnostic (TSD uses the degree-two analogue). Put differently, interval construction and dominance testing are not separate methods — they are two uses of the same directional representation.
 
 #### Empirical Stochastic Dominance Tests
 
@@ -832,7 +835,7 @@ $$
 \hat F_X(t) \le \hat F_Y(t)
 $$
 
-holds for all evaluation points $t$ in the combined support of the data. If the condition holds everywhere, $X$ first-order stochastically dominates $Y$. If it fails at some points, the distributions intersect and neither dominates at the first order.
+holds for all evaluation points $t$ in the combined support of the data. If the condition holds everywhere, with strict inequality at some point, $X$ first-order stochastically dominates $Y$. If it fails at some point, $X$ does not dominate $Y$; if the reverse inequality $\hat F_Y(t) \le \hat F_X(t)$ also fails somewhere, the empirical CDFs cross and neither dominates at the first order.
 
 Second- and third-order tests replace the empirical CDF with degree-one and degree-two lower partial moments. The implementation also checks between-knot extrema where required and enforces the TSD mean condition; checking support endpoints alone is not sufficient for every piecewise-polynomial criterion.
 
@@ -921,6 +924,7 @@ NNS.SS(manual_mpg, auto_mpg)
 # [1] 0.8299595
 
 # 2. Full-distribution comparison
+set.seed(1)
 NNS.ANOVA(control = auto_mpg,
           treatment = manual_mpg,
           robust = TRUE)
@@ -943,22 +947,22 @@ NNS.ANOVA(control = auto_mpg,
 # [1] 0.02345583
 #
 # $`Effect_Size_LB.2.5%`
-# [1] 2.377328
+# [1] 2.363563
 #
 # $`Effect_Size_UB.97.5%`
-# [1] 12.2155
+# [1] 11.95408
 #
 # $Confidence_Level
 # [1] 0.95
 #
 # $`Robust Certainty Estimate`
-# [1] 0.01094359
+# [1] 0.01405324
 #
 # $`Lower 95% CI`
-# [1] 3.864872e-06
+# [1] 3.461308e-05
 #
 # $`Upper 95% CI`
-# [1] 0.1048396
+# [1] 0.1025869
 
 # 3. Preference ordering over the full support
 NNS.FSD(manual_mpg, auto_mpg)
@@ -988,7 +992,7 @@ fsd(manual_mpg, auto_mpg)   # 1: "X FSD Y", -1: "Y FSD X", 0: no FSD
 
 For this comparison, `NNS.SS(manual_mpg, auto_mpg)` yields `p_gt = 0.8259109`, `p_tie = 0.008097166`, 
 and `p_star = 0.8299595`, indicating that a randomly selected manual-transmission car exceeds a randomly selected automatic-transmission car in miles-per-gallon about 83 percent of the time. 
-`NNS.ANOVA(control = auto_mpg, treatment = manual_mpg, robust = TRUE)` returns `Certainty = 0.02345583` and `Robust Certainty Estimate = 0.01094359`, indicating very little distributional agreement between the two groups. 
+`NNS.ANOVA(control = auto_mpg, treatment = manual_mpg, robust = TRUE)` returns `Certainty = 0.02345583` and, with `set.seed(1)`, `Robust Certainty Estimate = 0.01405324` (the bootstrap outputs vary with the seed), indicating very little distributional agreement between the two groups. 
 `NNS.FSD(manual_mpg, auto_mpg)` returns "X FSD Y", implying that the manual-transmission miles-per-gallon distribution first-order stochastically dominates the automatic-transmission distribution. Together, these results show pairwise directional advantage, 
 weak distributional agreement, and full-support preference for the manual-transmission group.
 
@@ -1003,3 +1007,8 @@ At the distributional-agreement level, the degree-one ratio is anchored at 0.5 a
 At the strongest level, stochastic dominance extends directional comparison from pairwise exceedance to full preference ordering over the support. First-, second-, and third-order dominance can all be written as partial-moment inequalities, which shows that dominance analysis, efficient sets, and dominance clustering are all natural extensions of the same directional probability representation.
 
 Taken together, these tools provide a coherent hierarchy for nonparametric distribution comparison. Stochastic superiority answers the pairwise question, NNS ANOVA answers the agreement question, and stochastic dominance answers the preference-ordering question.
+
+## References
+
+- Koenker, R. (1993). When are expectiles percentiles? (Solution). *Econometric Theory*, 9(3), 526-527.
+- Newey, W. K., & Powell, J. L. (1987). Asymmetric least squares estimation and testing. *Econometrica*, 55(4), 819-847.

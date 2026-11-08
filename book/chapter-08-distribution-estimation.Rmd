@@ -82,7 +82,7 @@ L_r(t;X) = E[(t-X)_+^r]
 U_r(t;X) = E[(X-t)_+^r]
 \]
 
-by the law of large numbers.
+by the law of large numbers (for i.i.d. samples whose order-\(r\) partial moments are finite, as in Chapter 2; no condition is needed at \(r=0\)).
 
 Thus empirical partial moments provide estimators of directional deviation structure that do not require specifying a parametric family.
 
@@ -161,11 +161,11 @@ This distinction is important: the EDF already gives a complete nonparametric es
 
 Classical statistics addresses this issue using **kernel density estimation**, which smooths the empirical distribution using a bandwidth parameter. Another common alternative is the **histogram estimator**, which approximates the density by counting observations within fixed intervals. However, histograms also require selecting a bin width, which plays a role analogous to the bandwidth in kernel density estimation.
 
-The directional framework approaches the problem differently. Rather than smoothing the distribution directly, it identifies structural features of the distribution—such as the **mode and local concentration of probability mass**—through data-adaptive procedures whose tuning is set by the data rather than chosen by the analyst. `NNS.mode`, for example, counts observations in bins of width \(\mathrm{IQR}/\sqrt{n}\) and smooths the counts with a short triangular filter before locating peaks; the bin width is still a smoothing choice, but it is fixed by the sample's own spread and size.
+The directional framework approaches the problem differently. Rather than smoothing the distribution directly, it identifies structural features of the distribution—such as the **mode and local concentration of probability mass**—through data-adaptive procedures whose tuning is set by the data rather than chosen by the analyst. `NNS.mode`, for example, counts observations in bins of width \(\mathrm{IQR}/\sqrt{n}\) and smooths the counts with a short triangular filter before locating peaks (when the distinct values are spaced farther apart than one bin, as with integer-valued data, it instead reads the modes directly from the value frequencies); the bin width is still a smoothing choice, but it is fixed by the sample's own spread and size.
 
 Chapter 13 develops a continuous hinge representation from which the distribution can be recovered, alongside the already complete degree-zero CDF representation. That identity does not eliminate smoothing choices in a finite-sample mode estimator. Chapter 18 develops recursive partitioning as a separate way to construct local representatives; `NNS.mode` uses the histogram and smoothing rule described here.
 
-Practical implementation of these methods — including sampling from empirical distributions and generating PDFs via degree manipulation of `LPM.VaR` — is demonstrated in the NNS package vignette [Sampling and Simulation](https://cran.r-project.org/web/packages/NNS/vignettes/NNSvignette_05_Sampling.html).
+Practical implementation of these methods — including sampling from empirical distributions and generating PDFs of the degree-reshaped laws via degree manipulation of `LPM.VaR` (only degree 0 reproduces the sample's own distribution) — is demonstrated in the NNS package vignette [Sampling and Simulation](https://cran.r-project.org/web/packages/NNS/vignettes/NNSvignette_05_Sampling.html).
 
 ---
 
@@ -306,7 +306,7 @@ Second, the estimator is **transparent**. Each observation contributes directly 
 
 Third, the estimator improves **systematically with sample size**. As additional observations are collected, the empirical distribution converges uniformly to the true distribution.
 
-Because partial moments measure deviations relative to benchmarks, extreme observations influence the estimates in proportion to their deviation magnitude when \(r \ge 1\). In applications such as risk management, where extreme outcomes carry important information, this sensitivity can be desirable because it preserves tail behavior that smoothing-based estimators may dilute.
+Because partial moments measure deviations relative to benchmarks, extreme observations influence the estimates in proportion to the \(r\)-th power of their deviation magnitude when \(r \ge 1\). In applications such as risk management, where extreme outcomes carry important information, this sensitivity can be desirable because it preserves tail behavior that smoothing-based estimators may dilute.
 
 ---
 

@@ -118,7 +118,7 @@ Conditional probabilities are simply **relative weights of these regions after c
 
 All eight conditional probabilities arising from the four-quadrant partition can be expressed as ratios of a co-partial moment to a marginal partial moment. We organize them by quadrant.
 
-## Concordant lower-tail conditioning
+### Concordant lower-tail conditioning
 
 \[
 P(Y \le t_Y \mid X \le t_X)
@@ -127,7 +127,7 @@ P(X \le t_X \mid Y \le t_Y)
 = \frac{\mathrm{CoLPM}_{0,0}(t_X,t_Y)}{L_0(t_Y;\,Y)}.
 \]
 
-## Concordant upper-tail conditioning
+### Concordant upper-tail conditioning
 
 \[
 P(Y > t_Y \mid X > t_X)
@@ -136,7 +136,7 @@ P(X > t_X \mid Y > t_Y)
 = \frac{\mathrm{CoUPM}_{0,0}(t_X,t_Y)}{U_0(t_Y;\,Y)}.
 \]
 
-## Discordant conditioning
+### Discordant conditioning
 
 \[
 P(Y > t_Y \mid X \le t_X)
@@ -156,7 +156,7 @@ P(X > t_X \mid Y \le t_Y)
 
 Every conditional ratio requires a positive denominator.
 
-Each formula follows from the same logic: the joint probability of the relevant quadrant divided by the marginal probability of the conditioning event. Together, these eight expressions **complete the four-quadrant conditional probability picture** — every conditional probability involving thresholds on \(X\) and \(Y\) is a ratio of a degree-zero co-partial moment to a marginal degree-zero partial moment.
+Each formula follows from the same logic: the joint probability of the relevant quadrant divided by the marginal probability of the conditioning event. Together, these eight expressions **complete the four-quadrant conditional probability picture** — every conditional probability of a one-sided threshold event on one variable, given a one-sided threshold event on the other, is a ratio of a degree-zero co-partial moment to a marginal degree-zero partial moment.
 
 In NNS notation, letting \(A = \{X > t_X\}\) and \(B = \{Y > t_Y\}\):
 
@@ -198,7 +198,7 @@ This identity allows probabilities to be updated when new information becomes av
 
 Using the directional framework, Bayes' theorem follows immediately from co-partial moment identities.
 
-## Lower-tail derivation
+### Lower-tail derivation
 
 Let \(A = \{X \le t_X\}\) and \(B = \{Y \le t_Y\}\). From Section 13.4,
 
@@ -226,7 +226,7 @@ Since \(L_0(t_X;\,X) = P(A)\) and \(L_0(t_Y;\,Y) = P(B)\),
 \boxed{P(A \mid B) = \frac{P(B \mid A)\,P(A)}{P(B)}.}
 \]
 
-## Upper-tail derivation
+### Upper-tail derivation
 
 The identical derivation holds in the upper region. Let \(A = \{X > t_X\}\) and \(B = \{Y > t_Y\}\). Replacing CoLPM with CoUPM and \(L_0\) with \(U_0\) throughout,
 
@@ -288,7 +288,7 @@ P(X \le 0 \mid Y \le 0)
 = \frac{0.75 \times 0.4}{0.5} = 0.6. \checkmark
 \]
 
-The directional framework identifies \(\mathrm{CoLPM}_{0,0}(0,0) = 0.3\) as the probability mass in the joint lower-left region. Conditional probabilities are relative frequencies within that region, computed directly from partial-moment ratios without distributional assumptions.
+The directional framework identifies \(\mathrm{CoLPM}_{0,0}(0,0) = 0.3\) as the probability mass in the joint lower-left region. Conditional probabilities are the relative frequencies of that region within each conditioning event, \(\{X \le 0\}\) or \(\{Y \le 0\}\), computed directly from partial-moment ratios without distributional assumptions.
 
 ---
 
@@ -296,7 +296,7 @@ The directional framework identifies \(\mathrm{CoLPM}_{0,0}(0,0) = 0.3\) as the 
 
 The analysis so far has operated at degree zero, where co-partial moments are indicator-level probability masses. A natural question arises: what additional structure is carried by **degree-one co-partial moments**?
 
-## The hinge surface
+### The hinge surface
 
 Define the **degree-one lower co-partial moment surface**
 
@@ -306,7 +306,7 @@ H(t_X, t_Y) = E\!\bigl[(t_X - X)_+\,(t_Y - Y)_+\bigr].
 
 This replaces indicator contributions with **hinge magnitudes** — continuous functions of how far each variable falls below its benchmark. Unlike degree-zero moments, which record whether an observation lands in a quadrant, degree-one moments record **how far into that quadrant it lies**.
 
-## Continuous partition of unity
+### Continuous partition of unity
 
 Degree-one co-partial moments form a continuous partition of unity over the same four-quadrant geometry as degree zero. Defining concordant and divergent degree-one quantities
 
@@ -328,7 +328,7 @@ w^{--} = \frac{C^{--}}{S}, \quad w^{++} = \frac{C^{++}}{S}, \quad w^{+-} = \frac
 
 satisfy \(w^{--} + w^{++} + w^{+-} + w^{-+} = 1\) with all weights non-negative whenever \(0<S<\infty\). These are magnitude shares at the chosen benchmarks, not automatically probabilities under the original joint law. If \(S=0\), every observation lies on at least one benchmark axis, \(X=t_X\) or \(Y=t_Y\); the unnormalized moments remain defined but their normalized shares require an explicit convention. This can occur in discrete data and must not be read as evidence of independence. As positive degrees approach zero, the weights approach the degree-zero quadrant probabilities when neither benchmark has an atom and the limiting expectations are justified. With mass on a benchmark axis, positive-degree hinges omit that mass, so the indicator convention at degree zero must be applied separately.
 
-## Distributional recovery
+### Distributional recovery
 
 The degree-zero co-lower partial moment is already complete: \(CoLPM_{0,0}(a,b) = P(X\le a, Y\le b)\) is the joint CDF, which determines the joint law (rectangle probabilities follow from its four corner values). The hinge surface is a second complete representation, and the following result shows how it recovers the joint CDF.
 
@@ -372,7 +372,7 @@ See [Discrete and Continuous Bayes](https://github.com/OVVO-Financial/NNS/blob/N
 
 
 
-## Hierarchy across degrees
+### Hierarchy across degrees
 
 This result establishes a natural hierarchy:
 
@@ -398,7 +398,7 @@ Formally:
 
 - **Frequentist path**: empirical law \(\hat{P}_n = \frac{1}{n}\sum_{i=1}^n \delta_{X_i}\) → compute \(L_n(t;\,X)\), \(U_n(t;\,X)\) with \(X \sim \hat{P}_n\).
 
-Because both pipelines reduce to the same partial-moment operators applied to different input distributions, **any two models that agree on the distribution of \(X\) will produce identical partial moments** — not just the normalized degree-one weights, but all partial moments of all degrees. The formula stays the same; only the input distribution changes. This is the formal sense in which partial moments are a practical lingua franca between Bayesian and frequentist workflows.
+Because both pipelines reduce to the same partial-moment operators applied to different input distributions, **any two models that agree on the distribution of \(X\) (for co-partial moments, on the joint distribution of \((X, Y)\)) will produce identical partial moments** — not just the normalized degree-one weights, but all partial moments of all degrees. The formula stays the same; only the input distribution changes. This is the formal sense in which partial moments are a practical lingua franca between Bayesian and frequentist workflows.
 
 The directional formulation of Bayes' theorem in Sections 13.5–13.6 is therefore paradigm-agnostic: it holds whether the joint distribution is constructed from a posterior predictive, an empirical distribution, or any other probability measure fed into the co-partial moment operators.
 
@@ -413,7 +413,7 @@ Conditional probability and Bayes' theorem arise naturally and completely from t
 - **All eight conditional probabilities** from the four-quadrant partition are ratios of a degree-zero co-partial moment to a marginal partial moment.
 - **Bayes' theorem follows directly from co-partial moment identities**, holds symmetrically in both the lower and upper tails, and requires no distributional assumptions.
 - **Bayesian updating corresponds to renormalizing the four-quadrant probability partition** after conditioning on one marginal.
-- **Degree-one co-partial moments are distributional generators**: the mixed second derivative of the hinge surface recovers the joint CDF at all continuity points, and the mixed fourth derivative recovers the joint density when it exists. Degree zero, the joint CDF, is already complete; degree one is a continuous complete representation with the stated derivative qualifications.
+- **Degree-one co-partial moments are distributional generators**: the right mixed second derivative of the hinge surface recovers the joint CDF at every benchmark pair, atoms included (the ordinary mixed derivative agrees wherever it exists), and the mixed fourth derivative recovers the joint density at points where the density is continuous. Degree zero, the joint CDF, is already complete; degree one is a continuous complete representation with the stated derivative qualifications.
 - **Partial moments are law-invariant**: they depend only on the induced distribution of \(X\), making them identical across Bayesian and frequentist pipelines whenever those pipelines agree on the distribution of outcomes.
 
 The next chapter extends these conditional-probability tools to directional causation — asking not merely how probability mass is distributed across variables, but which variable is doing the driving.

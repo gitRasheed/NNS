@@ -87,7 +87,7 @@ The structural meaning is identical in every case:
 t_\alpha^{(0)}
 \]
 
-is the generalized-inverse probability threshold. For a continuous CDF, \(F_X(t_\alpha^{(0)})=\alpha\); with atoms the two-sided probability inequality above is the appropriate statement. In finite samples, `LPM.VaR(..., degree = 0)` uses type-7 interpolated empirical quantiles, which differ from generalized-inverse order statistics. Neither convention alone gives exact finite-sample coverage for a new observation.
+is the generalized-inverse probability threshold. For a continuous CDF, \(F_X(t_\alpha^{(0)})=\alpha\); with atoms the two-sided probability inequality above is the appropriate statement. In finite samples, `LPM.VaR(..., degree = 0)` uses type-7 interpolated empirical quantiles, which differ from generalized-inverse order statistics. Neither convention alone gives exact finite-sample coverage \(\alpha\) for a new observation in general: for continuous data the \(k\)-th order statistic covers a new draw with probability exactly \(k/(n+1)\), so the generalized inverse (\(k=\lceil n\alpha\rceil\)) is exact only when \((n+1)\alpha\) is an integer, and the interpolated type-7 value carries no distribution-free coverage guarantee at all.
 
 Thus degree 0 is the **frequency-calibrated** threshold rule.
 
@@ -173,7 +173,7 @@ A more general bound uses lower partial moments of degree \(\alpha\). Define
 \theta(t,\alpha)=\left(E[(t-X)_+^\alpha]\right)^{1/\alpha}.
 \]
 
-Then, for \(g \le t\),
+Then, for \(\alpha>0\) and \(g < t\),
 
 \[
 P(X\le g)\le \left(\frac{\theta(t,\alpha)}{t-g}\right)^\alpha.
@@ -185,7 +185,7 @@ So the directional hierarchy of probability control is
 \text{symmetric variance bound} \to \text{semivariance bound} \to \text{general lower-partial-moment bound}.
 \]
 
-Each step aligns the bound more closely with the side of the distribution that matters for the decision.
+Each step aligns the bound more closely with the side of the distribution that matters for the decision. The arrows mark directional refinement, not uniformly tighter bounds: for a symmetric distribution the semivariance bound equals the halved Chebyshev bound, which is tighter than Cantelli's only when \(\mu-g>\sigma\), and the general bound improves on the semivariance bound only once \((t,\alpha)\) is chosen well (\(t=\mu,\ \alpha=2\) recovers it).
 
 ---
 
@@ -193,11 +193,11 @@ Each step aligns the bound more closely with the side of the distribution that m
 
 Once higher-degree thresholds are viewed as severity-weighted quantiles, an important practical feature becomes clear.
 
-A degree-1 or degree-2 threshold can be less extreme than the degree-0 threshold and yet still produce milder realized tail behavior.
+A degree-1 or degree-2 threshold can be less extreme than the degree-0 threshold (for the normal at \(\alpha=0.05\), \(t^{(0)}=-1.64\), \(t^{(1)}=-1.14\), \(t^{(2)}=-0.91\)); used as an intervention trigger it then fires earlier, so the shortfalls realized after intervention are milder.
 
 This is not a contradiction. It occurs because higher-degree thresholds are calibrated in weighted directional mass, not in raw event counts.
 
-Mathematically, this makes sense. The degree-2 rule assigns much more weight to large adverse deviations than to small ones. If a 10-unit shortfall contributes \(10^2\) units of quadratic severity while a 1-unit shortfall contributes only \(1^2\), then the threshold naturally shifts toward earlier intervention.
+Mathematically, this makes sense for many distributions. The degree-2 rule assigns much more weight to large adverse deviations than to small ones. If a 10-unit shortfall contributes \(10^2\) units of quadratic severity while a 1-unit shortfall contributes only \(1^2\), then for the normal, or for data with a light lower tail, the threshold shifts toward earlier intervention (normal, \(\alpha=0.05\): \(t^{(0)}=-1.64\), \(t^{(2)}=-0.91\)). The shift is not universal, because \(F_d\) compares lower with upper directional mass: when the lower tail is heavy the same weighting can pull the threshold outward (\(X=-\mathrm{LogNormal}(0,1)\), \(\alpha=0.05\): \(t^{(0)}=-5.18\), \(t^{(1)}=-4.93\), \(t^{(2)}=-6.29\)), and \(t^{(d)}\) need not be monotone in \(d\).
 
 The same logic applies across domains:
 
@@ -205,7 +205,7 @@ The same logic applies across domains:
 - in operations, it triggers replenishment before deep shortages form,
 - in engineering, it signals action before large safety-margin breaches dominate the lower tail.
 
-Thus higher-degree thresholds are best interpreted as **early-intervention rules under asymmetric cost**.
+Thus higher-degree thresholds are best interpreted as **severity-weighted rules under asymmetric cost**, which act as early-intervention rules when the weighted lower mass does not dominate.
 
 ---
 

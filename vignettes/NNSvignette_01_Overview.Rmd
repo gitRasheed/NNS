@@ -38,22 +38,22 @@ Sys.setenv("OMP_THREAD_LIMIT" = 1)
 8. Simulation (max‑entropy) & Monte Carlo
 9. Portfolio & stochastic dominance
 
-**Notation.** For a random variable \(X\) and threshold/target \(t\), the population \(n\)‑th **partial moments** are defined as:
+**Notation.** For a random variable \(X\) and threshold/target \(t\), the population \(k\)‑th **partial moments** are defined as:
 
 \[
-\operatorname{LPM}(n,t,X) 
-= \int_{-\infty}^{t} (t-x)^{n} \, dF_X(x),
+\operatorname{LPM}(k,t,X) 
+= \int_{-\infty}^{t} (t-x)^{k} \, dF_X(x),
 \qquad
-\operatorname{UPM}(n,t,X) 
-= \int_{t}^{\infty} (x-t)^{n} \, dF_X(x).
+\operatorname{UPM}(k,t,X) 
+= \int_{t}^{\infty} (x-t)^{k} \, dF_X(x).
 \]
 
 The **empirical** estimators replace \(F_X\) with the empirical CDF \(\hat F_n\) (or, equivalently, use indicator functions):
 
 \[
-\widehat{\operatorname{LPM}}_n(t;X) = \frac{1}{n} \sum_{i=1}^n (t-x_i)^n \, \mathbf{1}_{\{x_i \le t\}},
+\widehat{\operatorname{LPM}}_k(t;X) = \frac{1}{n} \sum_{i=1}^n (t-x_i)^k \, \mathbf{1}_{\{x_i \le t\}},
 \qquad
-\widehat{\operatorname{UPM}}_n(t;X) = \frac{1}{n} \sum_{i=1}^n (x_i-t)^n \, \mathbf{1}_{\{x_i > t\}}.
+\widehat{\operatorname{UPM}}_k(t;X) = \frac{1}{n} \sum_{i=1}^n (x_i-t)^k \, \mathbf{1}_{\{x_i > t\}}.
 \]
 
 These correspond to integrals over the measurable subsets \(\{X \le t\}\) and \(\{X > t\}\) in a \(\sigma\)‑algebra; the empirical sums are discrete analogues of Lebesgue integrals.
@@ -107,11 +107,11 @@ cat(sprintf("Skewed z: LPM2=%.4f, UPM2=%.4f (expect imbalance)\n", LPM(2,mu_z,z)
 
 ## 2.1 Higher moments from partial moments
 
-Define asymmetric analogues of skewness/kurtosis using \(\operatorname{UPM}_3\), \(\operatorname{LPM}_3\) (and degree 4), yielding robust tail diagnostics without parametric assumptions.
+Define asymmetric analogues of skewness/kurtosis using \(\operatorname{UPM}_3\), \(\operatorname{LPM}_3\) (and degree 4), yielding asymmetric tail diagnostics without parametric assumptions (like any third/fourth moment they remain sensitive to outliers).
 
 **Header.**
 
--   `NNS.moments(x)`
+-   `NNS.moments(x, population = TRUE)` — classical mean, variance, skewness and excess kurtosis; these equal the partial-moment decompositions about the mean, e.g. \(\text{skewness} = (\operatorname{UPM}_3 - \operatorname{LPM}_3)/(\operatorname{UPM}_2 + \operatorname{LPM}_2)^{3/2}\).
 
 ```{r}
 M <- NNS.moments(y)
@@ -134,10 +134,10 @@ NNS.mode(multimodal,multi = TRUE)
 
 **Headers.**
 
--   `LPM.ratio(degree = 0, target, variable)` (empirical CDF when `degree=0`)
--   `UPM.ratio(degree = 0, target, variable)`
--   `LPM.VaR(p, degree, variable)` (quantiles via partial‑moment CDFs)
--   `UPM.VaR(p, degree, variable)`
+-   `LPM.ratio(degree, target, variable)` (empirical CDF when `degree=0`)
+-   `UPM.ratio(degree, target, variable)` (empirical survival function, 1 − CDF, when `degree=0`)
+-   `LPM.VaR(percentile, degree, x)` (`degree=0`: empirical type-7 quantile; `degree>0`: the threshold at which the lower deviation area is `percentile` of the total (lower + upper) deviation area, an expectile-type point (the expectile itself at degree 1), not a quantile of `x`)
+-   `UPM.VaR(percentile, degree, x)`
 
 ```{r}
 qgrid <- LPM.VaR(seq(0.05,0.95,.1),0,z) # equivalent to quantile(z,probs = seq(0.05,0.95,by=0.1))
@@ -156,7 +156,7 @@ Pearson captures linear monotone relationships. Many structures (U‑shapes, sat
 **Headers.** 
 
 -   `Co.LPM(degree_lpm, x, y, target_x, target_y, degree_y)` / `Co.UPM(...)` (co‑partial moments)
--   `PM.matrix(LPM_degree, UPM_degree, target=NULL, variable, pop_adj=TRUE)`
+-   `PM.matrix(LPM_degree, UPM_degree, target, variable, pop_adj, norm = FALSE)` (no defaults for `target` or `pop_adj`; pass `target = NULL` for column means)
 -   `NNS.dep(x, y)` (scalar dependence coefficient)
 -   `NNS.copula(X, target=NULL, continuous=TRUE, plot=FALSE, independence.overlay=FALSE)`
 
@@ -170,7 +170,7 @@ cat(sprintf("Pearson r = %.4f\n", cor(x,y)))
 cat(sprintf("NNS.dep  = %.4f\n", NNS.dep(x,y)$Dependence))
 
 X <- data.frame(a=x, b=y, c=x*y + rnorm(2000, sd=.05))
-pm <- PM.matrix(1, 1, target = "means", variable=X, pop_adj=TRUE)
+pm <- PM.matrix(1, 1, target = NULL, variable=X, pop_adj=TRUE) # target = NULL: partial moments about each column's mean
 pm
 
 cop <- NNS.copula(X, continuous=TRUE, plot=FALSE)
@@ -184,13 +184,13 @@ cop
 set.seed(123); x = rnorm(100); y = rnorm(100); z = expand.grid(x, y)
 
 # Plot
-rgl::plot3d(z[,1], z[,2], Co.LPM(0, z[,1], z[,2], z[,1], z[,2]), col = "red")
+rgl::plot3d(z[,1], z[,2], Co.LPM(0, x, y, z[,1], z[,2]), col = "red")
 
 # Uniform values
 u_x = LPM.ratio(0, x, x); u_y = LPM.ratio(0, y, y); z = expand.grid(u_x, u_y)
 
 # Plot
-rgl::plot3d(z[,1], z[,2], Co.LPM(0, z[,1], z[,2], z[,1], z[,2]), col = "blue")
+rgl::plot3d(z[,1], z[,2], Co.LPM(0, u_x, u_y, z[,1], z[,2]), col = "blue")
 ```
 
 **Interpretation.** `NNS.dep` remains high for curved relationships; `PM.matrix` collects co‑partial moments across variables; `NNS.copula` summarizes higher‑dimensional dependence using partial‑moment ratios. Copulas are returned and evaluated via `Co.LPM` functions.
@@ -265,7 +265,7 @@ A <- list(g1=rnorm(150,0.0,1.1), g2=rnorm(150,0.2,1.0), g3=rnorm(150,-0.1,0.9))
 NNS.ANOVA(control=A, means.only=TRUE, plot=FALSE)
 ```
 
-**Math sketch.** For each quantile/threshold \(t\), compare CDFs built from `LPM.ratio(0, t, •)` (possibly with one‑sided tails). Aggregate across \(t\) to a certainty score.
+**Math sketch.** At the grand mean (grand median when `medians = TRUE`) compare each group's degree-1 (degree-0 for medians) `LPM.ratio` with 0.5; with `means.only = FALSE` also compare degree-1 `LPM.ratio`/`UPM.ratio` with 0.25 and 0.125 at four common benchmarks, each the cross-group average of the groups' own `LPM.VaR(.25, 1, •)`, `UPM.VaR(.25, 1, •)`, `LPM.VaR(.125, 1, •)`, `UPM.VaR(.125, 1, •)`. The largest discrepancies at these benchmarks are combined into a weighted certainty score in \([0,1]\).
 
 ## 5.3 Stochastic Superiority
 
@@ -285,7 +285,7 @@ P^* = P(X > Y) + \frac{1}{2} P(X = Y)
 
 A value of \(P^* = 0.5\) indicates no directional advantage, values above \(0.5\) favor \(X\), and values below \(0.5\) favor \(Y\).
 
-This differs from stochastic dominance. Stochastic superiority is a pairwise exceedance probability, while stochastic dominance requires one distribution to be preferred to another over the entire shared support.
+This differs from stochastic dominance. Stochastic superiority is a pairwise exceedance probability, while stochastic dominance requires one distribution to be weakly preferred at every threshold (its CDF, or integrated CDF, never above the other's), not just on average.
 
 Below is an example comparing two distributions with unequal means.
 
@@ -302,6 +302,7 @@ Since \(y\) was generated with a higher mean, the stochastic superiority probabi
 We can also obtain confidence intervals for the tie-adjusted superiority probability using maximum entropy bootstrap replicates.
 
 ```{r stochsuperiorityci, echo=TRUE, eval=FALSE}
+set.seed(123)
 NNS.SS(x, y, confidence.interval = TRUE, reps = 999, ci = 0.95)[1:5]
 
 $p_gt
@@ -314,10 +315,10 @@ $p_star
 [1] 0.233915
 
 $lower
-[1] 0.2105631
+[1] 0.2191905
 
 $upper
-[1] 0.2537789
+[1] 0.2587136
 ```
 
 This provides an interpretable effect size for directional comparison between two distributions without requiring identical distributions or equal variances.
@@ -456,7 +457,7 @@ head(mc$replicates$`rho = 0`)
 
 # 9. Portfolio & Stochastic Dominance
 
-Stochastic dominance orders uncertain prospects for broad classes of risk‑averse utilities; partial moments supply practical, nonparametric estimators.
+Stochastic dominance orders uncertain prospects for broad classes of utilities (all increasing utilities for FSD; increasing risk-averse utilities for SSD, with prudence added for TSD); partial moments supply practical, nonparametric estimators.
 
 **Headers.** 
 
@@ -512,19 +513,19 @@ Centering at \(t=\mu_X\) yields the variance decomposition identity in Section 1
 ## 1. Partial Moments & Ratios
 - `LPM(degree, target, variable)` — lower partial moment of order `degree` at `target`.
 - `UPM(degree, target, variable)` — upper partial moment of order `degree` at `target`.
-- `LPM.ratio(degree, target, variable)`; `UPM.ratio(...)` — normalized shares; `degree=0` gives CDF.
-- `LPM.VaR(p, degree, variable)` — partial-moment quantile at probability `p`.
+- `LPM.ratio(degree, target, variable)`; `UPM.ratio(...)` — normalized shares LPM/(LPM+UPM) and UPM/(LPM+UPM); `degree=0` gives the empirical CDF (`LPM.ratio`) and survival function (`UPM.ratio`).
+- `LPM.VaR(percentile, degree, x)` — `degree = 0`: empirical quantile at `percentile`; `degree > 0`: threshold at which the degree-weighted lower deviation area is `percentile` of the total deviation area (degree 1 = expectile).
 - `Co.LPM(degree_lpm, x, y, target_x, target_y, degree_y)` — co-lower partial moment between two variables.
 - `Co.UPM(degree_upm, x, y, target_x, target_y, degree_y)` — co-upper partial moment between two variables.
-- `D.LPM(degree, target, variable)` — divergent lower partial moment (away from `target`).
-- `D.UPM(degree, target, variable)` — divergent upper partial moment (away from `target`).
-- `NNS.CDF(x, target = NULL, points = NULL, plot = TRUE/FALSE)` — CDF from partial moments.
-- `NNS.moments(x)` — mean/var/skew/kurtosis via partial moments.
+- `D.LPM(degree_lpm, degree_upm, x, y, target_x, target_y)` — divergent lower partial moment: `x` above `target_x` while `y` at or below `target_y`.
+- `D.UPM(degree_lpm, degree_upm, x, y, target_x, target_y)` — divergent upper partial moment: `x` at or below `target_x` while `y` above `target_y`.
+- `NNS.CDF(variable, degree = 0, target = NULL, type = "CDF", plot = TRUE)` — CDF (or survival / hazard / cumulative hazard via `type`) from partial-moment ratios; `degree = 0` empirical, `degree > 0` area-weighted.
+- `NNS.moments(x, population = TRUE)` — mean/variance/skewness/excess kurtosis (equal to their partial-moment decompositions about the mean).
 
 ## 2. Descriptive Statistics & Distributions
-- `NNS.mode(x, multi = FALSE)` — nonparametric mode(s).
-- `PM.matrix(l_degree, u_degree, target, variable, pop_adj)` — co-/divergent partial-moment matrices.
-- `NNS.gravity(x, w = NULL)` — partial-moment weighted location (gravity center).
+- `NNS.mode(x, discrete = FALSE, multi = TRUE)` — nonparametric mode(s); `discrete = TRUE` rounds to integers and returns the most frequent, `multi = FALSE` returns a single mode.
+- `PM.matrix(LPM_degree, UPM_degree, target, variable, pop_adj, norm = FALSE)` — co-/divergent partial-moment matrices.
+- `NNS.gravity(x, discrete = FALSE)` — partial-moment weighted location (gravity center).
 
 
 See NNS Vignette: [Getting Started with NNS: Partial Moments](NNSvignette_02_Partial_Moments.html)
