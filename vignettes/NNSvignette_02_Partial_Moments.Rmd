@@ -89,11 +89,11 @@ cov(x, y)
 ```
 
 ## Covariance Elements and Covariance Matrix
-The covariance matrix $(\Sigma)$ is equal to the sum of the co-partial moments matrices less the divergent partial moments matrices.
+The covariance matrix $(\Sigma)$ is equal to the sum of the co-partial moments matrices less the divergent partial moments matrices, each computed about the column means (`target = NULL`).
 $$ \Sigma = CLPM + CUPM - DLPM - DUPM $$
 
 ```{r cov_dec, warning=FALSE}
-cov.mtx = PM.matrix(LPM_degree = 1, UPM_degree = 1, target = 'mean', variable = cbind(x, y), pop_adj = TRUE)
+cov.mtx = PM.matrix(LPM_degree = 1, UPM_degree = 1, target = NULL, variable = cbind(x, y), pop_adj = TRUE)
 cov.mtx
 
 # Reassembled Covariance Matrix

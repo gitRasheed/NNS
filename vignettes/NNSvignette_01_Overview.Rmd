@@ -170,7 +170,7 @@ cat(sprintf("Pearson r = %.4f\n", cor(x,y)))
 cat(sprintf("NNS.dep  = %.4f\n", NNS.dep(x,y)$Dependence))
 
 X <- data.frame(a=x, b=y, c=x*y + rnorm(2000, sd=.05))
-pm <- PM.matrix(1, 1, target = "means", variable=X, pop_adj=TRUE)
+pm <- PM.matrix(1, 1, target = NULL, variable=X, pop_adj=TRUE) # target = NULL: partial moments about each column's mean
 pm
 
 cop <- NNS.copula(X, continuous=TRUE, plot=FALSE)
@@ -184,13 +184,13 @@ cop
 set.seed(123); x = rnorm(100); y = rnorm(100); z = expand.grid(x, y)
 
 # Plot
-rgl::plot3d(z[,1], z[,2], Co.LPM(0, z[,1], z[,2], z[,1], z[,2]), col = "red")
+rgl::plot3d(z[,1], z[,2], Co.LPM(0, x, y, z[,1], z[,2]), col = "red")
 
 # Uniform values
 u_x = LPM.ratio(0, x, x); u_y = LPM.ratio(0, y, y); z = expand.grid(u_x, u_y)
 
 # Plot
-rgl::plot3d(z[,1], z[,2], Co.LPM(0, z[,1], z[,2], z[,1], z[,2]), col = "blue")
+rgl::plot3d(z[,1], z[,2], Co.LPM(0, u_x, u_y, z[,1], z[,2]), col = "blue")
 ```
 
 **Interpretation.** `NNS.dep` remains high for curved relationships; `PM.matrix` collects co‑partial moments across variables; `NNS.copula` summarizes higher‑dimensional dependence using partial‑moment ratios. Copulas are returned and evaluated via `Co.LPM` functions.
