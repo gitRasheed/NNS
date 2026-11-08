@@ -4,17 +4,21 @@
   `PM.matrix`, the `_nD` functions and `NNS.CDF`) now reject an infinite
   degree with "`degree` must be finite." (named after the argument) instead
   of returning Inf, 0 or NaN.
-* `LPM()`/`LPM.ratio()`/`UPM.ratio()` with more than 32 targets, and
+* `LPM()`/`UPM()`/`LPM.ratio()`/`UPM.ratio()` with more than 32 targets, and
   univariate `NNS.CDF()` with more than 32 observations, no longer round a
-  degree within 1e-12 of an integer to that integer. A tiny positive degree
-  such as `1e-13` now excludes ties at the target, as it already did with 32
-  or fewer targets, instead of returning the degree-0 value.
+  degree within 1e-12 of an integer to that integer, so they agree with the
+  32-or-fewer-target path (e.g. `UPM(2 + 1e-13, ...)` is no longer exactly the
+  degree-2 value). For `LPM()` and the ratios, a tiny positive degree such as
+  `1e-13` now excludes ties at the target, as it already did with 32 or fewer
+  targets, instead of returning the degree-0 value.
 * Integer degrees above 32 are evaluated with `pow()` rather than a product of
   `degree` factors, so a huge integer degree no longer takes time proportional
   to the degree. Results for degrees up to 32 are unchanged; above 32 they can
   differ in the last bits.
-* `LPM()`/`UPM()` with more than 32 targets return `Inf`, as the single-target
-  path does, instead of `NaN` when an intermediate power sum overflows.
+* `LPM()`, `UPM()`, `LPM.ratio()`, `UPM.ratio()` with more than 32 targets,
+  and univariate `NNS.CDF()` with more than 32 observations, return `Inf` (or
+  the corresponding 0/1 ratio) instead of `NaN` when an intermediate power sum
+  overflows, matching the 32-or-fewer-target path; `Inf/Inf` remains `NaN`.
 
 # NNS 13.3 (development changes)
 

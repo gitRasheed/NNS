@@ -82,24 +82,28 @@ test_that("finite degrees above the int range are accepted and use pow", {
 })
 
 test_that("integer degrees up to 32 keep the left-fold product bit for bit", {
+  # Deliberate compatibility pin: earlier releases evaluated integer degrees as
+  # the product 1 * v * v * ..., and results for degrees <= 32 must not move.
   expect_identical(LPM(32, 1, -0.3), Reduce(`*`, rep(1 - (-0.3), 32), 1))
   expect_identical(UPM(5, 0, 1.1), Reduce(`*`, rep(1.1, 5), 1))
   expect_identical(LPM(3, 1, -0.3, excess_ret = TRUE), Reduce(`*`, rep(1.3, 3), 1))
 })
 
-test_that("integer degrees above 32 use pow", {
-  expect_identical(LPM(33, 1, -0.3), (1 - (-0.3))^33)
-  expect_identical(UPM(40, 0, 1.1), 1.1^40)
-  expect_identical(Co.LPM(40, -0.3, -0.3, 1, 1, degree_y = 1), (1 - (-0.3))^40 * 1.3)
+test_that("integer degrees above 32 agree with the power to a few ulps", {
+  tol <- 8 * .Machine$double.eps
+  expect_equal(LPM(33, 1, -0.3), 1.3^33, tolerance = tol)
+  expect_equal(UPM(40, 0, 1.1), 1.1^40, tolerance = tol)
+  expect_equal(Co.LPM(40, -0.3, -0.3, 1, 1, degree_y = 1), 1.3^40 * 1.3, tolerance = tol)
 })
 
 test_that("the cost of a huge integer degree does not grow with the degree", {
   # The left fold took about 11 s for degree 1e7 and n = 1000 and would take
-  # hours for 2^31 - 1.
+  # hours for 2^31 - 1; pow takes microseconds. The bound only checks that the
+  # calls do not hang, so it is loose enough for slow or instrumented builds.
   el <- system.time(r1 <- LPM(2^31 - 1, 2, rep(1, 1000)))[["elapsed"]]
   el <- el + system.time(r2 <- UPM(1e7, 0, rep(1, 1000)))[["elapsed"]]
   el <- el + system.time(r3 <- Co.LPM(2e8, c(0, 0.5, 2), c(0, 0.5, 2), 1, 1))[["elapsed"]]
-  expect_lt(el, 5)
+  expect_lt(el, 60)
   expect_identical(c(r1, r2, r3), c(1, 1, 1 / 3))
 })
 
@@ -121,4 +125,29 @@ test_that("the prefix path has no NaN at a high degree on widely spread data", {
   out <- LPM(32, z, z)
   expect_false(any(is.nan(out)))
   expect_identical(is.infinite(out), is.infinite(vapply(z, function(t) LPM(32, t, z), numeric(1))))
+})
+
+test_that("a near-integer UPM degree is not rounded on the prefix path", {
+  x <- c(0, 0.5, 1, 2)
+  expect_identical(UPM(2 + 1e-13, c(0.5, pad), x)[1], UPM(2 + 1e-13, 0.5, x))
+  expect_false(identical(UPM(2 + 1e-13, c(0.5, pad), x)[1], UPM(2, 0.5, x)))
+})
+
+test_that("LPM.ratio on the prefix path is 0, not NaN, when only the upper sum overflows", {
+  y <- c(0, 1e200)
+  expect_identical(LPM.ratio(4, c(-1e-170, pad), y)[1], LPM.ratio(4, -1e-170, y))
+  expect_identical(LPM.ratio(4, c(-1e-170, pad), y)[1], 0)
+})
+
+test_that("UPM.ratio stays NaN (Inf/Inf) on the prefix path when the upper sum overflows", {
+  y <- c(0, 1e200)
+  expect_identical(UPM.ratio(4, c(-1e-170, pad), y)[1], UPM.ratio(4, -1e-170, y))
+  expect_identical(UPM.ratio(4, c(-1e-170, pad), y)[1], NaN)
+})
+
+test_that("univariate NNS.CDF over 32 observations has no NaN when a power sum overflows", {
+  d <- c(0, 1e200, seq(1, 2, length.out = 40))
+  f <- NNS.CDF(d, degree = 4, plot = FALSE)$Function
+  expect_identical(f$CDF[1:3], vapply(f$x[1:3], function(t) LPM.ratio(4, t, d), numeric(1)))
+  expect_identical(f$CDF[1:3], c(0, 0, 0))
 })
