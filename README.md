@@ -49,6 +49,9 @@ install.packages('NNS')
 ## Examples
 Please see https://github.com/OVVO-Financial/NNS/blob/NNS-Beta-Version/examples/index.md for basic partial moments equivalences, hands-on statistics, machine learning and econometrics examples.
 
+## Documentation for LLMs
+The book and the help pages are also published as plain Markdown with every formula kept as LaTeX: https://ovvo-financial.github.io/NNS/llm/index.md (use these rather than pkgdown's `reference/*.md` pages, whose formulas are escaped).
+
 
 ## Citation
 ```
