@@ -2,7 +2,7 @@
 
 ![](articles/images/NNS_hex_sticker.png)
 
-[![packageversion](https://img.shields.io/badge/NNS%20version-13.2-blue.svg?style=flat-square)](https://github.com/OVVO-Financial/NNS/commits/NNS-Beta-Version)
+[![packageversion](https://img.shields.io/badge/NNS%20version-14.2-blue.svg?style=flat-square)](https://github.com/OVVO-Financial/NNS/commits/NNS-Beta-Version)
 [![Licence](https://img.shields.io/badge/licence-GPL--3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
 
 ## 
@@ -29,6 +29,11 @@ Companion R-package and datasets to: \#### Viole, F. and Nawrocki, D.
 
 2nd edition available here: <https://ovvo-financial.github.io/NNS/book/>
 
+[Watch the chapter-by-chapter NNS video
+series](https://www.youtube.com/playlist?list=PLIcjK7rT4IwM&si=Qo1H872wzbEIZrjX):
+A pedagogical introduction to the intuition, mathematics, and
+applications of NNS.
+
 #### For a direct quantitative finance implementation of NNS, see [OVVO Labs](https://ovvolabs.com/)
 
 ## Current Version
@@ -42,7 +47,7 @@ CRAN version is
 
 [![NNS](https://img.shields.io/badge/NNS--blue.svg)](https://cran.r-project.org/package=NNS)
 requires [![minimal R
-version](https://img.shields.io/badge/R%3E%3D-3.5.0-6666ff.svg)](https://cran.r-project.org/).
+version](https://img.shields.io/badge/R%3E%3D-3.6.0-6666ff.svg)](https://cran.r-project.org/).
 See <https://cran.r-project.org/> or
 [![installr](https://img.shields.io/badge/installr-0.18.0-blue.svg)](https://cran.r-project.org/package=installr)
 for upgrading to latest R release.
@@ -66,13 +71,19 @@ Please see
 for basic partial moments equivalences, hands-on statistics, machine
 learning and econometrics examples.
 
+## Formal Proofs
+
+Mathematical claims from the book and the help pages are formalized in
+Lean 4. See
+[lean/README.md](https://github.com/OVVO-Financial/NNS/blob/NNS-Beta-Version/lean/README.md).
+
 ## Citation
 
     @Manual{,
         title = {NNS: Nonlinear Nonparametric Statistics},
         author = {Fred Viole},
         year = {2016},
-        note = {R package version 13.2},
+        note = {R package version 14.2},
         url = {https://CRAN.R-project.org/package=NNS},
       }
 

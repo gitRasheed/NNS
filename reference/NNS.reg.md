@@ -155,13 +155,14 @@ NNS.reg(
 
   integer; `NULL` (default) Sets the number of nearest regression points
   to use in weighting for multivariate regression at
-  `floor((1 - D) * sqrt(nrow(x)))` (at least 1, at most the number of
-  regression points), where D averages the copula summaries with
-  response y and -y so the smoothing choice is unchanged by response
-  reflection. `(n.best = "all")` will select and weight all generated
-  regression points. Analogous to `k` in a `k Nearest Neighbors`
-  algorithm. Different values of `n.best` are tested using
-  cross-validation in
+  `floor((1 - D) * sqrt(R))`, where R is the number of regression points
+  (at least 1), and D averages the copula summaries with response y and
+  -y so the smoothing choice is unchanged by response reflection. For
+  classification, D is the mean over predictors of each predictor's
+  strongest dependence with a class indicator. `(n.best = "all")` will
+  select and weight all generated regression points. Analogous to `k` in
+  a `k Nearest Neighbors` algorithm. Different values of `n.best` are
+  tested using cross-validation in
   [NNS.stack](https://OVVO-Financial.github.io/NNS/reference/NNS.stack.md).
   `NA` selects the default, as `NULL` does.
 
@@ -198,7 +199,9 @@ NNS.reg(
 
   integer; value specifying the number of cores to be used in the
   parallelized procedure. If NULL (default), the number of cores to be
-  used is equal to the number of cores of the machine - 1.
+  used is equal to the number of cores of the machine - 1 for
+  multivariate regression predictions large enough to repay them, and
+  one otherwise. The estimates do not depend on the number of cores.
 
 - point.only:
 

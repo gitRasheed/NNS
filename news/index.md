@@ -83,6 +83,20 @@ CRAN release: 2026-10-30
   three classes, two predictors and `folds = 2`, `NNS.stack` takes 1.3 s
   and `NNS.boost` 1.3 s at n = 1000 (0.9 s and 0.12 s before), and 5.8 s
   and 8.0 s at n = 5000 (2.6 s and 1.2 s before).
+- The default neighbour count of multivariate `NNS.reg`
+  (`n.best = NULL`) is `floor((1 - D) * sqrt(R))` for R regression
+  points, instead of `sqrt(n)`
+  ([\#153](https://github.com/OVVO-Financial/NNS/issues/153)). At a
+  fixed order the number of regression points stops growing with n, so
+  the `sqrt(n)` count averaged over nearly every point and pulled class
+  probabilities, fitted values and `dy.d_` partial derivatives toward
+  their means as n grew. On simulated two-predictor problems with known
+  targets, at n = 5000 the mean absolute error falls from 0.17 to 0.04
+  for class probabilities and from 0.17 to 0.03 for regression, the
+  error of the best fixed count, and it halves for a `dy.d_` partial
+  derivative. With four predictors, where the number of regression
+  points grows with n, the two rules give similar errors. Explicit
+  `n.best` and `NNS.stack`’s cross-validated count are unaffected.
 - Gravity retains its location blend with corrected quartiles and
   observed bin centers. Mode retains distinct continuous and class
   behavior. Changes to these defaults can affect regression,
@@ -178,3 +192,65 @@ CRAN release: 2026-10-30
   refitting. Add revised editable companions for the historical PDFs,
   preserve originals, and record that the original editable sources were
   not recovered.
+
+### Speed
+
+- The same results, faster. Every output of the 130-case reference run
+  over all exported functions is identical to the previous build, as are
+  1,500 random `NNS.reg` calls, 11,000 random partitions, 4,000 random
+  copulas and 24,000 random multivariate prediction problems (x86-64
+  Linux; other platforms run the same arithmetic in the same order).
+  Across the 77 reference cases that take at least 20 ms the median
+  speedup is 1.7x on one thread.
+- `NNS.part` (3-5x): each cell is a range of one index array over
+  presorted values, split by a binary search, instead of every
+  observation being relabelled and every cell re-sorted at every level.
+  `NNS.dep` and `NNS.norm` gain about 2x from it.
+- `NNS.copula` computes its dependence in one compiled call. It runs
+  twice per regressor in the default `order` of `NNS.reg`, which was
+  most of a short series’ regression time: single-predictor `NNS.reg` is
+  2-4x faster, `NNS.ARMA` and `NNS.ARMA.optim` 1.8-2.5x, `NNS.VAR` 2.2x,
+  and regression with `NNS.stack` 1.3-2.9x and `NNS.boost` 1.7-1.9x.
+- Multivariate `NNS.reg` finds each point’s nearest regression points
+  without measuring its distance to all of them, and no longer predicts
+  every training row when only the `point.est` estimates are returned
+  (`point.only = TRUE`, which `NNS.stack`’s final fits and `dy.d_` now
+  use). On 20,000 rows a full fit is 1.1x (2 predictors) to 2x (5
+  predictors) faster, and point estimates alone 4x to 14x (32x with
+  `n.best = 1`).
+- `NNS.reg` and `NNS.part` no longer build fitted values, tables, sorted
+  copies and axis labels that the call does not return.
+- Removed internal code that nothing called: the compiled
+  `fast_lm_mult`, `is.fcl`, `downSample`, `upSample`,
+  `NNS_reg_points_cpp`, `NNS_mreg_reduce_cpp`, `NNS_distance_path_cpp`
+  and `NNS_distance_bulk_cpp`, and the R helper `.grouped_gravity`.
+- A second pass moved the remaining interpreted loops into compiled
+  code, again with identical results: 3,000 random classification fits,
+  12,000 random `LPM.VaR` / `UPM.VaR` calls, 1,500 random `NNS.ANOVA`
+  calls, 1,000 random `dy.d_` calls, 5,000 random `NNS.meboot` /
+  `NNS.MC` calls, 4,000 random `NNS.dep` calls and 260 random
+  `NNS.stack` / `NNS.boost` runs match the previous build, including
+  their warnings and random number use. The compiled code repeats R’s
+  own arithmetic: `sum`, `mean`, `var`, `cumsum`, `rowSums` and
+  `colMeans` accumulate in long double as R’s do, the weighted class
+  shares use the BLAS call `crossprod` makes, and the root finder and
+  minimizer are R’s `uniroot` and `optimize` algorithms.
+- Classification: the class-probability prediction loop is compiled.
+  `NNS.reg` with a class response is 6-12x faster, `NNS.stack`
+  classification 1.8-4.4x and `NNS.boost` classification 2.8x.
+- `LPM.VaR` and `UPM.VaR` solve integer degrees 1 to 4 in compiled code.
+  `NNS.ANOVA(robust = TRUE)` is 6.6x faster and `dy.d_`, which also
+  builds the stencils of all its evaluation points together, 2.5-10x.
+- `NNS.meboot` solves its `rho` targets in compiled code: `NNS.meboot`
+  and `NNS.MC` are 4-5x faster, `NNS.SS` with a confidence interval 3.1x
+  and `NNS.ARMA` prediction intervals 7x.
+- `NNS.dep` groups cell labels instead of sorting them, and on a matrix
+  or with `p.value = TRUE` splits each variable once rather than once
+  per pair: matrices are 2.2x faster (2.9x with `asym = TRUE`), p-values
+  2.1x, and a pair of 100,000 observations 1.6x. `NNS.norm` gains 2.2x.
+- `ncores = NULL` in multivariate `NNS.reg` now uses the machine’s cores
+  less one, as documented, once a prediction is large enough to repay
+  the threads (it ran on one thread); small fits still use one.
+  Estimates do not depend on the number of cores. Under `R CMD check`’s
+  core limit `NNS.reg` and `NNS.stack` use two at most. The package now
+  links the BLAS that R uses.
