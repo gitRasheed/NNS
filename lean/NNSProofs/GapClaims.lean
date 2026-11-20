@@ -40,20 +40,21 @@ theorem claim_C047 {f : ℝ → ℝ} [IsProbabilityMeasure (densityLaw f)] (hf :
 theorem claim_C063 {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} {X : Ω → ℝ} {f g : ℝ → ℝ}
     (hX : AEMeasurable X P) (hf : Measurable f) (hf0 : ∀ x, 0 ≤ f x)
     (hlaw : P.map X = volume.withDensity fun x => ENNReal.ofReal (f x))
-    (hg : AEStronglyMeasurable g (P.map X)) : ∫ ω, g (X ω) ∂P = ∫ x, g x * f x :=
-  expectation_eq_integral_mul_density hX hf hf0 hlaw hg
+    (hg : Integrable g (P.map X)) : ∫ ω, g (X ω) ∂P = ∫ x, g x * f x :=
+  expectation_eq_integral_mul_density hX hf hf0 hlaw hg.aestronglyMeasurable
 
 theorem claim_C075 {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
-    {X : Ω → ℝ} {g : ℝ → ℝ} (hX : AEMeasurable X P) (hg : AEStronglyMeasurable g (P.map X)) :
+    {X : Ω → ℝ} {g : ℝ → ℝ} (hX : AEMeasurable X P) (hg : Integrable g (P.map X)) :
     ∫ ω, g (X ω) ∂P = ∫ x, g x ∂(cdf (P.map X)).measure :=
-  expectation_eq_integral_cdf_measure hX hg
+  expectation_eq_integral_cdf_measure hX hg.aestronglyMeasurable
 
 theorem claim_C076 {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} {X : Ω → ℝ} {a b : ℝ}
     {f : ℝ → ℝ} (hab : a < b) (hX : pdf.IsUniform X (Set.Icc a b) P)
-    (hf : AEStronglyMeasurable f (volume.restrict (Set.Icc a b))) :
+    (hf : IntegrableOn f (Set.Icc a b)) :
     ∫ ω, f (X ω) ∂P = (b - a)⁻¹ * ∫ x in a..b, f x ∧
       ∫ x in a..b, f x = (b - a) * ∫ ω, f (X ω) ∂P :=
-  ⟨IsUniform.expectation_eq hab.le hX hf, IsUniform.intervalIntegral_eq hab hX hf⟩
+  ⟨IsUniform.expectation_eq hab.le hX hf.aestronglyMeasurable,
+    IsUniform.intervalIntegral_eq hab hX hf.aestronglyMeasurable⟩
 
 theorem claim_C080 {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} {a b : ℝ} {f : ℝ → ℝ}
     (hab : a < b) (hf : IntervalIntegrable f volume a b) :
@@ -91,24 +92,29 @@ theorem claim_C418 :
 
 end DensityClaims
 
-theorem claim_C274 :
-    (∀ r : ℝ, 0 < r →
-      0.25 < cdf (expMeasure r) (GapQuantile.threshold 1 (expMeasure r) (1 / 20)) ∧
-        cdf (expMeasure r) (GapQuantile.threshold 1 (expMeasure r) (1 / 20)) < 0.26) ∧
-    (∀ a b : ℝ, a < b →
-      LPM 0 (GapQuantile.threshold 1 (empMeasure ![a, b]) (1 / 20)) ![a, b] = 1 / 2) :=
-  ⟨fun _ hr => (GapDensity.threshold_one_expMeasure hr).2.2,
-    fun _ _ hab => (GapDensity.threshold_one_two_points hab).2⟩
+theorem claim_C274 (r : ℝ) (hr : 0 < r) :
+    let t := GapQuantile.threshold 1 (expMeasure r) (1 / 20)
+    0.25455 < cdf (expMeasure r) t ∧ cdf (expMeasure r) t < 0.25465 ∧
+    ∀ {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+      (X : ℕ → Ω → ℝ), Pairwise (fun i j => X i ⟂ᵢ[P] X j) →
+      (∀ i, IdentDistrib (X i) (X 0) P P) → P.map (X 0) = expMeasure r →
+      ∀ᵐ ω ∂P, Tendsto (fun n : ℕ => LPM 0 t fun i : Fin n => X i ω) atTop
+        (𝓝 (cdf (expMeasure r) t)) := by
+  dsimp only
+  obtain ⟨_, _, hl, hu⟩ := GapDensity.threshold_one_expMeasure hr
+  refine ⟨hl, hu, fun X hi he hlaw => ?_⟩
+  simpa only [hlaw] using GapSampling.ae_tendsto_ecdf X hi he
+    (GapQuantile.threshold 1 (expMeasure r) (1 / 20))
 
-theorem claim_C555 :
-    (∀ r : ℝ, 0 < r →
-      0.25 < cdf (expMeasure r) (GapQuantile.threshold 1 (expMeasure r) (1 / 20)) ∧
-        cdf (expMeasure r) (GapQuantile.threshold 1 (expMeasure r) (1 / 20)) < 0.26) ∧
-    (∀ a b : ℝ, a < b →
-      GapQuantile.threshold 1 (empMeasure ![a, b]) (1 / 20) = (19 * a + b) / 20 ∧
-      LPM 0 (GapQuantile.threshold 1 (empMeasure ![a, b]) (1 / 20)) ![a, b] = 1 / 2) :=
-  ⟨fun _ hr => (GapDensity.threshold_one_expMeasure hr).2.2,
-    fun _ _ hab => GapDensity.threshold_one_two_points hab⟩
+theorem claim_C555 (r : ℝ) (hr : 0 < r) :
+    let t := GapQuantile.threshold 1 (expMeasure r) (1 / 20)
+    0.25455 < cdf (expMeasure r) t ∧ cdf (expMeasure r) t < 0.25465 ∧
+    ∀ {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
+      (X : ℕ → Ω → ℝ), Pairwise (fun i j => X i ⟂ᵢ[P] X j) →
+      (∀ i, IdentDistrib (X i) (X 0) P P) → P.map (X 0) = expMeasure r →
+      ∀ᵐ ω ∂P, Tendsto (fun n : ℕ => LPM 0 t fun i : Fin n => X i ω) atTop
+        (𝓝 (cdf (expMeasure r) t)) :=
+  claim_C274 r hr
 
 section SamplingClaims
 
@@ -1494,8 +1500,9 @@ theorem claim_C216 :
   fun d k h0 hmax hk => ⟨share_monotoneOn d k h0 hmax hk, share_strictMonoOn d k h0 hmax⟩
 
 theorem claim_C377 {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} {X : Ω → ℝ}
-    (hX : AEMeasurable X P) : variance X P = ∫ ω, (X ω - ∫ ω', X ω' ∂P) ^ 2 ∂P :=
-  variance_eq_integral_sq hX
+    [IsProbabilityMeasure P] (hX : MemLp X 2 P) :
+    variance X P = ∫ ω, (X ω - ∫ ω', X ω' ∂P) ^ 2 ∂P :=
+  variance_eq_integral_sq hX.aestronglyMeasurable.aemeasurable
 
 theorem claim_C072 :
     (fun i => lowerDev 1 0 (ch04Sample i)) = ![4, 2, 1, 0, 0, 0] ∧ LPM 1 0 ch04Sample = 7 / 6 :=
