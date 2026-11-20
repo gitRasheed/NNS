@@ -4,6 +4,7 @@ module
 public import NNSProofs.GapOperators
 public import NNSProofs.GapProjection
 public import NNSProofs.GapMoments
+public import NNSProofs.Integration
 public import NNSProofs.GapDensity
 public import NNSProofs.GapCoMoments
 
@@ -92,19 +93,114 @@ theorem claim_C418 :
 
 end DensityClaims
 
+private lemma expectile_error {n : ℕ} (x : Fin n → ℝ) (hx : ∃ i j, x i ≠ x j) (t : ℝ) :
+    |GapQuantile.threshold 1 (empMeasure x) (1 / 20) - t| ≤
+      |19 * LPM 1 t x - UPM 1 t x| := by
+  let q := GapQuantile.threshold 1 (empMeasure x) (1 / 20)
+  obtain ⟨i, _, _⟩ := id hx
+  have hn := Fin.pos i
+  have := isProbabilityMeasure_empMeasure hn x
+  have h := GapQuantile.threshold_balance (d := 1) one_ne_zero (memLp_empMeasure hn x _)
+    (GapQuantile.empMeasure_compl_singleton_ne_zero hx) (a := 1 / 20) (by norm_num) (by norm_num)
+  rw [mLPM_empMeasure, mUPM_empMeasure] at h
+  change (1 - 1 / 20) * LPM 1 q x = 1 / 20 * UPM 1 q x at h
+  change |q - t| ≤ _
+  have hq := UPM_one_sub_LPM_one hn q x
+  have ht := UPM_one_sub_LPM_one hn t x
+  rcases le_total q t with hqt | htq
+  · rw [abs_of_nonpos (sub_nonpos.mpr hqt)]
+    exact le_trans (by linarith [LPM_monotone_target 1 x hqt]) (le_abs_self _)
+  · rw [abs_of_nonneg (sub_nonneg.mpr htq)]
+    exact le_trans (by linarith [LPM_monotone_target 1 x htq]) (neg_le_abs _)
+
+private lemma nonconstant_of_ecdf {n : ℕ} {x : Fin n → ℝ} {t : ℝ}
+    (hl : 0 < LPM 0 t x) (hu : LPM 0 t x < 1) : ∃ i j, x i ≠ x j := by
+  classical
+  by_contra! hall
+  cases n with
+  | zero => simp [LPM] at hl
+  | succ n =>
+    by_cases h : x 0 ≤ t
+    · have hle (i) : x i ≤ t := (hall i 0).le.trans h
+      simp [LPM, lowerDev, hle, div_self (by positivity : (n : ℝ) + 1 ≠ 0)] at hu
+    · have hgt (i) : ¬ x i ≤ t := by rwa [hall i 0]
+      simp [LPM, lowerDev, hgt] at hl
+
 theorem claim_C274 (r : ℝ) (hr : 0 < r) :
     let t := GapQuantile.threshold 1 (expMeasure r) (1 / 20)
     0.25455 < cdf (expMeasure r) t ∧ cdf (expMeasure r) t < 0.25465 ∧
     ∀ {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
       (X : ℕ → Ω → ℝ), Pairwise (fun i j => X i ⟂ᵢ[P] X j) →
       (∀ i, IdentDistrib (X i) (X 0) P P) → P.map (X 0) = expMeasure r →
-      ∀ᵐ ω ∂P, Tendsto (fun n : ℕ => LPM 0 t fun i : Fin n => X i ω) atTop
-        (𝓝 (cdf (expMeasure r) t)) := by
-  dsimp only
-  obtain ⟨_, _, hl, hu⟩ := GapDensity.threshold_one_expMeasure hr
+      ∀ᵐ ω ∂P,
+        let x := fun n (i : Fin n) => X i ω
+        let q := fun n => GapQuantile.threshold 1 (empMeasure (x n)) (1 / 20)
+        Tendsto (fun n => LPM 0 t (x n)) atTop (𝓝 (cdf (expMeasure r) t)) ∧
+        Tendsto q atTop (𝓝 t) ∧
+        Tendsto (fun n => LPM 0 (q n) (x n)) atTop (𝓝 (cdf (expMeasure r) t)) ∧
+        Tendsto (fun n => GapSampling.ecdfLeft (q n) (x n)) atTop (𝓝 (cdf (expMeasure r) t)) := by
+  let t := GapQuantile.threshold 1 (expMeasure r) (1 / 20)
+  have := isProbabilityMeasure_expMeasure hr
+  obtain ⟨ht, _, hl, hu⟩ := GapDensity.threshold_one_expMeasure hr
   refine ⟨hl, hu, fun X hi he hlaw => ?_⟩
-  simpa only [hlaw] using GapSampling.ae_tendsto_ecdf X hi he
-    (GapQuantile.threshold 1 (expMeasure r) (1 / 20))
+  have hm := GapDensity.memLp_one_expMeasure hr
+  have hX := (he 0).aemeasurable_fst
+  have hmX := (memLp_map_measure_iff aestronglyMeasurable_id hX).mp (hlaw ▸ hm)
+  have hL := GapSampling.ae_tendsto_LPM X 1 t (GapSampling.integrable_lowerDev_comp hX hmX t) hi he
+  have hU := GapSampling.ae_tendsto_UPM X 1 t (GapSampling.integrable_upperDev_comp hX hmX t) hi he
+  have hF := GapSampling.ae_tendsto_ecdf X hi he t
+  have hGC := GapSampling.glivenko_cantelli_eventually X hi he
+  rw [hlaw] at hL hU hF hGC
+  have ht0 : 0 < t := pos_of_mul_pos_right (lt_trans (by norm_num) ht) hr.le
+  have balance := GapQuantile.threshold_balance one_ne_zero hm
+    (GapDensity.expMeasure_compl_singleton_ne_zero hr) (a := 1 / 20) (by norm_num) (by norm_num)
+  have hb : 19 * mLPM 1 t (expMeasure r) - mUPM 1 t (expMeasure r) = 0 := by
+    dsimp only [t]; linarith
+  filter_upwards [hL, hU, hF, hGC] with ω hLω hUω hFω hGCω
+  let x := fun n (i : Fin n) => X i ω
+  let q := fun n => GapQuantile.threshold 1 (empMeasure (x n)) (1 / 20)
+  have hscore := ((hLω.const_mul 19).sub hUω).abs
+  rw [hb, abs_zero] at hscore
+  have hq : Tendsto q atTop (𝓝 t) := by
+    rw [tendsto_iff_dist_tendsto_zero]
+    apply squeeze_zero' (Eventually.of_forall fun _ => dist_nonneg) _ hscore
+    filter_upwards [hFω.eventually_const_lt (lt_trans (by norm_num : (0 : ℝ) < 0.25455) hl),
+      hFω.eventually_lt_const (lt_trans hu (by norm_num : (0.25465 : ℝ) < 1))] with n h1 h2
+    exact expectile_error (x n) (nonconstant_of_ecdf h1 h2) t
+  have inclusive (u : ℕ → ℝ) (hu' : Tendsto u atTop (𝓝 t)) :
+      Tendsto (fun n => LPM 0 (u n) (x n)) atTop (𝓝 (cdf (expMeasure r) t)) := by
+    have hc : Tendsto (fun n => 1 - Real.exp (-(r * u n))) atTop
+        (𝓝 (1 - Real.exp (-(r * t)))) :=
+      tendsto_const_nhds.sub (Real.continuous_exp.continuousAt.tendsto.comp (hu'.const_mul r).neg)
+    have hcdf : Tendsto (fun n => cdf (expMeasure r) (u n)) atTop
+        (𝓝 (cdf (expMeasure r) t)) := by
+      rw [cdf_expMeasure_eq hr t, ite_eq_left ht0.le]
+      refine hc.congr' ?_
+      filter_upwards [hu'.eventually_const_lt ht0] with n hn
+      rw [cdf_expMeasure_eq hr, ite_eq_left hn.le]
+    apply hcdf.congr_dist
+    rw [Metric.tendsto_nhds]
+    intro ε hε
+    filter_upwards [hGCω (ε / 2) (half_pos hε)] with n hn
+    simpa [Real.dist_eq, abs_sub_comm, abs_abs] using (hn (u n)).trans_lt (half_lt_self hε)
+  have hinc := inclusive q hq
+  refine ⟨hFω, hq, hinc, ?_⟩
+  let v := fun n : ℕ => q n - 1 / ((n : ℝ) + 1)
+  have hv : Tendsto v atTop (𝓝 t) := by
+    simpa [v] using hq.sub (tendsto_one_div_add_atTop_nhds_zero_nat (𝕜 := ℝ))
+  apply tendsto_of_tendsto_of_tendsto_of_le_of_le (inclusive v hv) hinc
+  · intro n
+    dsimp only
+    rw [GapSampling.ecdfLeft_eq_card, LPM_zero_eq_ecdf]
+    apply div_le_div_of_nonneg_right _ n.cast_nonneg
+    exact_mod_cast Finset.card_le_card (Finset.monotone_filter_right Finset.univ
+      fun i _ (hi' : x n i ≤ v n) => hi'.trans_lt (sub_lt_self _ (by positivity)))
+  · intro n
+    dsimp only
+    rw [GapSampling.ecdfLeft_eq_card, LPM_zero_eq_ecdf]
+    apply div_le_div_of_nonneg_right _ n.cast_nonneg
+    exact_mod_cast Finset.card_le_card (Finset.monotone_filter_right Finset.univ
+      fun i _ (hi' : x n i < q n) => hi'.le)
 
 theorem claim_C555 (r : ℝ) (hr : 0 < r) :
     let t := GapQuantile.threshold 1 (expMeasure r) (1 / 20)
@@ -112,8 +208,13 @@ theorem claim_C555 (r : ℝ) (hr : 0 < r) :
     ∀ {Ω : Type*} [MeasurableSpace Ω] {P : Measure Ω} [IsProbabilityMeasure P]
       (X : ℕ → Ω → ℝ), Pairwise (fun i j => X i ⟂ᵢ[P] X j) →
       (∀ i, IdentDistrib (X i) (X 0) P P) → P.map (X 0) = expMeasure r →
-      ∀ᵐ ω ∂P, Tendsto (fun n : ℕ => LPM 0 t fun i : Fin n => X i ω) atTop
-        (𝓝 (cdf (expMeasure r) t)) :=
+      ∀ᵐ ω ∂P,
+        let x := fun n (i : Fin n) => X i ω
+        let q := fun n => GapQuantile.threshold 1 (empMeasure (x n)) (1 / 20)
+        Tendsto (fun n => LPM 0 t (x n)) atTop (𝓝 (cdf (expMeasure r) t)) ∧
+        Tendsto q atTop (𝓝 t) ∧
+        Tendsto (fun n => LPM 0 (q n) (x n)) atTop (𝓝 (cdf (expMeasure r) t)) ∧
+        Tendsto (fun n => GapSampling.ecdfLeft (q n) (x n)) atTop (𝓝 (cdf (expMeasure r) t)) :=
   claim_C274 r hr
 
 section SamplingClaims

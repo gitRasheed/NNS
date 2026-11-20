@@ -93,7 +93,7 @@ C136	Measurability of deviations and threshold events	NNS.ClaimsA.claim_C136	PRO
 C137	Recovering signed and absolute deviations	NNS.ClaimsA.claim_C137	PROVED-FAITHFUL		book/chapter-06-measure-theoretic-interpretation.Rmd:99-109
 C138	Measurability of deviations and threshold events	NNS.ClaimsA.claim_C138	PROVED-WITH-SIDE-CONDITION	Measurability of the positive and negative parts requires a measurable function.	book/chapter-06-measure-theoretic-interpretation.Rmd:111
 C140	Positive and negative parts	NNS.ClaimsA.claim_C140	PROVED-FAITHFUL		book/chapter-06-measure-theoretic-interpretation.Rmd:135-145
-C141	Moment of a signed deviation	NNS.ClaimsA.claim_C141	PROVED-FAITHFUL		book/chapter-06-measure-theoretic-interpretation.Rmd:204-213
+C141	Implicit pointwise step in the signed moment formula	NNS.ClaimsA.claim_C141	PROVED-FAITHFUL		book/chapter-06-measure-theoretic-interpretation.Rmd:204-213 book/chapter-06-measure-theoretic-interpretation.Rmd:135-145
 C142	Ties and the degree-zero partition	NNS.ClaimsA.claim_C142	PROVED-FAITHFUL		book/chapter-06-measure-theoretic-interpretation.Rmd:156-179 book/chapter-02-directional-deviation-operators.Rmd:142
 C143	Directional powers and their averages	NNS.ClaimsA.claim_C143	PROVED-FAITHFUL		book/chapter-06-measure-theoretic-interpretation.Rmd:166
 C144	Integrals on either side of the benchmark	NNS.ClaimsA.claim_C144	PROVED-FAITHFUL		book/chapter-06-measure-theoretic-interpretation.Rmd:182-193
@@ -120,7 +120,7 @@ C169	Directional information lost in the variance or moment sum	NNS.GapClaims.cl
 C170	Directional information lost in the variance or moment sum	NNS.GapClaims.claim_C170	PROVED-FAITHFUL		book/chapter-07-directional-descriptive-statistics.Rmd:100
 C172	Unconditional shortfall and tail averages	NNS.GapClaims.claim_C172	PROVED-FAITHFUL		book/chapter-07-directional-descriptive-statistics.Rmd:124-132
 C173	Unconditional shortfall and tail averages	NNS.GapClaims.claim_C173	PROVED-FAITHFUL		book/chapter-07-directional-descriptive-statistics.Rmd:135-136 book/chapter-07-directional-descriptive-statistics.Rmd:158
-C175	Worked sample at a fixed benchmark	NNS.GapClaims.claim_C175	PROVED-FAITHFUL		book/chapter-07-directional-descriptive-statistics.Rmd:149-152
+C175	Worked sample at a fixed benchmark	NNS.GapClaims.claim_C175	PROVED-FAITHFUL		book/chapter-07-directional-descriptive-statistics.Rmd:140-152
 C176	Worked sample at a fixed benchmark	NNS.GapClaims.claim_C176	PROVED-FAITHFUL		book/chapter-07-directional-descriptive-statistics.Rmd:154
 C177	Skewness and the signed third moment	NNS.GapClaims.claim_C177	PROVED-FAITHFUL		book/chapter-07-directional-descriptive-statistics.Rmd:169-170
 C178	Third central moment	NNS.ClaimsA.claim_C178	PROVED-FAITHFUL		book/chapter-07-directional-descriptive-statistics.Rmd:176
@@ -198,7 +198,7 @@ C269	Discrete support of the empirical measure	NNS.ClaimsA.claim_C269	PROVED-FAI
 C271	CDF at the mean under symmetry or an exponential law	NNS.GapClaimsNew.claim_C271	PROVED-FAITHFUL		book/chapter-15-distribution-comparison.Rmd:204
 C272	CDF at the mean under symmetry or an exponential law	NNS.GapClaims.claim_C272	PROVED-FAITHFUL		book/chapter-15-distribution-comparison.Rmd:204
 C273	Degree-one area shares and their induced CDF	NNS.ClaimsA.claim_C273	PROVED-FAITHFUL		book/chapter-15-distribution-comparison.Rmd:211-221
-C274	Frequency below the exponential 5% area threshold	NNS.GapClaims.claim_C274	PROVED-WITH-SIDE-CONDITION	The 5% expectile is for the exponential population. The sample share at that fixed threshold converges almost surely to about 25.46%.	book/chapter-15-distribution-comparison.Rmd:224
+C274	About 25.46% below the fitted 5% expectile in large exponential samples	NNS.GapClaims.claim_C274	PROVED-FAITHFUL	For pairwise independent draws with a common exponential law, the share strictly below the sample's own 5% expectile converges almost surely to a value between 25.455% and 25.465%.	book/chapter-15-distribution-comparison.Rmd:213-224
 C275	Quantiles, expectiles and inversion	NNS.ClaimsA.claim_C275	PROVED-WITH-SIDE-CONDITION	Degree zero uses the generalized inverse, including at jumps. Exact degree-one inversion on the sample range needs nonconstant data.	book/chapter-15-distribution-comparison.Rmd:224
 C276	Degree-one area shares and their induced CDF	NNS.ClaimsA.claim_C276	PROVED-WITH-SIDE-CONDITION	Continuity at positive degree requires a nonconstant sample.	book/chapter-15-distribution-comparison.Rmd:224
 C279	Degree-one balance at the mean or a shared benchmark	NNS.ClaimsA.claim_C279	PROVED-WITH-SIDE-CONDITION	In each group, some observation differs from the benchmark, so its total deviation is positive.	book/chapter-15-distribution-comparison.Rmd:354
@@ -364,7 +364,7 @@ C547	Joint survival and multivariate normalization	NNS.GapClaims.claim_C547	PROV
 C548	Degree-one area shares and their induced CDF	NNS.ClaimsA.claim_C548	PROVED-FAITHFUL		man/NNS.CDF.Rd:16
 C553	Quantiles, expectiles and inversion	NNS.ClaimsA.claim_C553	PROVED-FAITHFUL		man/LPM.VaR.Rd:12
 C554	Quantiles, expectiles and inversion	NNS.ClaimsA.claim_C554	PROVED-FAITHFUL		man/LPM.VaR.Rd:12
-C555	Frequency below the exponential 5% area threshold	NNS.GapClaims.claim_C555	PROVED-WITH-SIDE-CONDITION	The 5% expectile is for the exponential population. The sample share at that fixed threshold converges almost surely to about 25.46%.	man/LPM.VaR.Rd:12
+C555	About 25.46% below the fitted 5% expectile in large exponential samples	NNS.GapClaims.claim_C555	PROVED-FAITHFUL	For pairwise independent draws with a common exponential law, the share strictly below the sample's own 5% expectile converges almost surely to a value between 25.455% and 25.465%.	man/LPM.VaR.Rd:12
 C557	Quantiles, expectiles and inversion	NNS.ClaimsA.claim_C557	PROVED-FAITHFUL		man/LPM.VaR.Rd:17
 C559	Quantiles, expectiles and inversion	NNS.ClaimsA.claim_C559	PROVED-FAITHFUL		man/UPM.VaR.Rd:12
 C561	Marginal and joint quadrant probabilities	NNS.ClaimsA.claim_C561	PROVED-FAITHFUL		man/Co.LPM.Rd:10
@@ -374,7 +374,7 @@ C571	Sample adjustment and normalized matrix cells	NNS.ClaimsA.claim_C571	PROVED
 C573	Sample adjustment and normalized matrix cells	NNS.ClaimsA.claim_C573	PROVED-FAITHFUL		man/PM.matrix.Rd:20 man/PM.matrix.Rd:32-33
 C575	Sample adjustment and normalized matrix cells	NNS.ClaimsA.claim_C575	PROVED-FAITHFUL		man/PM.matrix.Rd:34-36
 C578	Multivariate moments and the quadrant partition	NNS.ClaimsA.claim_C578	PROVED-FAITHFUL		man/Co.LPM_nD.Rd:16 man/Co.UPM_nD.Rd:16 man/DPM_nD.Rd:16
-C579	Multivariate moments and the quadrant partition	NNS.ClaimsA.claim_C579	PROVED-FAITHFUL		man/Co.LPM_nD.Rd:22 man/DPM_nD.Rd:22 man/Co.LPM_nD.Rd:14-16 man/DPM_nD.Rd:14-16 src/partial_moments.cpp:106-242
+C579	Multivariate moments and the quadrant partition	NNS.ClaimsA.claim_C579	PROVED-FAITHFUL		man/Co.LPM_nD.Rd:22 man/DPM_nD.Rd:22 man/Co.LPM_nD.Rd:14-16 man/DPM_nD.Rd:14-16 src/partial_moments.cpp:106-242 src/partial_moments.cpp:256-266 src/partial_moments.cpp:288-298 src/partial_moments.cpp:320-330
 C580	Multivariate moments and the quadrant partition	NNS.ClaimsA.claim_C580	PROVED-FAITHFUL		man/Co.LPM_nD.Rd:22 man/Co.UPM_nD.Rd:14-16 man/DPM_nD.Rd:14-22 src/partial_moments.cpp:106-242
 C583	Multivariate moments and the quadrant partition	NNS.ClaimsA.claim_C583	PROVED-FAITHFUL		man/DPM_nD.Rd:22
 C585	Moment summaries and tail information	NNS.ClaimsA.claim_C585	PROVED-FAITHFUL		man/NNS.moments.Rd:12 man/NNS.moments.Rd:17-20
